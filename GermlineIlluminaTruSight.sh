@@ -53,7 +53,7 @@ COMPRESSION_LEVEL=0
 -knownSites /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
 -knownSites /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -I "$runId"_"$sampleId"_rmdup.bam \
--L /data/diagnostics/pipelines/GermlineIlluminaTruSight/"$version"/"$bedFileName" \
+-L "$version"/"$bedFileName" \
 -o "$runId"_"$sampleId"_recal_data.table \
 -ip 200 \
 -dt NONE
@@ -67,7 +67,7 @@ COMPRESSION_LEVEL=0
 -knownSites /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -BQSR "$runId"_"$sampleId"_recal_data.table \
 -I "$runId"_"$sampleId"_rmdup.bam \
--L /data/diagnostics/pipelines/GermlineIlluminaTruSight/"$version"/"$bedFileName" \
+-L "$version"/"$bedFileName" \
 -o "$runId"_"$sampleId"_post_recal_data.table \
 -ip 200 \
 -dt NONE
@@ -79,7 +79,7 @@ COMPRESSION_LEVEL=0
 -before "$runId"_"$sampleId"_recal_data.table \
 -after "$runId"_"$sampleId"_post_recal_data.table \
 -plots "$runId"_"$sampleId"_recalibration_plots.pdf \
--L /data/diagnostics/pipelines/GermlineIlluminaTruSight/"$version"/"$bedFileName" \
+-L "$version"/"$bedFileName" \
 -ip 200 \
 -dt NONE
 
@@ -99,7 +99,7 @@ COMPRESSION_LEVEL=0
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -I "$runId"_"$sampleId".bam \
--L /data/diagnostics/pipelines/GermlineIlluminaTruSight/"$version"/"$bedFileName" \
+-L "$version"/"$bedFileName" \
 -o "$runId"_"$sampleId".g.vcf \
 --genotyping_mode DISCOVERY \
 -stand_emit_conf 10 \
