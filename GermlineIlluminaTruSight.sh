@@ -23,7 +23,6 @@ version="1.0.0"
 /share/apps/cutadapt-distros/cutadapt-1.9.1/bin/cutadapt \
 -a CTGTCTCTTATACACATCT \
 -A CTGTCTCTTATACACATCT \
---minimum-length 36 \
 -o "$runId"_"$sampleId"_R1_trimmed.fastq \
 -p "$runId"_"$sampleId"_R2_trimmed.fastq \
 "$read1Fastq" \
@@ -106,3 +105,6 @@ COMPRESSION_LEVEL=0
 -stand_call_conf 30 \
 --emitRefConfidence GVCF \
 -dt NONE
+
+#clean up
+rm -r tmp
