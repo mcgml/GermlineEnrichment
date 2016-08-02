@@ -23,27 +23,50 @@ version="1.0.0"
 /share/apps/cutadapt-distros/cutadapt-1.9.1/bin/cutadapt \
 -a CTGTCTCTTATACACATCT \
 -A CTGTCTCTTATACACATCT \
---minimum-length 40 \
--o "$runId"_"$sampleId"_R1_trimmed.fastq \
--p "$runId"_"$sampleId"_R2_trimmed.fastq \
+-o "$seqId"_"$sampleId"_R1_trimmed.fastq \
+-p "$seqId"_"$sampleId"_R2_trimmed.fastq \
 "$read1Fastq" \
 "$read2Fastq"
 
 #Align reads to reference genome
 /share/apps/bwa-distros/bwa-0.7.15/bwa mem \
 -M \
--R '@RG\tID:'"$runId"_"$lane"_"$sampleId"'\tSM:'"$sampleId"'\tPL:ILLUMINA\tLB:'"$experimentName" \
+-R '@RG\tID:'"$seqId"_"$laneId"_"$sampleId"'\tSM:'"$sampleId"'\tPL:ILLUMINA\tLB:'"$worksheetId_$sampleId" \
 /data/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
-"$runId"_"$sampleId"_R1_trimmed.fastq "$runId"_"$sampleId"_R2_trimmed.fastq \
-| /share/apps/samtools-distros/samtools-1.3.1/samtools sort -l0 -o "$runId"_"$sampleId"_sorted.bam
+"$seqId"_"$sampleId"_R1_trimmed.fastq "$seqId"_"$sampleId"_R2_trimmed.fastq \
+| /share/apps/samtools-distros/samtools-1.3.1/samtools sort -l0 -o "$seqId"_"$sampleId"_sorted.bam
 
 #Mark duplicate reads
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MarkDuplicates \
-INPUT="$runId"_"$sampleId"_sorted.bam \
-OUTPUT="$runId"_"$sampleId"_rmdup.bam \
-METRICS_FILE="$runId"_"$sampleId"_dupMetrics.txt \
+INPUT="$seqId"_"$sampleId"_sorted.bam \
+OUTPUT="$seqId"_"$sampleId"_rmdup.bam \
+METRICS_FILE="$seqId"_"$sampleId"_dupMetrics.txt \
 CREATE_INDEX=true \
 COMPRESSION_LEVEL=0
+
+#Identify regions requiring realignment
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx2g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+-T RealignerTargetCreator \
+-R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-known /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
+-known /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
+-I "$seqId"_"$sampleId"_rmdup.bam \
+-o "$seqId"_"$sampleId"_realigned.intervals \
+-L "$version"/"$bedFileName" \
+-ip 100 \
+-dt NONE
+
+#Realign around indels
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx2g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+-T IndelRealigner \
+-R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-known /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
+-known /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
+-targetIntervals "$seqId"_"$sampleId"_realigned.intervals \
+-I "$seqId"_"$sampleId"_rmdup.bam \
+-o "$seqId"_"$sampleId"_realigned.bam \
+-compress 0 \
+-dt NONE
 
 #Analyze patterns of covariation in the sequence dataset
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
@@ -52,9 +75,9 @@ COMPRESSION_LEVEL=0
 -knownSites /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -knownSites /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
 -knownSites /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
--I "$runId"_"$sampleId"_rmdup.bam \
+-I "$seqId"_"$sampleId"_realigned.bam \
 -L "$version"/"$bedFileName" \
--o "$runId"_"$sampleId"_recal_data.table \
+-o "$seqId"_"$sampleId"_recal_data.table \
 -ip 200 \
 -dt NONE
 
@@ -65,10 +88,10 @@ COMPRESSION_LEVEL=0
 -knownSites /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -knownSites /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
 -knownSites /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
--BQSR "$runId"_"$sampleId"_recal_data.table \
--I "$runId"_"$sampleId"_rmdup.bam \
+-BQSR "$seqId"_"$sampleId"_recal_data.table \
+-I "$seqId"_"$sampleId"_realigned.bam \
 -L "$version"/"$bedFileName" \
--o "$runId"_"$sampleId"_post_recal_data.table \
+-o "$seqId"_"$sampleId"_post_recal_data.table \
 -ip 200 \
 -dt NONE
 
@@ -76,9 +99,9 @@ COMPRESSION_LEVEL=0
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T AnalyzeCovariates \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--before "$runId"_"$sampleId"_recal_data.table \
--after "$runId"_"$sampleId"_post_recal_data.table \
--plots "$runId"_"$sampleId"_recalibration_plots.pdf \
+-before "$seqId"_"$sampleId"_recal_data.table \
+-after "$seqId"_"$sampleId"_post_recal_data.table \
+-plots "$seqId"_"$sampleId"_recalibration_plots.pdf \
 -L "$version"/"$bedFileName" \
 -ip 200 \
 -dt NONE
@@ -87,20 +110,25 @@ COMPRESSION_LEVEL=0
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T PrintReads \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--I "$runId"_"$sampleId"_rmdup.bam \
--BQSR "$runId"_"$sampleId"_post_recal_data.table \
--o "$runId"_"$sampleId".bam \
+-I "$seqId"_"$sampleId"_realigned.bam \
+-BQSR "$seqId"_"$sampleId"_post_recal_data.table \
+-o "$seqId"_"$sampleId"_recal.bam \
 -compress 0 \
 -dt NONE
+
+#fix bam
+/share/apps/samtools-distros/samtools-1.3.1/samtools sort -n -l0 "$seqId"_"$sampleId"_recal.bam | 
+/share/apps/samtools-distros/samtools-1.3.1/samtools fixmates |
+/share/apps/samtools-distros/samtools-1.3.1/samtools sort -o "$seqId"_"$sampleId".bam
 
 #variant calling with Haplotypecaller
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T HaplotypeCaller \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
--I "$runId"_"$sampleId".bam \
+-I "$seqId"_"$sampleId".bam \
 -L "$version"/"$bedFileName" \
--o "$runId"_"$sampleId".g.vcf \
+-o "$seqId"_"$sampleId".g.vcf \
 --genotyping_mode DISCOVERY \
 -stand_emit_conf 10 \
 -stand_call_conf 30 \
@@ -109,6 +137,8 @@ COMPRESSION_LEVEL=0
 
 #clean up
 rm -r tmp
-rm "$runId"_"$sampleId"_R?_trimmed.fastq
-rm "$runId"_"$sampleId"_rmdup.ba?
-rm "$runId"_"$sampleId"_sorted.ba?
+rm "$seqId"_"$sampleId"_R?_trimmed.fastq
+rm "$seqId"_"$sampleId"_rmdup.ba?
+rm "$seqId"_"$sampleId"_sorted.ba?
+rm "$seqId"_"$sampleId"_recal.ba?
+rm "$seqId"_"$sampleId"_realigned.ba?
