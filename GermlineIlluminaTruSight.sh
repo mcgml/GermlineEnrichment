@@ -118,7 +118,7 @@ COMPRESSION_LEVEL=0
 
 #fix bam
 /share/apps/samtools-distros/samtools-1.3.1/samtools sort -n -l0 "$seqId"_"$sampleId"_recal.bam | 
-/share/apps/samtools-distros/samtools-1.3.1/samtools fixmates |
+/share/apps/samtools-distros/samtools-1.3.1/samtools fixmate |
 /share/apps/samtools-distros/samtools-1.3.1/samtools sort -o "$seqId"_"$sampleId".bam
 
 #variant calling with Haplotypecaller
