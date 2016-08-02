@@ -38,7 +38,7 @@ version="1.0.0"
 | /share/apps/samtools-distros/samtools-1.3.1/samtools sort -l0 -o "$runId"_"$sampleId"_sorted.bam
 
 #Mark duplicate reads
-/usr/java/jdk1.8.0/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MarkDuplicates \
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MarkDuplicates \
 INPUT="$runId"_"$sampleId"_sorted.bam \
 OUTPUT="$runId"_"$sampleId"_rmdup.bam \
 METRICS_FILE="$runId"_"$sampleId"_dupMetrics.txt \
@@ -46,7 +46,7 @@ CREATE_INDEX=true \
 COMPRESSION_LEVEL=0
 
 #Analyze patterns of covariation in the sequence dataset
-/usr/java/jdk1.8.0/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T BaseRecalibrator \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -knownSites /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
@@ -59,7 +59,7 @@ COMPRESSION_LEVEL=0
 -dt NONE
 
 #Do a second pass to analyze covariation remaining after recalibration
-/usr/java/jdk1.8.0/bin/java -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T BaseRecalibrator \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -knownSites /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
@@ -73,7 +73,7 @@ COMPRESSION_LEVEL=0
 -dt NONE
 
 #Generate before/after plots
-/usr/java/jdk1.8.0/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T AnalyzeCovariates \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -before "$runId"_"$sampleId"_recal_data.table \
@@ -84,7 +84,7 @@ COMPRESSION_LEVEL=0
 -dt NONE
 
 #Apply the recalibration to your sequence data
-/usr/java/jdk1.8.0/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T PrintReads \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -I "$runId"_"$sampleId"_rmdup.bam \
@@ -94,7 +94,7 @@ COMPRESSION_LEVEL=0
 -dt NONE
 
 #variant calling with Haplotypecaller
-/usr/java/jdk1.8.0/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T HaplotypeCaller \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
