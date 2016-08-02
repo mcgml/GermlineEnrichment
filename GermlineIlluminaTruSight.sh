@@ -45,30 +45,6 @@ METRICS_FILE="$runId"_"$sampleId"_dupMetrics.txt \
 CREATE_INDEX=true \
 COMPRESSION_LEVEL=0
 
-#Identify regions requiring realignment
-/usr/java/jdk1.8.0/bin/java -Xmx2g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
--T RealignerTargetCreator \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--known /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
--known /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
--I "$runId"_"$sampleId"_rmdup.bam \
--o "$runId"_"$sampleId"_realign.intervals \
--L /data/diagnostics/pipelines/GermlineIlluminaTruSight/"$version"/"$bedFileName" \
--ip 200 \
--dt NONE
-
-#Realign around indels
-/usr/java/jdk1.8.0/bin/java -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
--T IndelRealigner \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--known /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
--known /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
--targetIntervals "$runId"_"$sampleId"_realign.intervals \
--I "$runId"_"$sampleId"_rmdup.bam \
--o "$runId"_"$sampleId"_realigned.bam \
--compress 0 \
--dt NONE
-
 #Analyze patterns of covariation in the sequence dataset
 /usr/java/jdk1.8.0/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T BaseRecalibrator \
@@ -76,7 +52,7 @@ COMPRESSION_LEVEL=0
 -knownSites /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -knownSites /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
 -knownSites /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
--I "$runId"_"$sampleId"_realigned.bam \
+-I "$runId"_"$sampleId"_rmdup.bam \
 -L /data/diagnostics/pipelines/GermlineIlluminaTruSight/"$version"/"$bedFileName" \
 -o "$runId"_"$sampleId"_recal_data.table \
 -ip 200 \
@@ -90,7 +66,7 @@ COMPRESSION_LEVEL=0
 -knownSites /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
 -knownSites /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -BQSR "$runId"_"$sampleId"_recal_data.table \
--I "$runId"_"$sampleId"_realigned.bam \
+-I "$runId"_"$sampleId"_rmdup.bam \
 -L /data/diagnostics/pipelines/GermlineIlluminaTruSight/"$version"/"$bedFileName" \
 -o "$runId"_"$sampleId"_post_recal_data.table \
 -ip 200 \
@@ -111,7 +87,7 @@ COMPRESSION_LEVEL=0
 /usr/java/jdk1.8.0/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T PrintReads \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--I "$runId"_"$sampleId"_realigned.bam \
+-I "$runId"_"$sampleId"_rmdup.bam \
 -BQSR "$runId"_"$sampleId"_post_recal_data.table \
 -o "$runId"_"$sampleId".bam \
 -compress 0 \
