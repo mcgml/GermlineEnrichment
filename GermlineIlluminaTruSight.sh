@@ -23,6 +23,7 @@ version="1.0.0"
 /share/apps/cutadapt-distros/cutadapt-1.9.1/bin/cutadapt \
 -a CTGTCTCTTATACACATCT \
 -A CTGTCTCTTATACACATCT \
+--minimum-length 40 \
 -o "$runId"_"$sampleId"_R1_trimmed.fastq \
 -p "$runId"_"$sampleId"_R2_trimmed.fastq \
 "$read1Fastq" \
@@ -108,3 +109,6 @@ COMPRESSION_LEVEL=0
 
 #clean up
 rm -r tmp
+rm "$runId"_"$sampleId"_R?_trimmed.fastq
+rm "$runId"_"$sampleId"_rmdup.ba?
+rm "$runId"_"$sampleId"_sorted.ba?
