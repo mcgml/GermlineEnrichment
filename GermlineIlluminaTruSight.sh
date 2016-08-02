@@ -53,7 +53,7 @@ COMPRESSION_LEVEL=0
 -I "$seqId"_"$sampleId"_rmdup.bam \
 -o "$seqId"_"$sampleId"_realigned.intervals \
 -L "$version"/"$bedFileName" \
--ip 100 \
+-ip 200 \
 -dt NONE
 
 #Realign around indels
@@ -120,6 +120,8 @@ COMPRESSION_LEVEL=0
 /share/apps/samtools-distros/samtools-1.3.1/samtools sort -n -l0 "$seqId"_"$sampleId"_recal.bam |
 /share/apps/samtools-distros/samtools-1.3.1/samtools fixmate - - |
 /share/apps/samtools-distros/samtools-1.3.1/samtools sort -o "$seqId"_"$sampleId".bam
+/share/apps/samtools-distros/samtools-1.3.1/samtools index "$seqId"_"$sampleId".bam
+mv "$seqId"_"$sampleId".bam.bai "$seqId"_"$sampleId".bai
 
 #variant calling with Haplotypecaller
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
