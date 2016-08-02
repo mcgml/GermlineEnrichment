@@ -20,7 +20,7 @@ version="1.0.0"
 . variables
 
 #trim adapters and remove short reads
-/share/apps/cutadapt-distros/cutadapt-1.10/bin/cutadapt \
+/share/apps/cutadapt-distros/cutadapt-1.9.1/bin/cutadapt \
 -a CTGTCTCTTATACACATCT \
 -A CTGTCTCTTATACACATCT \
 --minimum-length 36 \
