@@ -1,20 +1,20 @@
 #!/bin/bash
-#PBS -l walltime=40:00:00
+#PBS -l walltime=04:00:00
 #PBS -l ncpus=12
-#PBS_O_WORKDIR=(`echo $PBS_O_WORKDIR | sed "s/^\/state\/partition1//" `)
-#cd $PBS_O_WORKDIR
+PBS_O_WORKDIR=(`echo $PBS_O_WORKDIR | sed "s/^\/state\/partition1//" `)
+cd $PBS_O_WORKDIR
 
-#Description: Germline Illumina TruSight
-#Author: Matthew Lyon, All Wales Medical Genetics Lab
-#Status: Development
+#Description: Germline Illumina TruSight pipeline
+#Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.0.0"
+version="dev"
 
 #TODO file staging
 #TODO file piping
 #TODO MD5 input files
 #TODO QC
 #TODO multithread
+#TODO handle multiple lanes
 
 #load sample variables
 . variables
@@ -28,10 +28,10 @@ version="1.0.0"
 "$read1Fastq" \
 "$read2Fastq"
 
-#Align reads to reference genome
+#Align reads to reference genome, sort by coordinate and convert to BAM
 /share/apps/bwa-distros/bwa-0.7.15/bwa mem \
 -M \
--R '@RG\tID:'"$seqId"_"$laneId"_"$sampleId"'\tSM:'"$sampleId"'\tPL:ILLUMINA\tLB:'"$worksheetId_$sampleId" \
+-R '@RG\tID:'"$seqId"_"$laneNo"_"$sampleId"'\tSM:'"$sampleId"'\tPL:ILLUMINA\tLB:'"$worksheetId_$sampleId" \
 /data/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
 "$seqId"_"$sampleId"_R1_trimmed.fastq "$seqId"_"$sampleId"_R2_trimmed.fastq \
 | /share/apps/samtools-distros/samtools-1.3.1/samtools sort -l0 -o "$seqId"_"$sampleId"_sorted.bam
@@ -40,7 +40,7 @@ version="1.0.0"
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MarkDuplicates \
 INPUT="$seqId"_"$sampleId"_sorted.bam \
 OUTPUT="$seqId"_"$sampleId"_rmdup.bam \
-METRICS_FILE="$seqId"_"$sampleId"_dupMetrics.txt \
+METRICS_FILE="$seqId"_"$sampleId"_MarkDuplicatesMetrics.txt \
 CREATE_INDEX=true \
 COMPRESSION_LEVEL=0
 
@@ -51,7 +51,7 @@ COMPRESSION_LEVEL=0
 -known /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
 -known /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -I "$seqId"_"$sampleId"_rmdup.bam \
--o "$seqId"_"$sampleId"_realigned.intervals \
+-o "$seqId"_"$sampleId"_realign.intervals \
 -L "$version"/"$bedFileName" \
 -ip 200 \
 -dt NONE
@@ -69,7 +69,7 @@ COMPRESSION_LEVEL=0
 -dt NONE
 
 #Analyze patterns of covariation in the sequence dataset
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T BaseRecalibrator \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -knownSites /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
@@ -82,7 +82,7 @@ COMPRESSION_LEVEL=0
 -dt NONE
 
 #Do a second pass to analyze covariation remaining after recalibration
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T BaseRecalibrator \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -knownSites /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
@@ -96,7 +96,7 @@ COMPRESSION_LEVEL=0
 -dt NONE
 
 #Generate before/after plots
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T AnalyzeCovariates \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -before "$seqId"_"$sampleId"_recal_data.table \
@@ -107,7 +107,7 @@ COMPRESSION_LEVEL=0
 -dt NONE
 
 #Apply the recalibration to your sequence data
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T PrintReads \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -I "$seqId"_"$sampleId"_realigned.bam \
@@ -124,7 +124,7 @@ COMPRESSION_LEVEL=0
 mv "$seqId"_"$sampleId".bam.bai "$seqId"_"$sampleId".bai
 
 #variant calling with Haplotypecaller
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T HaplotypeCaller \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
@@ -136,6 +136,11 @@ mv "$seqId"_"$sampleId".bam.bai "$seqId"_"$sampleId".bai
 -stand_call_conf 30 \
 --emitRefConfidence GVCF \
 -dt NONE
+
+#TODO ROH
+#TODO Contamination
+#TODO SV
+#TODO Gender
 
 #clean up
 rm -r tmp
