@@ -102,16 +102,9 @@ COMPRESSION_LEVEL=0
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -I "$seqId"_"$sampleId"_realigned.bam \
 -BQSR "$seqId"_"$sampleId"_post_recal_data.table \
--o "$seqId"_"$sampleId"_recal.bam \
+-o "$seqId"_"$sampleId".bam \
 -compress 0 \
 -dt NONE
-
-#Fix mate information
-/share/apps/samtools-distros/samtools-1.3.1/samtools sort -n -l0 "$seqId"_"$sampleId"_recal.bam |
-/share/apps/samtools-distros/samtools-1.3.1/samtools fixmate - - |
-/share/apps/samtools-distros/samtools-1.3.1/samtools sort -o "$seqId"_"$sampleId".bam
-/share/apps/samtools-distros/samtools-1.3.1/samtools index "$seqId"_"$sampleId".bam
-mv "$seqId"_"$sampleId".bam.bai "$seqId"_"$sampleId".bai
 
 ### Variant calling ###
 
