@@ -33,11 +33,13 @@ version="dev"
 /share/apps/bwa-distros/bwa-0.7.15/bwa mem \
 -M \
 -R '@RG\tID:'"$seqId"_"$laneNo"_"$sampleId"'\tSM:'"$sampleId"'\tPL:ILLUMINA\tLB:'"$worksheetId_$sampleId" \
+-t 4 \
 /data/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
 "$seqId"_"$sampleId"_R1_trimmed.fastq "$seqId"_"$sampleId"_R2_trimmed.fastq | \
-/share/apps/samtools-distros/samtools-1.3.1/samtools sort -l0 -o "$seqId"_"$sampleId"_sorted.bam
+/share/apps/samtools-distros/samtools-1.3.1/samtools sort -@4 -l0 -o "$seqId"_"$sampleId"_sorted.bam
 
 #Mark duplicate reads
+#TODO optimise MAX_RECORDS_IN_RAM setting
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MarkDuplicates \
 INPUT="$seqId"_"$sampleId"_sorted.bam \
 OUTPUT="$seqId"_"$sampleId"_rmdup.bam \
@@ -55,6 +57,7 @@ COMPRESSION_LEVEL=0
 -o "$seqId"_"$sampleId"_realign.intervals \
 -L "$version"/"$bedFileName" \
 -ip 200 \
+-nt 2 \
 -dt NONE
 
 #Realign around indels
@@ -80,6 +83,7 @@ COMPRESSION_LEVEL=0
 -L "$version"/"$bedFileName" \
 -o "$seqId"_"$sampleId"_recal_data.table \
 -ip 200 \
+-nct 6 \
 -dt NONE
 
 #Do a second pass to analyze covariation remaining after recalibration
@@ -93,6 +97,7 @@ COMPRESSION_LEVEL=0
 -I "$seqId"_"$sampleId"_realigned.bam \
 -L "$version"/"$bedFileName" \
 -o "$seqId"_"$sampleId"_post_recal_data.table \
+-nct 6 \
 -ip 200 \
 -dt NONE
 
@@ -104,6 +109,7 @@ COMPRESSION_LEVEL=0
 -BQSR "$seqId"_"$sampleId"_post_recal_data.table \
 -o "$seqId"_"$sampleId".bam \
 -compress 0 \
+-nct 6 \
 -dt NONE
 
 ### Variant calling ###
@@ -121,6 +127,7 @@ COMPRESSION_LEVEL=0
 -stand_emit_conf 10 \
 -stand_call_conf 30 \
 --emitRefConfidence GVCF \
+-nct 6 \
 -dt NONE
 
 #Structural variants with pindel
@@ -210,6 +217,7 @@ pctSelectedBases=$(head -n8 "$seqId"_"$sampleId"_hs_metrics.txt | tail -n1 | cut
 --countType COUNT_FRAGMENTS \
 --minMappingQuality 20 \
 -ct 30 \
+-nt 4 \
 -dt NONE
 
 meanOnTargetCoverage=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f3)
@@ -268,6 +276,7 @@ freemix=$(tail -n1 "$seqId"_"$sampleId"_contamination.selfSM | cut -s -f7)
 --omitDepthOutputAtEachBase \
 --omitIntervalStatistics \
 --omitLocusTable \
+-nt 4 \
 -dt NONE
 
 yMeanCoverage=$(head -n2 y.sample_summary | tail -n1 | cut -s -f3)

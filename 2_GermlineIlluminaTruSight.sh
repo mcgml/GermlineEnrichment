@@ -25,6 +25,7 @@ version="dev"
 -V VCFsforFiltering.list \
 -L "$version"/"$bedFileName" \
 -o "$seqId"_Variants.vcf \
+-nt 4 \
 -dt NONE
 
 #filter calls
