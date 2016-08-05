@@ -185,7 +185,7 @@ overRepresentedSeqR2=$(head -n10 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.
 adapterContentR2=$(head -n11 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
 
 #Extract duplicationRate: identify over-amplification
-duplicationRate=$(head -n8 "$seqId"_"$sampleId"_MarkDuplicatesMetrics.txt | tail -n1 | -s -f8) #The percentage of mapped sequence that is marked as duplicate.
+duplicationRate=$(head -n8 "$seqId"_"$sampleId"_MarkDuplicatesMetrics.txt | tail -n1 | cut -s -f8) #The percentage of mapped sequence that is marked as duplicate.
 
 #Calculate insert size: fragmentation performance
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar CollectInsertSizeMetrics \
@@ -226,7 +226,8 @@ pctTargetBases30x=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /data/diagnostics/apps/CoverageCalculator-2.0.0/CoverageCalculator-2.0.0.jar \
 "$seqId"_"$sampleId"_DepthOfCoverage \
 "$version"/"$geneListFileName" \
-/data/db/human/refseq/ref_GRCh37.p13_top_level.gff3 > "$seqId"_"$sampleId"_PercentageCoverage.txt
+/data/db/human/refseq/ref_GRCh37.p13_top_level.gff3 \
+-p5 > "$seqId"_"$sampleId"_PercentageCoverage.txt
 
 #Generate BQSR plots
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx2g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
@@ -268,7 +269,7 @@ freemix=$(tail -n1 "$seqId"_"$sampleId"_contamination.selfSM | cut -s -f7)
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -T DepthOfCoverage \
--o Y \
+-o y \
 -L y.bed \
 -I "$seqId"_"$sampleId".bam \
 --omitDepthOutputAtEachBase \
