@@ -127,7 +127,6 @@ COMPRESSION_LEVEL=0
 -stand_emit_conf 10 \
 -stand_call_conf 30 \
 --emitRefConfidence GVCF \
--nct 6 \
 -dt NONE
 
 #Structural variants with pindel
@@ -217,7 +216,6 @@ pctSelectedBases=$(head -n8 "$seqId"_"$sampleId"_hs_metrics.txt | tail -n1 | cut
 --countType COUNT_FRAGMENTS \
 --minMappingQuality 20 \
 -ct 30 \
--nt 4 \
 -dt NONE
 
 meanOnTargetCoverage=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f3)
@@ -276,7 +274,6 @@ freemix=$(tail -n1 "$seqId"_"$sampleId"_contamination.selfSM | cut -s -f7)
 --omitDepthOutputAtEachBase \
 --omitIntervalStatistics \
 --omitLocusTable \
--nt 4 \
 -dt NONE
 
 yMeanCoverage=$(head -n2 y.sample_summary | tail -n1 | cut -s -f3)
