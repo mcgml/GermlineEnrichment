@@ -185,7 +185,7 @@ overRepresentedSeqR2=$(head -n10 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.
 adapterContentR2=$(head -n11 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
 
 #Extract duplicationRate: identify over-amplification
-duplicationRate=$(head -n8 "$seqId"_"$sampleId"_MarkDuplicatesMetrics.txt | tail -n1 | cut -s -f8) #The percentage of mapped sequence that is marked as duplicate.
+duplicationRate=$(head -n8 "$seqId"_"$sampleId"_MarkDuplicatesMetrics.txt | tail -n1 | cut -s -f9) #The percentage of mapped sequence that is marked as duplicate.
 
 #Calculate insert size: fragmentation performance
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar CollectInsertSizeMetrics \
