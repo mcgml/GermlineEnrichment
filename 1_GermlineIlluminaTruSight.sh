@@ -159,7 +159,7 @@ grep -P '^Y' "$version"/"$bedFileName" > y.bed
 
 #Convert BED to interval_list for later
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar BedToIntervalList \
-I="$bedFileName" \
+I="$version"/"$bedFileName" \
 O="$bedFileName".interval_list \
 SD=/data/db/human/gatk/2.8/b37/human_g1k_v37.dict
 
