@@ -1,8 +1,8 @@
 #!/bin/bash
 #PBS -l walltime=08:00:00
 #PBS -l ncpus=12
-PBS_O_WORKDIR=(`echo $PBS_O_WORKDIR | sed "s/^\/state\/partition1//" `)
-cd $PBS_O_WORKDIR
+#PBS_O_WORKDIR=(`echo $PBS_O_WORKDIR | sed "s/^\/state\/partition1//" `)
+#cd $PBS_O_WORKDIR
 
 #Description: Germline Illumina TruSight Pipeline (Paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
@@ -154,8 +154,8 @@ echo -e "$seqId"_"$sampleId".bam"\t"300"\t""$sampleId" > pindel.txt
 ### QC ###
 
 #Split BED files by contig for later
-grep -E ^"[1-22]\t" "$version"/"$bedFileName" > autosomal.bed
-grep -E ^"Y\t" "$version"/"$bedFileName" > y.bed
+grep -P '^[1-22]' "$version"/"$bedFileName" > autosomal.bed
+grep -P '^Y' "$version"/"$bedFileName" > y.bed
 
 #Convert BED to interval_list for later
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar BedToIntervalList \
@@ -279,29 +279,7 @@ freemix=$(tail -n1 "$seqId"_"$sampleId"_contamination.selfSM | cut -s -f7)
 yMeanCoverage=$(head -n2 y.sample_summary | tail -n1 | cut -s -f3)
 
 #Print QC metrics
-echo "$basicStatsR1\t
-$perBaseSeqQualityR1\t
-$perTileSeqQualityR1\t
-$perSeqQualityScoreR1\t
-$perBaseNContentR1\t
-$overRepresentedSeqR1\t
-$adapterContentR1\t
-$basicStatsR2\t
-$perBaseSeqQualityR2\t
-$perTileSeqQualityR2\t
-$perSeqQualityScoreR2\t
-$perBaseNContentR2\t
-$overRepresentedSeqR2\t
-$adapterContentR2\t
-$totalReads\t
-$duplicationRate\t
-$pctSelectedBases\t
-$pctTargetBases30x\t
-$meanOnTargetCoverage\t
-$yMeanCoverage\t
-$freemix\t
-$meanInsertSize\t
-$sdInsertSize"
+echo -e "$basicStatsR1\t$perBaseSeqQualityR1\t$perTileSeqQualityR1\t$perSeqQualityScoreR1\t$perBaseNContentR1\t$overRepresentedSeqR1\t$adapterContentR1\t$basicStatsR2\t$perBaseSeqQualityR2\t$perTileSeqQualityR2\t$perSeqQualityScoreR2\t$perBaseNContentR2\t$overRepresentedSeqR2\t$adapterContentR2\t$totalReads\t$duplicationRate\t$pctSelectedBases\t$pctTargetBases30x\t$meanOnTargetCoverage\t$yMeanCoverage\t$freemix\t$meanInsertSize\t$sdInsertSize"
 
 #clean up
 #rm -r tmp
