@@ -131,25 +131,25 @@ mv "$seqId"_"$sampleId".bam.bai "$seqId"_"$sampleId".bai
 -dt NONE
 
 #Structural variants with pindel
-echo -e "$seqId"_"$sampleId".bam"\t"300"\t""$sampleId" > pindel.txt
-/share/apps/pindel-distros/pindel-0.2.5b8/pindel \
--f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--i pindel.txt \
--c ALL \
--T 12 \
---max_range_index 6 \
--o "$seqId"_"$sampleId"_pindel
+#echo -e "$seqId"_"$sampleId".bam"\t"300"\t""$sampleId" > pindel.txt
+#/share/apps/pindel-distros/pindel-0.2.5b8/pindel \
+#-f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+#-i pindel.txt \
+#-c ALL \
+#-T 12 \
+#--max_range_index 6 \
+#-o "$seqId"_"$sampleId"_pindel
 
 #Convert pindel output to VCF format and filter calls
-/share/apps/pindel-distros/pindel-0.2.5b8/pindel2vcf \
--P "$seqId"_"$sampleId"_pindel \
--r /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--R human_g1k_v37 \
--d none \
--e 3 \
---min_size 50 \
---min_coverage 10 \
--v "$seqId"_"$sampleId"_pindel.vcf
+#/share/apps/pindel-distros/pindel-0.2.5b8/pindel2vcf \
+#-P "$seqId"_"$sampleId"_pindel \
+#-r /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+#-R human_g1k_v37 \
+#-d none \
+#-e 3 \
+#--min_size 50 \
+#--min_coverage 10 \
+#-v "$seqId"_"$sampleId"_pindel.vcf
 
 ### QC ###
 
