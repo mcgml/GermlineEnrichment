@@ -223,7 +223,7 @@ meanOnTargetCoverage=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summ
 pctTargetBases30x=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f7)
 
 #Calculate gene percentage coverage
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /data/diagnostics/apps/CoverageCalculator-2.0.0.jar \
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /data/diagnostics/apps/CoverageCalculator-2.0.0/CoverageCalculator-2.0.0.jar \
 "$seqId"_"$sampleId"_DepthOfCoverage \
 "$version"/"$geneListFileName" \
 /data/db/human/refseq/ref_GRCh37.p13_top_level.gff3 > "$seqId"_"$sampleId"_PercentageCoverage.txt
