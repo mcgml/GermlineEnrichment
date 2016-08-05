@@ -1,10 +1,10 @@
 #!/bin/bash
-#PBS -l walltime=04:00:00
+#PBS -l walltime=08:00:00
 #PBS -l ncpus=12
 PBS_O_WORKDIR=(`echo $PBS_O_WORKDIR | sed "s/^\/state\/partition1//" `)
 cd $PBS_O_WORKDIR
 
-#Description: Germline Illumina TruSight Pipeline. Not for use with other library preps/ experimental conditions.
+#Description: Germline Illumina TruSight Pipeline (Paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
 version="dev"
@@ -12,6 +12,7 @@ version="dev"
 #TODO ExomeDepth
 #TODO add metadata to VCF
 #TODO collect QC data
+#TODO het vs hom ratio, TsTv, % dbSNP etc
 
 #load run variables
 . variables
