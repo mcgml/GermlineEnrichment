@@ -13,6 +13,7 @@ version="dev"
 #TODO multithread
 #TODO handle multiple lanes
 #TODO support mixed runs i.e. TSCP/TSO/TSCardio
+#TODO Picard: optimise MAX_RECORDS_IN_RAM setting
 
 #load sample variables
 . variables
@@ -32,14 +33,13 @@ version="dev"
 #Align reads to reference genome, sort by coordinate and convert to BAM
 /share/apps/bwa-distros/bwa-0.7.15/bwa mem \
 -M \
--R '@RG\tID:'"$seqId"_"$laneNo"_"$sampleId"'\tSM:'"$sampleId"'\tPL:ILLUMINA\tLB:'"$worksheetId_$sampleId" \
+-R '@RG\tID:'"$seqId"_"$laneNo"_"$sampleId"'\tSM:'"$sampleId"'\tPL:ILLUMINA\tLB:'"$worklistId_$panel_$sampleId" \
 -t 4 \
 /data/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
 "$seqId"_"$sampleId"_R1_trimmed.fastq "$seqId"_"$sampleId"_R2_trimmed.fastq | \
 /share/apps/samtools-distros/samtools-1.3.1/samtools sort -@4 -l0 -o "$seqId"_"$sampleId"_sorted.bam
 
 #Mark duplicate reads
-#TODO optimise MAX_RECORDS_IN_RAM setting
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MarkDuplicates \
 INPUT="$seqId"_"$sampleId"_sorted.bam \
 OUTPUT="$seqId"_"$sampleId"_rmdup.bam \
@@ -55,7 +55,7 @@ COMPRESSION_LEVEL=0
 -known /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -I "$seqId"_"$sampleId"_rmdup.bam \
 -o "$seqId"_"$sampleId"_realign.intervals \
--L "$version"/"$bedFileName" \
+-L /data/diagnostics/pipelines/GermlineIlluminaTruSight/GermlineIlluminaTruSight-"$version"/"$panel"/"$panel"_Design.bed \
 -ip 200 \
 -nt 2 \
 -dt NONE
@@ -80,7 +80,7 @@ COMPRESSION_LEVEL=0
 -knownSites /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
 -knownSites /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -I "$seqId"_"$sampleId"_realigned.bam \
--L "$version"/"$bedFileName" \
+-L /data/diagnostics/pipelines/GermlineIlluminaTruSight/GermlineIlluminaTruSight-"$version"/"$panel"/"$panel"_Design.bed \
 -o "$seqId"_"$sampleId"_recal_data.table \
 -ip 200 \
 -nct 6 \
@@ -95,7 +95,7 @@ COMPRESSION_LEVEL=0
 -knownSites /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -BQSR "$seqId"_"$sampleId"_recal_data.table \
 -I "$seqId"_"$sampleId"_realigned.bam \
--L "$version"/"$bedFileName" \
+-L /data/diagnostics/pipelines/GermlineIlluminaTruSight/GermlineIlluminaTruSight-"$version"/"$panel"/"$panel"_Design.bed \
 -o "$seqId"_"$sampleId"_post_recal_data.table \
 -nct 6 \
 -ip 200 \
@@ -120,7 +120,7 @@ COMPRESSION_LEVEL=0
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -I "$seqId"_"$sampleId".bam \
--L "$version"/"$bedFileName" \
+-L /data/diagnostics/pipelines/GermlineIlluminaTruSight/GermlineIlluminaTruSight-"$version"/"$panel"/"$panel"_Design.bed \
 -o "$seqId"_"$sampleId".g.vcf \
 -bamout "$seqId"_"$sampleId"_haplotypecaller.bam \
 --genotyping_mode DISCOVERY \
@@ -153,12 +153,12 @@ COMPRESSION_LEVEL=0
 ### QC ###
 
 #Split BED files by contig for later
-grep -P '^[1-22]' "$version"/"$bedFileName" > autosomal.bed
-grep -P '^Y' "$version"/"$bedFileName" > y.bed
+grep -P '^[1-22]' /data/diagnostics/pipelines/GermlineIlluminaTruSight/GermlineIlluminaTruSight-"$version"/"$panel"/"$panel"_Design.bed > autosomal.bed
+grep -P '^Y' /data/diagnostics/pipelines/GermlineIlluminaTruSight/GermlineIlluminaTruSight-"$version"/"$panel"/"$panel"_Design.bed > y.bed
 
 #Convert BED to interval_list for later
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar BedToIntervalList \
-I="$version"/"$bedFileName" \
+I=/data/diagnostics/pipelines/GermlineIlluminaTruSight/GermlineIlluminaTruSight-"$version"/"$panel"/"$panel"_Design.bed \
 O="$bedFileName".interval_list \
 SD=/data/db/human/gatk/2.8/b37/human_g1k_v37.dict
 
@@ -212,7 +212,7 @@ pctSelectedBases=$(head -n8 "$seqId"_"$sampleId"_hs_metrics.txt | tail -n1 | cut
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_"$sampleId"_DepthOfCoverage \
 -I "$seqId"_"$sampleId".bam \
--L "$version"/"$bedFileName" \
+-L /data/diagnostics/pipelines/GermlineIlluminaTruSight/GermlineIlluminaTruSight-"$version"/"$panel"/"$panel"_Design.bed \
 --countType COUNT_FRAGMENTS \
 --minMappingQuality 20 \
 -ct 30 \
@@ -235,8 +235,7 @@ pctTargetBases30x=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary
 -before "$seqId"_"$sampleId"_recal_data.table \
 -after "$seqId"_"$sampleId"_post_recal_data.table \
 -plots "$seqId"_"$sampleId"_recalibration_plots.pdf \
--L "$version"/"$bedFileName" \
--ip 200 \
+-csv "$seqId"_"$sampleId"_recalibration.csv \
 -dt NONE
 
 #Extract 1kg autosomal snps for contamination analysis
@@ -279,7 +278,7 @@ freemix=$(tail -n1 "$seqId"_"$sampleId"_contamination.selfSM | cut -s -f7)
 yMeanCoverage=$(head -n2 y.sample_summary | tail -n1 | cut -s -f3)
 
 #Print QC metrics
-echo -e "$basicStatsR1\t$perBaseSeqQualityR1\t$perTileSeqQualityR1\t$perSeqQualityScoreR1\t$perBaseNContentR1\t$overRepresentedSeqR1\t$adapterContentR1\t$basicStatsR2\t$perBaseSeqQualityR2\t$perTileSeqQualityR2\t$perSeqQualityScoreR2\t$perBaseNContentR2\t$overRepresentedSeqR2\t$adapterContentR2\t$totalReads\t$duplicationRate\t$pctSelectedBases\t$pctTargetBases30x\t$meanOnTargetCoverage\t$yMeanCoverage\t$freemix\t$meanInsertSize\t$sdInsertSize"
+echo -e "$basicStatsR1\t$perBaseSeqQualityR1\t$perTileSeqQualityR1\t$perSeqQualityScoreR1\t$perBaseNContentR1\t$overRepresentedSeqR1\t$adapterContentR1\t$basicStatsR2\t$perBaseSeqQualityR2\t$perTileSeqQualityR2\t$perSeqQualityScoreR2\t$perBaseNContentR2\t$overRepresentedSeqR2\t$adapterContentR2\t$totalReads\t$duplicationRate\t$pctSelectedBases\t$pctTargetBases30x\t$meanOnTargetCoverage\t$yMeanCoverage\t$freemix\t$meanInsertSize\t$sdInsertSize" > "$seqId"_"$sampleId"_qc.txt
 
 ### Clean up ###
 #rm -r tmp
