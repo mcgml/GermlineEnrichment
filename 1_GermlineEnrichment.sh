@@ -1,10 +1,10 @@
 #!/bin/bash
-#PBS -l walltime=08:00:00
+#PBS -l walltime=12:00:00
 #PBS -l ncpus=12
 PBS_O_WORKDIR=(`echo $PBS_O_WORKDIR | sed "s/^\/state\/partition1//" `)
 #cd $PBS_O_WORKDIR
 
-#Description: Germline Illumina TruSight Pipeline (Paired-end). Not for use with other library preps/ experimental conditions.
+#Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
 version="dev"
@@ -55,7 +55,7 @@ COMPRESSION_LEVEL=0
 -known /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -I "$seqId"_"$sampleId"_rmdup.bam \
 -o "$seqId"_"$sampleId"_realign.intervals \
--L /data/diagnostics/pipelines/GermlineIlluminaTruSight/GermlineIlluminaTruSight-"$version"/"$panel"/"$panel"_Design.bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed \
 -ip 200 \
 -nt 2 \
 -dt NONE
@@ -80,7 +80,7 @@ COMPRESSION_LEVEL=0
 -knownSites /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
 -knownSites /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -I "$seqId"_"$sampleId"_realigned.bam \
--L /data/diagnostics/pipelines/GermlineIlluminaTruSight/GermlineIlluminaTruSight-"$version"/"$panel"/"$panel"_Design.bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed \
 -o "$seqId"_"$sampleId"_recal_data.table \
 -ip 200 \
 -nct 6 \
@@ -95,7 +95,7 @@ COMPRESSION_LEVEL=0
 -knownSites /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -BQSR "$seqId"_"$sampleId"_recal_data.table \
 -I "$seqId"_"$sampleId"_realigned.bam \
--L /data/diagnostics/pipelines/GermlineIlluminaTruSight/GermlineIlluminaTruSight-"$version"/"$panel"/"$panel"_Design.bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed \
 -o "$seqId"_"$sampleId"_post_recal_data.table \
 -nct 6 \
 -ip 200 \
@@ -120,7 +120,7 @@ COMPRESSION_LEVEL=0
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -I "$seqId"_"$sampleId".bam \
--L /data/diagnostics/pipelines/GermlineIlluminaTruSight/GermlineIlluminaTruSight-"$version"/"$panel"/"$panel"_Design.bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed \
 -o "$seqId"_"$sampleId".g.vcf \
 -bamout "$seqId"_"$sampleId"_haplotypecaller.bam \
 --genotyping_mode DISCOVERY \
@@ -153,12 +153,12 @@ COMPRESSION_LEVEL=0
 ### QC ###
 
 #Split BED files by contig for later
-grep -P '^[1-22]' /data/diagnostics/pipelines/GermlineIlluminaTruSight/GermlineIlluminaTruSight-"$version"/"$panel"/"$panel"_Design.bed > autosomal.bed
-grep -P '^Y' /data/diagnostics/pipelines/GermlineIlluminaTruSight/GermlineIlluminaTruSight-"$version"/"$panel"/"$panel"_Design.bed > y.bed
+grep -P '^[1-22]' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed > autosomal.bed
+grep -P '^Y' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed > y.bed
 
 #Convert BED to interval_list for later
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar BedToIntervalList \
-I=/data/diagnostics/pipelines/GermlineIlluminaTruSight/GermlineIlluminaTruSight-"$version"/"$panel"/"$panel"_Design.bed \
+I=/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed \
 O="$bedFileName".interval_list \
 SD=/data/db/human/gatk/2.8/b37/human_g1k_v37.dict
 
@@ -212,7 +212,7 @@ pctSelectedBases=$(head -n8 "$seqId"_"$sampleId"_hs_metrics.txt | tail -n1 | cut
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_"$sampleId"_DepthOfCoverage \
 -I "$seqId"_"$sampleId".bam \
--L /data/diagnostics/pipelines/GermlineIlluminaTruSight/GermlineIlluminaTruSight-"$version"/"$panel"/"$panel"_Design.bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed \
 --countType COUNT_FRAGMENTS \
 --minMappingQuality 20 \
 -ct 30 \
