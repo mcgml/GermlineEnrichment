@@ -13,6 +13,22 @@ version="dev"
 #TODO SNPRelate
 #TODO PCA for ancestry
 
+# Directory structure required for pipeline
+#
+# /data
+# └── results
+#     └── seqId
+#         ├── panel1
+#         │   ├── sample1
+#         │   ├── sample2
+#         │   └── sample3
+#         └── panel2
+#             ├── sample1
+#             ├── sample2
+#             └── sample3
+#
+# Script 2 runs in panel folder
+
 #load run variables
 . variables
 
@@ -95,43 +111,21 @@ version="dev"
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed \
 -dt NONE
 
-#Add metadata to filtered VCF
-grep '^##' "$seqId"_variants_filtered.vcf > "$seqId"_variants_filtered_meta.vcf
-for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$seqId"_variants_filtered.vcf); do
-
-        #load variables into scope
-        . "$sample"/variables
-
-        #add metadata
-        echo \#\#SAMPLE\=\<ID\="$sampleId",Tissue\=Blood,WorklistId\="$worklistId",SeqId\="$seqId",Assay\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",RemoteBamFilePath\=$(find $PWD "$sample"/"$seqId"_"$sampleId"_haplotypecaller.bam),RemoteVcfFilePath=$(find $PWD "$seqId"_variants_filtered_meta.vcf)\> >> "$seqId"_variants_filtered_meta.vcf
-done
-grep -v '^##' "$seqId"_variants_filtered.vcf >> "$seqId"_variants_filtered_meta.vcf
-
-#validate and index final VCF
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
--T ValidateVariants \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$seqId"_variants_filtered_meta.vcf \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed \
---dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
--dt NONE
-
 ### ROH and CNV analysis ###
 
 #Identify CNVs using read-depth
-grep -P '^[1-22]' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed > autosomal.bed
-find $PWD -type f -name "*.bam" -not -name "haplotypecaller.bam" -not -name "*NTC*" > final_bams.list
-/share/apps/R-distros/R-3.3.1/bin/Rscript ExomeDepth.R \
--b final_bams.list \
--f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--r autosomal.bed \
-2>&1 | tee log.txt
+#grep -P '^[1-22]' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed > autosomal.bed
+#/share/apps/R-distros/R-3.3.1/bin/Rscript ExomeDepth.R \
+#-b FinalBAMs.list \
+#-f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+#-r autosomal.bed \
+#2>&1 | tee log.txt
 
 #print ExomeDepth metrics
-correlations=$(grep "Correlation between reference and tests count" log.txt | cut -d' ' -f8)
-fragments=$(grep "Number of counted fragments" log.txt | cut -d' ' -f6)
-echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_exomedepth.metrics.txt
-paste "$RunID"_gt_100x_bams.list $(echo "$fragments") $(echo "$correlations") >> "$seqId"_exomedepth.metrics.txt
+#correlations=$(grep "Correlation between reference and tests count" log.txt | cut -d' ' -f8)
+#fragments=$(grep "Number of counted fragments" log.txt | cut -d' ' -f6)
+#echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_exomedepth.metrics.txt
+#paste "$RunID"_gt_100x_bams.list $(echo "$fragments") $(echo "$correlations") >> "$seqId"_exomedepth.metrics.txt
 
 #identify runs of homozygosity
 /share/apps/htslib-distros/htslib-1.3.1/bgzip -c "$seqId"_variants_filtered.vcf > "$seqId"_variants_filtered.vcf.gz
@@ -161,7 +155,6 @@ done
 #rm "$seqId"_indels.vcf "$seqId"_indels.vcf.idx
 #rm "$seqId"_indels_filtered.vcf "$seqId"_indels_filtered.vcf.idx
 #rm "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx
-#rm "$seqId"_variants_filtered.vcf "$seqId"_variants_filtered.vcf.idx
 
 #log run complete
 #/share/apps/node-distros/node-v0.12.7-linux-x64/bin/node \

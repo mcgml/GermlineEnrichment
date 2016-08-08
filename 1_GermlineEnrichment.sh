@@ -11,37 +11,68 @@ version="dev"
 
 #TODO file staging
 #TODO multithread
-#TODO handle multiple lanes
-#TODO support mixed runs i.e. TSCP/TSO/TSCardio
 #TODO Picard: optimise MAX_RECORDS_IN_RAM setting
+
+# Directory structure required for pipeline
+#
+# /data
+# └── results
+#     └── seqId
+#         ├── panel1
+#         │   ├── sample1
+#         │   ├── sample2
+#         │   └── sample3
+#         └── panel2
+#             ├── sample1
+#             ├── sample2
+#             └── sample3
+#
+# Script 1 runs in sample folder
 
 #load sample variables
 . variables
 
 ### Preprocessing ###
 
-#Trim adapters and remove short reads
-/share/apps/cutadapt-distros/cutadapt-1.9.1/bin/cutadapt \
--a CTGTCTCTTATACACATCT \
--A CTGTCTCTTATACACATCT \
--o "$seqId"_"$sampleId"_R1_trimmed.fastq \
--p "$seqId"_"$sampleId"_R2_trimmed.fastq \
---minimum-length 30 \
-"$read1Fastq" \
-"$read2Fastq"
+#map one or more lanes of data for a single sample. Source data: ['read1Fastq,read2Fastq,L001', 'read1Fastq,read2Fastq,L002', 'read1Fastq,read2Fastq,L003', etc]
+for fastqPair in fastqPairs; do
 
-#Align reads to reference genome, sort by coordinate and convert to BAM
-/share/apps/bwa-distros/bwa-0.7.15/bwa mem \
--M \
--R '@RG\tID:'"$seqId"_"$laneNo"_"$sampleId"'\tSM:'"$sampleId"'\tPL:ILLUMINA\tLB:'"$worklistId_$panel_$sampleId" \
--t 4 \
-/data/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
-"$seqId"_"$sampleId"_R1_trimmed.fastq "$seqId"_"$sampleId"_R2_trimmed.fastq | \
-/share/apps/samtools-distros/samtools-1.3.1/samtools sort -@4 -l0 -o "$seqId"_"$sampleId"_sorted.bam
+    #parse fastq filenames
+    laneId=$(echo "$fastqPair" | cut -d, -f3)
+    read1Fastq=$(echo "$fastqPair" | cut -d, -f1)
+    read2Fastq=$(echo "$fastqPair" | cut -d, -f2)
+    
+    #Trim adapters and remove short reads
+    /share/apps/cutadapt-distros/cutadapt-1.9.1/bin/cutadapt \
+    -a CTGTCTCTTATACACATCT \
+    -A CTGTCTCTTATACACATCT \
+    -o $(echo "$read1Fastq" | sed 's/\.fastq\.gz/_trimmed\.fastq/g') \
+    -p $(echo "$read2Fastq" | sed 's/\.fastq\.gz/_trimmed\.fastq/g') \
+    --minimum-length 30 \
+    "$read1Fastq" \
+    "$read2Fastq"
+
+    #Align reads to reference genome, sort by coordinate and convert to BAM
+    /share/apps/bwa-distros/bwa-0.7.15/bwa mem \
+    -M \
+    -R '@RG\tID:'"$seqId"_"$laneId"_"$sampleId"'\tSM:'"$sampleId"'\tPL:ILLUMINA\tLB:'"$worklistId_$panel_$sampleId" \
+    -t 6 \
+    /data/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
+    $(echo "$read1Fastq" | sed 's/\.fastq\.gz/_trimmed\.fastq/g') $(echo "$read2Fastq" | sed 's/\.fastq\.gz/_trimmed\.fastq/g') | \
+    /share/apps/samtools-distros/samtools-1.3.1/samtools sort -@4 -l0 -o "$seqId"_"$sampleId"_"$laneId"_sorted.bam
+
+done
+
+#merge mulitple lanes
+if [ "${#fastqPairs[@]}" -gt 1 ]; then
+    /share/apps/samtools-distros/samtools-1.3.1/samtools merge -u "$seqId"_"$sampleId"_all_sorted.bam "$seqId"_"$sampleId"_*_sorted.bam
+else
+    mv "$seqId"_"$sampleId"_*_sorted.bam "$seqId"_"$sampleId"_all_sorted.bam
+fi
 
 #Mark duplicate reads
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MarkDuplicates \
-INPUT="$seqId"_"$sampleId"_sorted.bam \
+INPUT="$seqId"_"$sampleId"_all_sorted.bam \
 OUTPUT="$seqId"_"$sampleId"_rmdup.bam \
 METRICS_FILE="$seqId"_"$sampleId"_MarkDuplicatesMetrics.txt \
 CREATE_INDEX=true \
@@ -128,6 +159,11 @@ COMPRESSION_LEVEL=0
 -stand_call_conf 30 \
 --emitRefConfidence GVCF \
 -dt NONE
+
+#Add VCF meta data
+grep '^##' "$seqId"_"$sampleId".g.vcf > "$seqId"_"$sampleId"_meta.g.vcf
+echo \#\#SAMPLE\=\<ID\="$sampleId",Tissue\=Blood,WorklistId\="$worklistId",SeqId\="$seqId",Assay\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",RemoteBamFilePath\=$(find $PWD "$seqId"_"$sampleId"_haplotypecaller.bam)\> >> "$seqId"_"$sampleId"_meta.g.vcf
+grep -v '^##' "$seqId"_"$sampleId".g.vcf >> "$seqId"_"$sampleId"_meta.g.vcf
 
 #Structural variants with pindel
 #echo -e "$seqId"_"$sampleId".bam"\t"300"\t""$sampleId" > pindel.txt
@@ -292,3 +328,15 @@ echo -e "$basicStatsR1\t$perBaseSeqQualityR1\t$perTileSeqQualityR1\t$perSeqQuali
 #rm pindel.txt
 #rm "$seqId"_"$sampleId"_R?_trimmed_fastqc.html
 #rm "$seqId"_"$sampleId"_R?_trimmed_fastqc.zip
+#rm "$seqId"_"$sampleId".g.vcf "$seqId"_"$sampleId".g.vcf.idx
+
+#create BAM and VCF list for script 2
+find $PWD -name "$seqId"_"$sampleId"_meta.g.vcf >> ../VCFsforFiltering.list
+find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBAMs.list
+
+#check if all VCFs are written
+if [ ${#analysisDirs[@]} -eq $(wc -l ../VCFsforFiltering.list | cut -f1 -d' ') ] && [ ${#analysisDirs[@]} -eq $(wc -l ../FinalBAMs.list | cut -f1 -d' ') ]; then
+    echo "$seqId" > ../variables
+    echo "$panel" >> ../variables
+    cp 2_GermlineEnrichment.sh .. && cd .. && qsub 2_GermlineEnrichment.sh
+fi
