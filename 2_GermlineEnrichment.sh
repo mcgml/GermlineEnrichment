@@ -30,7 +30,7 @@ version="dev"
 # Script 2 runs in panel folder
 
 #load run variables
-. variables
+. *.variables
 
 ### Joint variant calling and filtering ###
 

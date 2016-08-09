@@ -30,7 +30,7 @@ version="dev"
 # Script 1 runs in sample folder
 
 #load sample variables
-. variables
+. *.variables
 
 ### Preprocessing ###
 
