@@ -34,13 +34,13 @@ version="dev"
 
 ### Preprocessing ###
 
-#map one or more lanes of data for a single sample. Source data: ['read1Fastq,read2Fastq,L001', 'read1Fastq,read2Fastq,L002', 'read1Fastq,read2Fastq,L003', etc]
-for fastqPair in fastqPairs; do
-
+#map one or more lanes of data for a single sample
+for fastqPair in $(ls "$sampleId"_*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
+        
     #parse fastq filenames
-    laneId=$(echo "$fastqPair" | cut -d, -f3)
-    read1Fastq=$(echo "$fastqPair" | cut -d, -f1)
-    read2Fastq=$(echo "$fastqPair" | cut -d, -f2)
+    laneId=$(echo "$fastqPair" | cut -d_ -f3)
+    read1Fastq=$(ls "$fastqPair"_R1*fastq.gz)
+    read2Fastq=$(ls "$fastqPair"_R2*fastq.gz)
     
     #Trim adapters and remove short reads
     /share/apps/cutadapt-distros/cutadapt-1.9.1/bin/cutadapt \
@@ -64,7 +64,7 @@ for fastqPair in fastqPairs; do
 done
 
 #merge mulitple lanes
-if [ "${#fastqPairs[@]}" -gt 1 ]; then
+if [ $(ls "$seqId"_"$sampleId"_*_sorted.bam | wc -l | sed 's/^[[:space:]]*//g') -gt 1 ]; then
     /share/apps/samtools-distros/samtools-1.3.1/samtools merge -u "$seqId"_"$sampleId"_all_sorted.bam "$seqId"_"$sampleId"_*_sorted.bam
 else
     mv "$seqId"_"$sampleId"_*_sorted.bam "$seqId"_"$sampleId"_all_sorted.bam
@@ -335,7 +335,7 @@ find $PWD -name "$seqId"_"$sampleId"_meta.g.vcf >> ../VCFsforFiltering.list
 find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBAMs.list
 
 #check if all VCFs are written
-if [ ${#analysisDirs[@]} -eq $(wc -l ../VCFsforFiltering.list | cut -f1 -d' ') ] && [ ${#analysisDirs[@]} -eq $(wc -l ../FinalBAMs.list | cut -f1 -d' ') ]; then
+if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../VCFsforFiltering.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
     echo "$seqId" > ../variables
     echo "$panel" >> ../variables
     cp 2_GermlineEnrichment.sh .. && cd .. && qsub 2_GermlineEnrichment.sh
