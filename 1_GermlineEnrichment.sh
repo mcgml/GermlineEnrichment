@@ -281,7 +281,7 @@ pctTargetBases30x=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary
 -dt NONE
 
 #Calculate dna contamination: sample-to-sample contamination
-/share/apps/verifyBamID-distros/verifyBamID-1.1.3/bin/verifyBamID \
+/share/apps/verifyBamID-distros/verifyBamID_1.1.3/verifyBamID/bin/verifyBamID \
 --bam "$seqId"_"$sampleId".bam \
 --vcf 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf \
 --out "$seqId"_"$sampleId"_contamination \
