@@ -242,8 +242,9 @@ pctSelectedBases=$(head -n8 "$seqId"_"$sampleId"_hs_metrics.txt | tail -n1 | cut
 -nt 8 \
 -dt NONE
 
-meanOnTargetCoverage=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f3)
-pctTargetBases30x=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f7)
+totalTargetedUsableBases=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f2) #total number of usable bases. NB BQSR requires >= 100M, ideally >= 1B
+meanOnTargetCoverage=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f3) #avg usable coverage
+pctTargetBases30x=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f7) #percentage panel covered with good enough data for variant detection
 
 #Calculate gene percentage coverage
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /data/diagnostics/apps/CoverageCalculator-2.0.0/CoverageCalculator-2.0.0.jar \
@@ -251,6 +252,12 @@ pctTargetBases30x=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary
 /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_genes.txt \
 /data/db/human/refseq/ref_GRCh37.p13_top_level.gff3 \
 -p5 > "$seqId"_"$sampleId"_PercentageCoverage.txt
+
+#sort gaps BED
+/share/apps/bedtools-distros/bedtools-2.24.0/bin/bedtools sort \
+-i "$sampleId"_gaps.bed \
+-faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
+> "$sampleId"_gaps_sorted.bed
 
 #Generate BQSR plots
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx2g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
@@ -277,7 +284,6 @@ pctTargetBases30x=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary
 -dt NONE
 
 #Calculate dna contamination: sample-to-sample contamination
-#TODO check args
 /share/apps/verifyBamID-distros/verifyBamID_1.1.3/verifyBamID/bin/verifyBamID \
 --bam "$seqId"_"$sampleId".bam \
 --vcf 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf \
@@ -309,7 +315,7 @@ yMeanCoverage=$(head -n2 y.sample_summary | tail -n1 | cut -s -f3)
 gender="Male"
 
 #Print QC metrics
-echo -e "$totalReads\t$duplicationRate\t$pctSelectedBases\t$pctTargetBases30x\t$meanOnTargetCoverage\t$yMeanCoverage\t$freemix\t$meanInsertSize\t$sdInsertSize"
+echo -e "$totalReads\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedBases\t$pctTargetBases30x\t$meanOnTargetCoverage\t$yMeanCoverage\t$freemix\t$meanInsertSize\t$sdInsertSize"
 
 ### Clean up ###
 #rm -r tmp
