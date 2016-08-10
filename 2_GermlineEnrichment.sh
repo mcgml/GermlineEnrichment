@@ -110,7 +110,7 @@ version="dev"
 -o "$seqId"_variants_filtered.vcf \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -nt 8 \
--genotypeMergeOptions UNIQUIFY \
+-genotypeMergeOptions UNSORTED \
 -dt NONE
 
 ### ROH and CNV analysis ###
@@ -133,9 +133,10 @@ version="dev"
 #identify runs of homozygosity
 /share/apps/htslib-distros/htslib-1.3.1/bgzip -c "$seqId"_variants_filtered.vcf > "$seqId"_variants_filtered.vcf.gz
 /share/apps/htslib-distros/htslib-1.3.1/tabix -p vcf "$seqId"_variants_filtered.vcf.gz
+
 for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$seqId"_variants_filtered.vcf); do
     /share/apps/bcftools-distros/bcftools-1.3.1/bcftools roh -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed -s "$sample" "$seqId"_variants_filtered.vcf.gz | \
-    grep -v '^#' | perl /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/bcftools_roh_range.pl | awk '{print $1'\t'$2-1'\t'$3'\t'$5}' > "$sample"/"$sample"_roh.bed
+    grep -v '^#' | perl /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/bcftools_roh_range.pl | grep -v '#' | awk '{print $1"\t"$2-1"\t"$3"\t"$5}' > "$sample"/"$sample"_roh.bed
 done
 
 ### QC ###
