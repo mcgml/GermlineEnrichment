@@ -153,6 +153,7 @@ done
 -dt NONE
 
 ### Clean up ###
+rm -r tmp
 #rm "$seqId"_variants_filtered.vcf.gz
 #rm "$seqId"_variants_filtered.vcf.gz.tbi
 #rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx

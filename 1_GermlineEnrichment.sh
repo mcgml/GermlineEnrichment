@@ -320,7 +320,7 @@ echo -e "TotalReads\tTotalTargetUsableBases\tDuplicationRate\tPctSelectedBases\t
 echo -e "$totalReads\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedBases\t$pctTargetBases30x\t$meanOnTargetCoverage\t$freemix\t$meanInsertSize\t$sdInsertSize" >> "$seqId"_"$sampleId"_qc.txt 
 
 ### Clean up ###
-#rm -r tmp
+rm -r tmp
 #rm "$seqId"_"$sampleId"_R?_trimmed.fastq
 #rm "$seqId"_"$sampleId"_rmdup.ba?
 #rm "$seqId"_"$sampleId"_sorted.ba?
@@ -334,6 +334,7 @@ echo -e "$totalReads\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedB
 #rm "$seqId"_"$sampleId".g.vcf "$seqId"_"$sampleId".g.vcf.idx
 
 #Add VCF meta data
+#TODO get metadata in final VCF
 grep '^##' "$seqId"_"$sampleId".g.vcf > "$seqId"_"$sampleId"_meta.g.vcf
 echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",PctTargetBases30x\="$pctTargetBases30x",Freemix\="$freemix",Gender\="$gender",RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> >> "$seqId"_"$sampleId"_meta.g.vcf
 grep -v '^##' "$seqId"_"$sampleId".g.vcf >> "$seqId"_"$sampleId"_meta.g.vcf
