@@ -172,7 +172,6 @@ grep -v '^##' "$seqId"_"$sampleId".g.vcf >> "$seqId"_"$sampleId"_meta.g.vcf
 #-o "$seqId"_"$sampleId"_pindel
 
 #Convert pindel output to VCF format and filter calls
-#TODO check for multithreading options
 #/share/apps/pindel-distros/pindel-0.2.5b8/pindel2vcf \
 #-P "$seqId"_"$sampleId"_pindel \
 #-r /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -247,12 +246,10 @@ pctSelectedBases=$(head -n8 "$seqId"_"$sampleId"_hs_metrics.txt | tail -n1 | cut
 -nt 8 \
 -dt NONE
 
-#TODO These metrics are +/-20bp not +/-5bp
 meanOnTargetCoverage=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f3)
 pctTargetBases30x=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f7)
 
 #Calculate gene percentage coverage
-#TODO CoverageCalculator emit mean on target coverage & PCT_GT_30x
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /data/diagnostics/apps/CoverageCalculator-2.0.0/CoverageCalculator-2.0.0.jar \
 "$seqId"_"$sampleId"_DepthOfCoverage \
 /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_genes.txt \
@@ -284,8 +281,7 @@ pctTargetBases30x=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary
 -dt NONE
 
 #Calculate dna contamination: sample-to-sample contamination
-#TODO update to 1.1.3
-/share/apps/verifyBamID-distros/verifyBamID-1.1.1/bin/verifyBamID \
+/share/apps/verifyBamID-distros/verifyBamID-1.1.3/bin/verifyBamID \
 --bam "$seqId"_"$sampleId".bam \
 --vcf 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf \
 --out "$seqId"_"$sampleId"_contamination \
