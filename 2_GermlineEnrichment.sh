@@ -110,6 +110,7 @@ version="dev"
 -o "$seqId"_variants_filtered.vcf \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -nt 8 \
+-genotypeMergeOptions UNIQUIFY \
 -dt NONE
 
 ### ROH and CNV analysis ###
