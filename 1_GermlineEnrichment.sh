@@ -9,10 +9,6 @@ cd $PBS_O_WORKDIR
 #Mode: BY_SAMPLE
 version="dev"
 
-#TODO file staging
-#TODO multithread
-#TODO Picard: optimise MAX_RECORDS_IN_RAM setting
-
 # Directory structure required for pipeline
 #
 # /data
@@ -56,16 +52,16 @@ for fastqPair in $(ls "$sampleId"_*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     /share/apps/bwa-distros/bwa-0.7.15/bwa mem \
     -M \
     -R '@RG\tID:'"$seqId"_"$laneId"_"$sampleId"'\tSM:'"$sampleId"'\tPL:ILLUMINA\tLB:'"$worklistId_$panel_$sampleId" \
-    -t 6 \
+    -t 8 \
     /data/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
     $(echo "$read1Fastq" | sed 's/\.fastq\.gz/_trimmed\.fastq/g') $(echo "$read2Fastq" | sed 's/\.fastq\.gz/_trimmed\.fastq/g') | \
-    /share/apps/samtools-distros/samtools-1.3.1/samtools sort -@4 -l0 -o "$seqId"_"$sampleId"_"$laneId"_sorted.bam
+    /share/apps/samtools-distros/samtools-1.3.1/samtools sort -l0 -o "$seqId"_"$sampleId"_"$laneId"_sorted.bam
 
 done
 
 #merge mulitple lanes
 if [ $(ls "$seqId"_"$sampleId"_*_sorted.bam | wc -l | sed 's/^[[:space:]]*//g') -gt 1 ]; then
-    /share/apps/samtools-distros/samtools-1.3.1/samtools merge -u "$seqId"_"$sampleId"_all_sorted.bam "$seqId"_"$sampleId"_*_sorted.bam
+    /share/apps/samtools-distros/samtools-1.3.1/samtools merge -@ 8 -u "$seqId"_"$sampleId"_all_sorted.bam "$seqId"_"$sampleId"_*_sorted.bam
 else
     mv "$seqId"_"$sampleId"_*_sorted.bam "$seqId"_"$sampleId"_all_sorted.bam
 fi
@@ -79,16 +75,16 @@ CREATE_INDEX=true \
 COMPRESSION_LEVEL=0
 
 #Identify regions requiring realignment
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx2g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T RealignerTargetCreator \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -known /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
 -known /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -I "$seqId"_"$sampleId"_rmdup.bam \
 -o "$seqId"_"$sampleId"_realign.intervals \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed \
--ip 200 \
--nt 2 \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+-ip 230 \
+-nt 8 \
 -dt NONE
 
 #Realign around indels
@@ -104,17 +100,17 @@ COMPRESSION_LEVEL=0
 -dt NONE
 
 #Analyse patterns of covariation in the sequence dataset
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T BaseRecalibrator \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -knownSites /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -knownSites /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
 -knownSites /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -I "$seqId"_"$sampleId"_realigned.bam \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_"$sampleId"_recal_data.table \
--ip 200 \
--nct 6 \
+-ip 230 \
+-nct 8 \
 -dt NONE
 
 #Do a second pass to analyze covariation remaining after recalibration
@@ -126,10 +122,10 @@ COMPRESSION_LEVEL=0
 -knownSites /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -BQSR "$seqId"_"$sampleId"_recal_data.table \
 -I "$seqId"_"$sampleId"_realigned.bam \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_"$sampleId"_post_recal_data.table \
--nct 6 \
--ip 200 \
+-nct 8 \
+-ip 230 \
 -dt NONE
 
 #Apply the recalibration to your sequence data
@@ -140,29 +136,29 @@ COMPRESSION_LEVEL=0
 -BQSR "$seqId"_"$sampleId"_post_recal_data.table \
 -o "$seqId"_"$sampleId".bam \
 -compress 0 \
--nct 6 \
+-nct 8 \
 -dt NONE
 
 ### Variant calling ###
 
 #SNPs and Indels with Haplotypecaller
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T HaplotypeCaller \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -I "$seqId"_"$sampleId".bam \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_"$sampleId".g.vcf \
--bamout "$seqId"_"$sampleId"_haplotypecaller.bam \
 --genotyping_mode DISCOVERY \
 -stand_emit_conf 10 \
 -stand_call_conf 30 \
 --emitRefConfidence GVCF \
+-nct 8 \
 -dt NONE
 
 #Add VCF meta data
 grep '^##' "$seqId"_"$sampleId".g.vcf > "$seqId"_"$sampleId"_meta.g.vcf
-echo \#\#SAMPLE\=\<ID\="$sampleId",Tissue\=Blood,WorklistId\="$worklistId",SeqId\="$seqId",Assay\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",RemoteBamFilePath\=$(find $PWD "$seqId"_"$sampleId"_haplotypecaller.bam)\> >> "$seqId"_"$sampleId"_meta.g.vcf
+echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",RemoteBamFilePath\=$(find $PWD "$seqId"_"$sampleId".bam)\> >> "$seqId"_"$sampleId"_meta.g.vcf
 grep -v '^##' "$seqId"_"$sampleId".g.vcf >> "$seqId"_"$sampleId"_meta.g.vcf
 
 #Structural variants with pindel
@@ -171,11 +167,12 @@ grep -v '^##' "$seqId"_"$sampleId".g.vcf >> "$seqId"_"$sampleId"_meta.g.vcf
 #-f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 #-i pindel.txt \
 #-c ALL \
-#-T 12 \
+#-T 8 \
 #--max_range_index 6 \
 #-o "$seqId"_"$sampleId"_pindel
 
 #Convert pindel output to VCF format and filter calls
+#TODO check for multithreading options
 #/share/apps/pindel-distros/pindel-0.2.5b8/pindel2vcf \
 #-P "$seqId"_"$sampleId"_pindel \
 #-r /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -189,35 +186,38 @@ grep -v '^##' "$seqId"_"$sampleId".g.vcf >> "$seqId"_"$sampleId"_meta.g.vcf
 ### QC ###
 
 #Split BED files by contig for later
-grep -P '^[1-22]' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed > autosomal.bed
-grep -P '^Y' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed > y.bed
+grep -P '^[1-22]' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed > autosomal.bed
+grep -P '^Y' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed > y.bed
 
 #Convert BED to interval_list for later
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar BedToIntervalList \
-I=/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed \
+I=/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 O="$bedFileName".interval_list \
 SD=/data/db/human/gatk/2.8/b37/human_g1k_v37.dict
 
 #Fastqc: raw sequence quality
-/share/apps/fastqc-distros/fastqc_v0.11.5/fastqc --extract "$seqId"_"$sampleId"_R1_trimmed.fastq
+#TODO fix
+for i in $(ls *_trimmed.fastq); do
+    /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -t8 --extract "$seqId"_"$sampleId"_R1_trimmed.fastq
 
-basicStatsR1=$(head -n1 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-perBaseSeqQualityR1=$(head -n2 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-perTileSeqQualityR1=$(head -n3 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-perSeqQualityScoreR1=$(head -n4 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-perBaseNContentR1=$(head -n7 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-overRepresentedSeqR1=$(head -n10 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-adapterContentR1=$(head -n11 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    basicStatsR1=$(head -n1 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    perBaseSeqQualityR1=$(head -n2 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    perTileSeqQualityR1=$(head -n3 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    perSeqQualityScoreR1=$(head -n4 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    perBaseNContentR1=$(head -n7 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    overRepresentedSeqR1=$(head -n10 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    adapterContentR1=$(head -n11 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
 
-/share/apps/fastqc-distros/fastqc_v0.11.5/fastqc --extract "$seqId"_"$sampleId"_R2_trimmed.fastq
+    /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -t8 --extract "$seqId"_"$sampleId"_R2_trimmed.fastq
 
-basicStatsR2=$(head -n1 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-perBaseSeqQualityR2=$(head -n2 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-perTileSeqQualityR2=$(head -n3 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-perSeqQualityScoreR2=$(head -n4 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-perBaseNContentR2=$(head -n7 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-overRepresentedSeqR2=$(head -n10 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-adapterContentR2=$(head -n11 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    basicStatsR2=$(head -n1 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    perBaseSeqQualityR2=$(head -n2 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    perTileSeqQualityR2=$(head -n3 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    perSeqQualityScoreR2=$(head -n4 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    perBaseNContentR2=$(head -n7 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    overRepresentedSeqR2=$(head -n10 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    adapterContentR2=$(head -n11 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+done
 
 #Calculate insert size: fragmentation performance
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar CollectInsertSizeMetrics \
@@ -248,19 +248,23 @@ pctSelectedBases=$(head -n8 "$seqId"_"$sampleId"_hs_metrics.txt | tail -n1 | cut
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_"$sampleId"_DepthOfCoverage \
 -I "$seqId"_"$sampleId".bam \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 --countType COUNT_FRAGMENTS \
 --minMappingQuality 20 \
+--omitIntervalStatistics \
 -ct 30 \
+-nt 8 \
 -dt NONE
 
+#TODO These metrics are +/-20bp not +/-5bp
 meanOnTargetCoverage=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f3)
 pctTargetBases30x=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f7)
 
 #Calculate gene percentage coverage
+#TODO CoverageCalculator emit mean on target coverage & PCT_GT_30x
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /data/diagnostics/apps/CoverageCalculator-2.0.0/CoverageCalculator-2.0.0.jar \
 "$seqId"_"$sampleId"_DepthOfCoverage \
-"$version"/"$geneListFileName" \
+/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_genes.txt \
 /data/db/human/refseq/ref_GRCh37.p13_top_level.gff3 \
 -p5 > "$seqId"_"$sampleId"_PercentageCoverage.txt
 
@@ -285,9 +289,11 @@ pctTargetBases30x=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary
 -env \
 -ef \
 -L autosomal.bed \
+-nt 8 \
 -dt NONE
 
 #Calculate dna contamination: sample-to-sample contamination
+#TODO update to 1.1.3
 /share/apps/verifyBamID-distros/verifyBamID-1.1.1/bin/verifyBamID \
 --bam "$seqId"_"$sampleId".bam \
 --vcf 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf \
@@ -300,6 +306,7 @@ pctTargetBases30x=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary
 freemix=$(tail -n1 "$seqId"_"$sampleId"_contamination.selfSM | cut -s -f7)
 
 #Calculate mean coverage for Y chrom: gender check
+#TODO try whole chromosome Y. ?Normalisation
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -T DepthOfCoverage \
@@ -309,6 +316,7 @@ freemix=$(tail -n1 "$seqId"_"$sampleId"_contamination.selfSM | cut -s -f7)
 --omitDepthOutputAtEachBase \
 --omitIntervalStatistics \
 --omitLocusTable \
+-nt 8 \
 -dt NONE
 
 yMeanCoverage=$(head -n2 y.sample_summary | tail -n1 | cut -s -f3)
