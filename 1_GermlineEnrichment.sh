@@ -156,11 +156,6 @@ COMPRESSION_LEVEL=0
 -nct 8 \
 -dt NONE
 
-#Add VCF meta data
-grep '^##' "$seqId"_"$sampleId".g.vcf > "$seqId"_"$sampleId"_meta.g.vcf
-echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",RemoteBamFilePath\=$(find $PWD "$seqId"_"$sampleId".bam)\> >> "$seqId"_"$sampleId"_meta.g.vcf
-grep -v '^##' "$seqId"_"$sampleId".g.vcf >> "$seqId"_"$sampleId"_meta.g.vcf
-
 #Structural variants with pindel
 #echo -e "$seqId"_"$sampleId".bam"\t"300"\t""$sampleId" > pindel.txt
 #/share/apps/pindel-distros/pindel-0.2.5b8/pindel \
@@ -309,6 +304,9 @@ freemix=$(tail -n1 "$seqId"_"$sampleId"_contamination.selfSM | cut -s -f7)
 
 yMeanCoverage=$(head -n2 y.sample_summary | tail -n1 | cut -s -f3)
 
+#TODO Calculate gender
+gender="Male"
+
 #Print QC metrics
 echo -e "$totalReads\t$duplicationRate\t$pctSelectedBases\t$pctTargetBases30x\t$meanOnTargetCoverage\t$yMeanCoverage\t$freemix\t$meanInsertSize\t$sdInsertSize"
 
@@ -325,6 +323,11 @@ echo -e "$totalReads\t$duplicationRate\t$pctSelectedBases\t$pctTargetBases30x\t$
 #rm "$seqId"_"$sampleId"_R?_trimmed_fastqc.html
 #rm "$seqId"_"$sampleId"_R?_trimmed_fastqc.zip
 #rm "$seqId"_"$sampleId".g.vcf "$seqId"_"$sampleId".g.vcf.idx
+
+#Add VCF meta data
+grep '^##' "$seqId"_"$sampleId".g.vcf > "$seqId"_"$sampleId"_meta.g.vcf
+echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",PctTargetBases30x\="$pctTargetBases30x",Freemix\="$freemix",Gender\="$gender",RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> >> "$seqId"_"$sampleId"_meta.g.vcf
+grep -v '^##' "$seqId"_"$sampleId".g.vcf >> "$seqId"_"$sampleId"_meta.g.vcf
 
 #create BAM and VCF list for script 2
 find $PWD -name "$seqId"_"$sampleId"_meta.g.vcf >> ../VCFsforFiltering.list
