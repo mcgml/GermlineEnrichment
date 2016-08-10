@@ -47,7 +47,7 @@ version="dev"
 
 #Select SNPs
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
--T SelectVariants \ 
+-T SelectVariants \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_variants.vcf \
 -selectType SNP \

@@ -344,7 +344,6 @@ find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBAMs.list
 
 #check if all VCFs are written
 if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../VCFsforFiltering.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
-    echo "$seqId" > ../variables
-    echo "$panel" >> ../variables
+    echo -e "seqId=$seqId\npanel=$panel" > ../variables
     cp 2_GermlineEnrichment.sh .. && cd .. && qsub 2_GermlineEnrichment.sh
 fi
