@@ -192,14 +192,15 @@ SD=/data/db/human/gatk/2.8/b37/human_g1k_v37.dict
 #Fastqc: raw sequence quality
 for i in $(ls *_trimmed.fastq); do
     /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc --threads 8 --extract "$i"
+    fastqcFolder=$(echo "$i" | sed 's/\.fastq/_fastqc/g')
     
-    basicStats=$(head -n1 "$i"/summary.txt | tail -n1 |cut -s -f1)
-    perBaseSeqQuality=$(head -n2 "$i"/summary.txt | tail -n1 |cut -s -f1)
-    perTileSeqQuality=$(head -n3 "$i"/summary.txt | tail -n1 |cut -s -f1)
-    perSeqQualityScore=$(head -n4 "$i"/summary.txt | tail -n1 |cut -s -f1)
-    perBaseNContent=$(head -n7 "$i"/summary.txt | tail -n1 |cut -s -f1)
-    overRepresentedSeq=$(head -n10 "$i"/summary.txt | tail -n1 |cut -s -f1)
-    adapterContent=$(head -n11 "$i"/summary.txt | tail -n1 |cut -s -f1)
+    basicStats=$(head -n1 "$fastqcFolder"/summary.txt | tail -n1 |cut -s -f1)
+    perBaseSeqQuality=$(head -n2 "$fastqcFolder"/summary.txt | tail -n1 |cut -s -f1)
+    perTileSeqQuality=$(head -n3 "$fastqcFolder"/summary.txt | tail -n1 |cut -s -f1)
+    perSeqQualityScore=$(head -n4 "$fastqcFolder"/summary.txt | tail -n1 |cut -s -f1)
+    perBaseNContent=$(head -n7 "$fastqcFolder"/summary.txt | tail -n1 |cut -s -f1)
+    overRepresentedSeq=$(head -n10 "$fastqcFolder"/summary.txt | tail -n1 |cut -s -f1)
+    adapterContent=$(head -n11 "$fastqcFolder"/summary.txt | tail -n1 |cut -s -f1)
     
     echo -e "$i\t$basicStats\t$perBaseSeqQuality\t$perTileSeqQuality\t$perSeqQualityScore\t$perBaseNContent\t$overRepresentedSeq\t$adapterContent"
 done
