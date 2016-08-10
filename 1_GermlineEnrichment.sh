@@ -190,6 +190,7 @@ O="$bedFileName".interval_list \
 SD=/data/db/human/gatk/2.8/b37/human_g1k_v37.dict
 
 #Fastqc: raw sequence quality
+echo -e "File\tBasicStatistics\tPerBaseSequenceQuality\tPerTileSequenceQuality\tPerSequenceQualityScores\tPerBaseNContent\tOverrepresentedSequences\tAdapterContent" > "$seqId"_"$sampleId"_fastqc.txt
 for i in $(ls *_trimmed.fastq); do
     /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc --threads 8 --extract "$i"
     fastqcFolder=$(echo "$i" | sed 's/\.fastq/_fastqc/g')
@@ -202,7 +203,7 @@ for i in $(ls *_trimmed.fastq); do
     overRepresentedSeq=$(head -n10 "$fastqcFolder"/summary.txt | tail -n1 |cut -s -f1)
     adapterContent=$(head -n11 "$fastqcFolder"/summary.txt | tail -n1 |cut -s -f1)
     
-    echo -e "$i\t$basicStats\t$perBaseSeqQuality\t$perTileSeqQuality\t$perSeqQualityScore\t$perBaseNContent\t$overRepresentedSeq\t$adapterContent"
+    echo -e "$i\t$basicStats\t$perBaseSeqQuality\t$perTileSeqQuality\t$perSeqQualityScore\t$perBaseNContent\t$overRepresentedSeq\t$adapterContent" >> "$seqId"_"$sampleId"_fastqc.txt 
 done
 
 #Calculate insert size: fragmentation performance
@@ -315,7 +316,8 @@ yMeanCoverage=$(head -n2 y.sample_summary | tail -n1 | cut -s -f3)
 gender="Male"
 
 #Print QC metrics
-echo -e "$totalReads\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedBases\t$pctTargetBases30x\t$meanOnTargetCoverage\t$yMeanCoverage\t$freemix\t$meanInsertSize\t$sdInsertSize"
+echo -e "TotalReads\tTotalTargetUsableBases\tDuplicationRate\tPctSelectedBases\tPctTargetBases30x\tMeanOnTargetCoverage\tFreemix\tMeanInsertSize\tSDInsertSize" > "$seqId"_"$sampleId"_qc.txt
+echo -e "$totalReads\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedBases\t$pctTargetBases30x\t$meanOnTargetCoverage\t$freemix\t$meanInsertSize\t$sdInsertSize" >> "$seqId"_"$sampleId"_qc.txt 
 
 ### Clean up ###
 #rm -r tmp
