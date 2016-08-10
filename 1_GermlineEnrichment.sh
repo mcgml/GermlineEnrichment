@@ -196,17 +196,17 @@ SD=/data/db/human/gatk/2.8/b37/human_g1k_v37.dict
 
 #Fastqc: raw sequence quality
 for i in $(ls *_trimmed.fastq); do
-    /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -t8 --extract "$i"
+    /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc --threads 8 --extract "$i"
     
-    basicStats=$(head -n1 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    perBaseSeqQuality=$(head -n2 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    perTileSeqQuality=$(head -n3 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    perSeqQualityScore=$(head -n4 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    perBaseNContent=$(head -n7 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    overRepresentedSeq=$(head -n10 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    adapterContent=$(head -n11 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    basicStats=$(head -n1 "$i"/summary.txt | tail -n1 |cut -s -f1)
+    perBaseSeqQuality=$(head -n2 "$i"/summary.txt | tail -n1 |cut -s -f1)
+    perTileSeqQuality=$(head -n3 "$i"/summary.txt | tail -n1 |cut -s -f1)
+    perSeqQualityScore=$(head -n4 "$i"/summary.txt | tail -n1 |cut -s -f1)
+    perBaseNContent=$(head -n7 "$i"/summary.txt | tail -n1 |cut -s -f1)
+    overRepresentedSeq=$(head -n10 "$i"/summary.txt | tail -n1 |cut -s -f1)
+    adapterContent=$(head -n11 "$i"/summary.txt | tail -n1 |cut -s -f1)
     
-    echo -e "$i\t$basicStats\t$perBaseSeqQuality\t$perTileSeqQuality\tperSeqQualityScore\t$perBaseNContent\t$overRepresentedSeq\t$adapterContent"
+    echo -e "$i\t$basicStats\t$perBaseSeqQuality\t$perTileSeqQuality\t$perSeqQualityScore\t$perBaseNContent\t$overRepresentedSeq\t$adapterContent"
 done
 
 #Calculate insert size: fragmentation performance
@@ -281,6 +281,7 @@ pctTargetBases30x=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary
 -dt NONE
 
 #Calculate dna contamination: sample-to-sample contamination
+#TODO check args
 /share/apps/verifyBamID-distros/verifyBamID_1.1.3/verifyBamID/bin/verifyBamID \
 --bam "$seqId"_"$sampleId".bam \
 --vcf 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf \
