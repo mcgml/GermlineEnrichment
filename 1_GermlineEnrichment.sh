@@ -196,27 +196,18 @@ O="$bedFileName".interval_list \
 SD=/data/db/human/gatk/2.8/b37/human_g1k_v37.dict
 
 #Fastqc: raw sequence quality
-#TODO fix
 for i in $(ls *_trimmed.fastq); do
-    /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -t8 --extract "$seqId"_"$sampleId"_R1_trimmed.fastq
-
-    basicStatsR1=$(head -n1 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    perBaseSeqQualityR1=$(head -n2 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    perTileSeqQualityR1=$(head -n3 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    perSeqQualityScoreR1=$(head -n4 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    perBaseNContentR1=$(head -n7 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    overRepresentedSeqR1=$(head -n10 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    adapterContentR1=$(head -n11 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-
-    /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -t8 --extract "$seqId"_"$sampleId"_R2_trimmed.fastq
-
-    basicStatsR2=$(head -n1 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    perBaseSeqQualityR2=$(head -n2 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    perTileSeqQualityR2=$(head -n3 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    perSeqQualityScoreR2=$(head -n4 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    perBaseNContentR2=$(head -n7 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    overRepresentedSeqR2=$(head -n10 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
-    adapterContentR2=$(head -n11 "$seqId"_"$sampleId"_R2_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -t8 --extract "$i"
+    
+    basicStats=$(head -n1 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    perBaseSeqQuality=$(head -n2 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    perTileSeqQuality=$(head -n3 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    perSeqQualityScore=$(head -n4 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    perBaseNContent=$(head -n7 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    overRepresentedSeq=$(head -n10 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    adapterContent=$(head -n11 "$seqId"_"$sampleId"_R1_trimmed_fastqc/summary.txt | tail -n1 |cut -s -f1)
+    
+    echo -e "$i\t$basicStats\t$perBaseSeqQuality\t$perTileSeqQuality\tperSeqQualityScore\t$perBaseNContent\t$overRepresentedSeq\t$adapterContent"
 done
 
 #Calculate insert size: fragmentation performance
@@ -322,7 +313,7 @@ freemix=$(tail -n1 "$seqId"_"$sampleId"_contamination.selfSM | cut -s -f7)
 yMeanCoverage=$(head -n2 y.sample_summary | tail -n1 | cut -s -f3)
 
 #Print QC metrics
-echo -e "$basicStatsR1\t$perBaseSeqQualityR1\t$perTileSeqQualityR1\t$perSeqQualityScoreR1\t$perBaseNContentR1\t$overRepresentedSeqR1\t$adapterContentR1\t$basicStatsR2\t$perBaseSeqQualityR2\t$perTileSeqQualityR2\t$perSeqQualityScoreR2\t$perBaseNContentR2\t$overRepresentedSeqR2\t$adapterContentR2\t$totalReads\t$duplicationRate\t$pctSelectedBases\t$pctTargetBases30x\t$meanOnTargetCoverage\t$yMeanCoverage\t$freemix\t$meanInsertSize\t$sdInsertSize" > "$seqId"_"$sampleId"_qc.txt
+echo -e "$totalReads\t$duplicationRate\t$pctSelectedBases\t$pctTargetBases30x\t$meanOnTargetCoverage\t$yMeanCoverage\t$freemix\t$meanInsertSize\t$sdInsertSize"
 
 ### Clean up ###
 #rm -r tmp
