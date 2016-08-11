@@ -29,8 +29,9 @@ version="dev"
 #
 # Script 2 runs in panel folder
 
-#load run variables
+#load run & pipeline variables
 . variables
+. /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
 
 ### Joint variant calling and filtering ###
 
@@ -116,24 +117,23 @@ version="dev"
 ### ROH and CNV analysis ###
 
 #Identify CNVs using read-depth
-#grep -P '^[1-22]' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed > autosomal.bed
-#/share/apps/R-distros/R-3.3.1/bin/Rscript ExomeDepth.R \
-#-b FinalBAMs.list \
-#-f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
-#-r autosomal.bed \
-#2>&1 | tee log.txt
+grep -P '^[1-22]' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed > autosomal.bed
+/share/apps/R-distros/R-3.3.1/bin/Rscript ExomeDepth.R \
+-b FinalBAMs.list \
+-f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-r autosomal.bed \
+2>&1 | tee log.txt
 
 #print ExomeDepth metrics
-#echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_exomedepth.metrics.txt
-#paste "$RunID"_gt_100x_bams.list \
-#$(grep "Number of counted fragments" log.txt | cut -d' ' -f6) \
-#$(grep "Correlation between reference and tests count" log.txt | cut -d' ' -f8) \
-#>> "$seqId"_exomedepth.metrics.txt
+echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_exomedepth.metrics.txt
+paste FinalBAMs.list \
+<(grep "Number of counted fragments" log.txt | cut -d' ' -f6) \
+<(grep "Correlation between reference and tests count" log.txt | cut -d' ' -f8) \
+>> "$seqId"_exomedepth.metrics.txt
 
 #identify runs of homozygosity
 /share/apps/htslib-distros/htslib-1.3.1/bgzip -c "$seqId"_variants_filtered.vcf > "$seqId"_variants_filtered.vcf.gz
 /share/apps/htslib-distros/htslib-1.3.1/tabix -p vcf "$seqId"_variants_filtered.vcf.gz
-
 for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$seqId"_variants_filtered.vcf); do
     /share/apps/bcftools-distros/bcftools-1.3.1/bcftools roh -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed -s "$sample" "$seqId"_variants_filtered.vcf.gz | \
     grep -v '^#' | perl /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/bcftools_roh_range.pl | grep -v '#' | awk '{print $1"\t"$2-1"\t"$3"\t"$5}' > "$sample"/"$sample"_roh.bed

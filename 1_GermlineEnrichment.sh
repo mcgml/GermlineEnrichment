@@ -9,6 +9,11 @@ cd $PBS_O_WORKDIR
 #Mode: BY_SAMPLE
 version="dev"
 
+#TODO gender analysis
+#TODO try whole chromosome Y. ?Normalisation
+#TODO check verifyBamID
+#TODO get metadata in final VCF
+
 # Directory structure required for pipeline
 #
 # /data
@@ -25,8 +30,9 @@ version="dev"
 #
 # Script 1 runs in sample folder
 
-#load sample variables
+#load sample & pipeline variables
 . *.variables
+. /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
 
 ### Preprocessing ###
 
@@ -40,8 +46,8 @@ for fastqPair in $(ls "$sampleId"_*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     
     #Trim adapters and remove short reads
     /share/apps/cutadapt-distros/cutadapt-1.9.1/bin/cutadapt \
-    -a CTGTCTCTTATACACATCT \
-    -A CTGTCTCTTATACACATCT \
+    -a "$read1Adapter" \
+    -A "$read2Adapter" \
     -o $(echo "$read1Fastq" | sed 's/\.fastq\.gz/_trimmed\.fastq/g') \
     -p $(echo "$read2Fastq" | sed 's/\.fastq\.gz/_trimmed\.fastq/g') \
     --minimum-length 30 \
@@ -60,11 +66,10 @@ for fastqPair in $(ls "$sampleId"_*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
 done
 
 #merge mulitple lanes
-if [ $(ls "$seqId"_"$sampleId"_*_sorted.bam | wc -l | sed 's/^[[:space:]]*//g') -gt 1 ]; then
-    /share/apps/samtools-distros/samtools-1.3.1/samtools merge -@ 8 -u "$seqId"_"$sampleId"_all_sorted.bam "$seqId"_"$sampleId"_*_sorted.bam
-else
-    mv "$seqId"_"$sampleId"_*_sorted.bam "$seqId"_"$sampleId"_all_sorted.bam
-fi
+/share/apps/samtools-distros/samtools-1.3.1/samtools merge \
+-@ 8 \
+-u "$seqId"_"$sampleId"_all_sorted.bam \
+"$seqId"_"$sampleId"_*_sorted.bam
 
 #Mark duplicate reads
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MarkDuplicates \
@@ -83,7 +88,7 @@ COMPRESSION_LEVEL=0
 -I "$seqId"_"$sampleId"_rmdup.bam \
 -o "$seqId"_"$sampleId"_realign.intervals \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
--ip 230 \
+-ip "$padding" \
 -nt 8 \
 -dt NONE
 
@@ -109,7 +114,7 @@ COMPRESSION_LEVEL=0
 -I "$seqId"_"$sampleId"_realigned.bam \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_"$sampleId"_recal_data.table \
--ip 230 \
+-ip "$padding" \
 -nct 8 \
 -dt NONE
 
@@ -125,7 +130,7 @@ COMPRESSION_LEVEL=0
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_"$sampleId"_post_recal_data.table \
 -nct 8 \
--ip 230 \
+-ip "$padding" \
 -dt NONE
 
 #Apply the recalibration to your sequence data
@@ -157,25 +162,25 @@ COMPRESSION_LEVEL=0
 -dt NONE
 
 #Structural variants with pindel
-#echo -e "$seqId"_"$sampleId".bam"\t"300"\t""$sampleId" > pindel.txt
-#/share/apps/pindel-distros/pindel-0.2.5b8/pindel \
-#-f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
-#-i pindel.txt \
-#-c ALL \
-#-T 8 \
-#--max_range_index 6 \
-#-o "$seqId"_"$sampleId"_pindel
+echo -e "$seqId"_"$sampleId".bam"\t$expectedInsertSize\t""$sampleId" > pindel.txt
+/share/apps/pindel-distros/pindel-0.2.5b8/pindel \
+-f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-i pindel.txt \
+-c ALL \
+-T 8 \
+--max_range_index 6 \
+-o "$seqId"_"$sampleId"_pindel
 
 #Convert pindel output to VCF format and filter calls
-#/share/apps/pindel-distros/pindel-0.2.5b8/pindel2vcf \
-#-P "$seqId"_"$sampleId"_pindel \
-#-r /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
-#-R human_g1k_v37 \
-#-d none \
-#-e 3 \
-#--min_size 50 \
-#--min_coverage 10 \
-#-v "$seqId"_"$sampleId"_pindel.vcf
+/share/apps/pindel-distros/pindel-0.2.5b8/pindel2vcf \
+-P "$seqId"_"$sampleId"_pindel \
+-r /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-R human_g1k_v37 \
+-d none \
+-e 3 \
+--min_size 50 \
+--min_coverage 10 \
+-v "$seqId"_"$sampleId"_pindel.vcf
 
 ### QC ###
 
@@ -238,21 +243,24 @@ pctSelectedBases=$(head -n8 "$seqId"_"$sampleId"_hs_metrics.txt | tail -n1 | cut
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 --countType COUNT_FRAGMENTS \
 --minMappingQuality 20 \
+--minBaseQuality 10 \
 --omitIntervalStatistics \
--ct 30 \
+-ct "$minimumCoverage" \
 -nt 8 \
 -dt NONE
 
 totalTargetedUsableBases=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f2) #total number of usable bases. NB BQSR requires >= 100M, ideally >= 1B
 meanOnTargetCoverage=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f3) #avg usable coverage
-pctTargetBases30x=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f7) #percentage panel covered with good enough data for variant detection
+pctTargetBasesCt=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f7) #percentage panel covered with good enough data for variant detection
 
 #Calculate gene percentage coverage
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /data/diagnostics/apps/CoverageCalculator-2.0.0/CoverageCalculator-2.0.0.jar \
 "$seqId"_"$sampleId"_DepthOfCoverage \
 /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_genes.txt \
 /data/db/human/refseq/ref_GRCh37.p13_top_level.gff3 \
--p5 > "$seqId"_"$sampleId"_PercentageCoverage.txt
+-p"$spliceSitePadding" \
+-d"$minimumCoverage" \
+> "$seqId"_"$sampleId"_PercentageCoverage.txt
 
 #sort gaps BED
 /share/apps/bedtools-distros/bedtools-2.24.0/bin/bedtools sort \
@@ -297,7 +305,6 @@ pctTargetBases30x=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary
 freemix=$(tail -n1 "$seqId"_"$sampleId"_contamination.selfSM | cut -s -f7)
 
 #Calculate mean coverage for Y chrom: gender check
-#TODO try whole chromosome Y. ?Normalisation
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -T DepthOfCoverage \
@@ -312,12 +319,9 @@ freemix=$(tail -n1 "$seqId"_"$sampleId"_contamination.selfSM | cut -s -f7)
 
 yMeanCoverage=$(head -n2 y.sample_summary | tail -n1 | cut -s -f3)
 
-#TODO Calculate gender
-gender="Male"
-
 #Print QC metrics
-echo -e "TotalReads\tTotalTargetUsableBases\tDuplicationRate\tPctSelectedBases\tPctTargetBases30x\tMeanOnTargetCoverage\tFreemix\tMeanInsertSize\tSDInsertSize" > "$seqId"_"$sampleId"_qc.txt
-echo -e "$totalReads\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedBases\t$pctTargetBases30x\t$meanOnTargetCoverage\t$freemix\t$meanInsertSize\t$sdInsertSize" >> "$seqId"_"$sampleId"_qc.txt 
+echo -e "TotalReads\tTotalTargetUsableBases\tDuplicationRate\tPctSelectedBases\tpctTargetBasesCt\tMeanOnTargetCoverage\tFreemix\tMeanInsertSize\tSDInsertSize" > "$seqId"_"$sampleId"_qc.txt
+echo -e "$totalReads\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedBases\t$pctTargetBasesCt\t$meanOnTargetCoverage\t$freemix\t$meanInsertSize\t$sdInsertSize" >> "$seqId"_"$sampleId"_qc.txt 
 
 ### Clean up ###
 rm -r tmp
@@ -334,9 +338,8 @@ rm -r tmp
 #rm "$seqId"_"$sampleId".g.vcf "$seqId"_"$sampleId".g.vcf.idx
 
 #Add VCF meta data
-#TODO get metadata in final VCF
 grep '^##' "$seqId"_"$sampleId".g.vcf > "$seqId"_"$sampleId"_meta.g.vcf
-echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",PctTargetBases30x\="$pctTargetBases30x",Freemix\="$freemix",Gender\="$gender",RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> >> "$seqId"_"$sampleId"_meta.g.vcf
+echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",pctTargetBasesCt\="$pctTargetBasesCt",Freemix\="$freemix",Gender\="$gender",RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> >> "$seqId"_"$sampleId"_meta.g.vcf
 grep -v '^##' "$seqId"_"$sampleId".g.vcf >> "$seqId"_"$sampleId"_meta.g.vcf
 
 #create BAM and VCF list for script 2
