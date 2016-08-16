@@ -116,8 +116,6 @@ phoneTrello()
 --filterName "SOR" \
 --filterExpression "HRun > 8" \
 --filterName "HRun" \
---filterExpression "vc.getAttribute(RPA)[0] > 10" \
---filterName "RPA" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_indels_filtered.vcf \
 -dt NONE
