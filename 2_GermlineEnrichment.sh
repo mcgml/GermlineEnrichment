@@ -55,6 +55,7 @@ phoneTrello()
 -o "$seqId"_variants.vcf \
 --annotation TandemRepeatAnnotator \
 --annotation HomopolymerRun \
+--reference_window_stop 20 \
 -nt 8 \
 -dt NONE
 
@@ -118,8 +119,6 @@ phoneTrello()
 --filterName "SOR" \
 --filterExpression "HRun > 8" \
 --filterName "HRun" \
---filterExpression "ExcessHet > 7" \
---filterName "ExcessHet" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_indels_filtered.vcf \
 -dt NONE
