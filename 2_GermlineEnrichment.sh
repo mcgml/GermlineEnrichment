@@ -110,7 +110,7 @@ phoneTrello()
 --filterName "FS" \
 --filterExpression "ReadPosRankSum < -20.0" \
 --filterName "ReadPosRankSum" \
---filterExpression "InbreedingCoeff < -0.8" \
+--filterExpression "InbreedingCoeff < -0.6" \
 --filterName "InbreedingCoeff" \
 --filterExpression "SOR > 10.0" \
 --filterName "SOR" \
