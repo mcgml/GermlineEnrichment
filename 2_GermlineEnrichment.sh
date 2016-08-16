@@ -12,7 +12,7 @@ version="dev"
 #TODO add ExomeDepth output to VCF for DB import
 #TODO SNPRelate
 #TODO PCA for ancestry
-#TODO replace HRun
+#TODO filter on homopolymers
 #TODO filter on repetitive sequences
 
 # Directory structure required for pipeline
@@ -71,7 +71,7 @@ phoneTrello()
 -T VariantFiltration \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_snps.vcf \
---filterExpression "QD < 4.0" \
+--filterExpression "QD < 2.0" \
 --filterName "QD" \
 --filterExpression "FS > 60.0" \
 --filterName "FS" \
@@ -103,7 +103,7 @@ phoneTrello()
 -T VariantFiltration \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_indels.vcf \
---filterExpression "QD < 4.0" \
+--filterExpression "QD < 2.0" \
 --filterName "QD" \
 --filterExpression "FS > 200.0" \
 --filterName "FS" \
