@@ -12,7 +12,9 @@ version="dev"
 #TODO add ExomeDepth output to VCF for DB import
 #TODO SNPRelate
 #TODO PCA for ancestry
-#TODO homopolymer filter + filter variants
+#TODO replace HRun
+#TODO filter on repetitive sequences
+
 
 # Directory structure required for pipeline
 #
@@ -116,6 +118,8 @@ phoneTrello()
 --filterName "SOR" \
 --filterExpression "HRun > 8" \
 --filterName "HRun" \
+--filterExpression "ExcessHet > 7" \
+--filterName "ExcessHet" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_indels_filtered.vcf \
 -dt NONE
