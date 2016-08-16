@@ -15,7 +15,6 @@ version="dev"
 #TODO replace HRun
 #TODO filter on repetitive sequences
 
-
 # Directory structure required for pipeline
 #
 # /data
@@ -53,9 +52,6 @@ phoneTrello()
 -V VCFsforFiltering.list \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_variants.vcf \
---annotation TandemRepeatAnnotator \
---annotation HomopolymerRun \
---reference_window_stop 20 \
 -nt 8 \
 -dt NONE
 
@@ -75,7 +71,7 @@ phoneTrello()
 -T VariantFiltration \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_snps.vcf \
---filterExpression "QD < 2.0" \
+--filterExpression "QD < 4.0" \
 --filterName "QD" \
 --filterExpression "FS > 60.0" \
 --filterName "FS" \
@@ -107,18 +103,18 @@ phoneTrello()
 -T VariantFiltration \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_indels.vcf \
---filterExpression "QD < 2.0" \
+--filterExpression "QD < 4.0" \
 --filterName "QD" \
 --filterExpression "FS > 200.0" \
 --filterName "FS" \
---filterExpression "ReadPosRankSum < -20.0" \
---filterName "ReadPosRankSum" \
---filterExpression "InbreedingCoeff < -0.6" \
---filterName "InbreedingCoeff" \
+--filterExpression "MQ < 40.0" \
+--filterName "MQ" \
 --filterExpression "SOR > 10.0" \
 --filterName "SOR" \
---filterExpression "HRun > 8" \
---filterName "HRun" \
+--filterExpression "ReadPosRankSum < -20.0" \
+--filterName "ReadPosRankSum" \
+--filterExpression "InbreedingCoeff < -0.7" \
+--filterName "InbreedingCoeff" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_indels_filtered.vcf \
 -dt NONE
