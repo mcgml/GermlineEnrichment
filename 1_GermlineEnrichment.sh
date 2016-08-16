@@ -146,6 +146,8 @@ COMPRESSION_LEVEL=0
 
 ### Variant calling ###
 
+#TODO get inbredingcoeffiecnt
+
 #SNPs and Indels with Haplotypecaller
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T HaplotypeCaller \
@@ -158,7 +160,10 @@ COMPRESSION_LEVEL=0
 -stand_emit_conf 10 \
 -stand_call_conf 30 \
 --emitRefConfidence GVCF \
--nct 8 \
+--annotation GCContent \
+--annotation TandemRepeatAnnotator \
+--annotation HomopolymerRun \
+--bamOutput "$seqId"_"$sampleId"_HC.bam \
 -dt NONE
 
 #Structural variants with pindel

@@ -12,6 +12,7 @@ version="dev"
 #TODO add ExomeDepth output to VCF for DB import
 #TODO SNPRelate
 #TODO PCA for ancestry
+#TODO homopolymer filter
 
 # Directory structure required for pipeline
 #
@@ -68,6 +69,8 @@ version="dev"
 --filterName "FS" \
 --filterExpression "MQ < 40.0" \
 --filterName "MQ" \
+--filterExpression "SOR > 3.0" \
+--filterName "SOR" \
 --filterExpression "MQRankSum < -12.5" \
 --filterName "MQRankSum" \
 --filterExpression "ReadPosRankSum < -8.0" \
@@ -98,6 +101,10 @@ version="dev"
 --filterName "FS" \
 --filterExpression "ReadPosRankSum < -20.0" \
 --filterName "ReadPosRankSum" \
+--filterExpression "InbreedingCoeff < -0.8" \
+--filterName "InbreedingCoeff" \
+--filterExpression "SOR > 10.0" \
+--filterName "SOR" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_indels_filtered.vcf \
 -dt NONE
@@ -114,7 +121,37 @@ version="dev"
 -genotypeMergeOptions UNSORTED \
 -dt NONE
 
+#Filter low GQ calls
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+-T VariantFiltration \
+-R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-V "$seqId"_variants_filtered.vcf \
+--genotypeFilterExpression "GQ < 20.0" \
+--genotypeFilterName "LowGQ" \
+--genotypeFilterExpression "DP < 10" \
+--genotypeFilterName "LowDP" \
+-o "$seqId"_genotypes_filtered.vcf
+
+#Variant Evaluation
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+-T VariantEval \
+-R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-o "$seqId"_variant_evaluation.txt \
+--eval:"$seqId"_genotypes_filtered.vcf \
+--dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+-nt 8 \
+-dt NONE
+
 ### ROH and CNV analysis ###
+
+#identify runs of homozygosity
+/share/apps/htslib-distros/htslib-1.3.1/bgzip -c "$seqId"_genotypes_filtered.vcf > "$seqId"_genotypes_filtered.vcf.gz
+/share/apps/htslib-distros/htslib-1.3.1/tabix -p vcf "$seqId"_genotypes_filtered.vcf.gz
+for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$seqId"_genotypes_filtered.vcf); do
+    /share/apps/bcftools-distros/bcftools-1.3.1/bcftools roh -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed -s "$sample" "$seqId"_genotypes_filtered.vcf.gz | \
+    grep -v '^#' | perl /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/bcftools_roh_range.pl | grep -v '#' | awk '{print $1"\t"$2-1"\t"$3"\t"$5}' > "$sample"/"$sample"_roh.bed
+done
 
 #Identify CNVs using read-depth
 grep -P '^[1-22]' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed > autosomal.bed
@@ -130,27 +167,6 @@ paste FinalBAMs.list \
 <(grep "Number of counted fragments" log.txt | cut -d' ' -f6) \
 <(grep "Correlation between reference and tests count" log.txt | cut -d' ' -f8) \
 >> "$seqId"_exomedepth.metrics.txt
-
-#identify runs of homozygosity
-/share/apps/htslib-distros/htslib-1.3.1/bgzip -c "$seqId"_variants_filtered.vcf > "$seqId"_variants_filtered.vcf.gz
-/share/apps/htslib-distros/htslib-1.3.1/tabix -p vcf "$seqId"_variants_filtered.vcf.gz
-for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$seqId"_variants_filtered.vcf); do
-    /share/apps/bcftools-distros/bcftools-1.3.1/bcftools roh -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed -s "$sample" "$seqId"_variants_filtered.vcf.gz | \
-    grep -v '^#' | perl /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/bcftools_roh_range.pl | grep -v '#' | awk '{print $1"\t"$2-1"\t"$3"\t"$5}' > "$sample"/"$sample"_roh.bed
-done
-
-### QC ###
-
-#Variant Evaluation
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
--T VariantEval \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--o "$seqId"_variant_evaluation.txt \
---eval:"$seqId" "$seqId"_variants_filtered.vcf \
---dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
--nt 8 \
--dt NONE
 
 ### Clean up ###
 rm -r tmp
