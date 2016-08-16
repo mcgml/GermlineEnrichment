@@ -12,7 +12,7 @@ version="dev"
 #TODO add ExomeDepth output to VCF for DB import
 #TODO SNPRelate
 #TODO PCA for ancestry
-#TODO homopolymer filter
+#TODO homopolymer filter + filter variants
 
 # Directory structure required for pipeline
 #
@@ -30,13 +30,20 @@ version="dev"
 #
 # Script 2 runs in panel folder
 
+phoneTrello()
+{
+    /share/apps/node-distros/node-v0.12.7-linux-x64/bin/node \
+    /data/diagnostics/scripts/TrelloAPI.js \
+    "$1" "$2"
+}
+
 #load run & pipeline variables
 . variables
 . /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
 
 ### Joint variant calling and filtering ###
 
-#Merge calls from HC VCFs
+#Joint genotyping
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T GenotypeGVCFs \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -132,12 +139,19 @@ version="dev"
 --genotypeFilterName "LowDP" \
 -o "$seqId"_genotypes_filtered.vcf
 
+#Add VCF meta data
+grep '^##' "$seqId"_genotypes_filtered.vcf > "$seqId"_genotypes_filtered_meta.vcf
+for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$seqId"_genotypes_filtered.vcf); do
+    cat "$sample"/"$seqId"_"$sample"_meta.txt >> "$seqId"_genotypes_filtered_meta.vcf
+done
+grep -v '^##' "$seqId"_genotypes_filtered.vcf >> "$seqId"_genotypes_filtered_meta.vcf
+
 #Variant Evaluation
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T VariantEval \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_variant_evaluation.txt \
---eval:"$seqId"_genotypes_filtered.vcf \
+--eval:"$seqId"_genotypes_filtered_meta.vcf \
 --dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -nt 8 \
@@ -170,15 +184,6 @@ paste FinalBAMs.list \
 
 ### Clean up ###
 rm -r tmp
-#rm "$seqId"_variants_filtered.vcf.gz
-#rm "$seqId"_variants_filtered.vcf.gz.tbi
-#rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx
-#rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx
-#rm "$seqId"_indels.vcf "$seqId"_indels.vcf.idx
-#rm "$seqId"_indels_filtered.vcf "$seqId"_indels_filtered.vcf.idx
-#rm "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx
 
 #log run complete
-#/share/apps/node-distros/node-v0.12.7-linux-x64/bin/node \
-#/data/diagnostics/scripts/TrelloAPI.js \
-#"$seqId" "$worksheetId"
+phoneTrello "$seqId" "Analysis complete"

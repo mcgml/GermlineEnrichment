@@ -12,7 +12,6 @@ version="dev"
 #TODO gender analysis
 #TODO try whole chromosome Y. ?Normalisation
 #TODO check verifyBamID
-#TODO get metadata in final VCF
 
 # Directory structure required for pipeline
 #
@@ -145,8 +144,6 @@ COMPRESSION_LEVEL=0
 -dt NONE
 
 ### Variant calling ###
-
-#TODO get inbredingcoeffiecnt
 
 #SNPs and Indels with Haplotypecaller
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
@@ -328,25 +325,12 @@ echo -e "$totalReads\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedB
 
 ### Clean up ###
 rm -r tmp
-#rm "$seqId"_"$sampleId"_R?_trimmed.fastq
-#rm "$seqId"_"$sampleId"_rmdup.ba?
-#rm "$seqId"_"$sampleId"_sorted.ba?
-#rm "$seqId"_"$sampleId"_recal.ba?
-#rm "$seqId"_"$sampleId"_realigned.ba?
-#rm autosome.sample_statistics x.sample_statistics y.sample_statistics
-#rm autosomal.bed x.bed y.bed
-#rm pindel.txt
-#rm "$seqId"_"$sampleId"_R?_trimmed_fastqc.html
-#rm "$seqId"_"$sampleId"_R?_trimmed_fastqc.zip
-#rm "$seqId"_"$sampleId".g.vcf "$seqId"_"$sampleId".g.vcf.idx
 
-#Add VCF meta data
-grep '^##' "$seqId"_"$sampleId".g.vcf > "$seqId"_"$sampleId"_meta.g.vcf
-echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",pctTargetBasesCt\="$pctTargetBasesCt",Freemix\="$freemix",Gender\="$gender",RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> >> "$seqId"_"$sampleId"_meta.g.vcf
-grep -v '^##' "$seqId"_"$sampleId".g.vcf >> "$seqId"_"$sampleId"_meta.g.vcf
+#print metaline for final VCF
+echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",pctTargetBasesCt\="$pctTargetBasesCt",Freemix\="$freemix",Gender\="$gender",RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> > "$seqId"_"$sampleId"_meta.txt
 
 #create BAM and VCF list for script 2
-find $PWD -name "$seqId"_"$sampleId"_meta.g.vcf >> ../VCFsforFiltering.list
+find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../VCFsforFiltering.list
 find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBAMs.list
 
 #check if all VCFs are written
