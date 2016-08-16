@@ -51,6 +51,8 @@ phoneTrello()
 -V VCFsforFiltering.list \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_variants.vcf \
+--annotation TandemRepeatAnnotator \
+--annotation HomopolymerRun \
 -nt 8 \
 -dt NONE
 
@@ -112,6 +114,10 @@ phoneTrello()
 --filterName "InbreedingCoeff" \
 --filterExpression "SOR > 10.0" \
 --filterName "SOR" \
+--filterExpression "HRun > 8" \
+--filterName "HRun" \
+--filterExpression "vc.getAttribute(RPA)[0] > 10" \
+--filterName "RPA" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_indels_filtered.vcf \
 -dt NONE
@@ -137,7 +143,8 @@ phoneTrello()
 --genotypeFilterName "LowGQ" \
 --genotypeFilterExpression "DP < 10" \
 --genotypeFilterName "LowDP" \
--o "$seqId"_genotypes_filtered.vcf
+-o "$seqId"_genotypes_filtered.vcf \
+-dt NONE
 
 #Add VCF meta data
 grep '^##' "$seqId"_genotypes_filtered.vcf > "$seqId"_genotypes_filtered_meta.vcf
@@ -151,7 +158,7 @@ grep -v '^##' "$seqId"_genotypes_filtered.vcf >> "$seqId"_genotypes_filtered_met
 -T VariantEval \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_variant_evaluation.txt \
---eval:"$seqId"_genotypes_filtered_meta.vcf \
+--eval "$seqId"_genotypes_filtered_meta.vcf \
 --dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -nt 8 \
@@ -168,12 +175,12 @@ for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$
 done
 
 #Identify CNVs using read-depth
-grep -P '^[1-22]' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed > autosomal.bed
-/share/apps/R-distros/R-3.3.1/bin/Rscript ExomeDepth.R \
--b FinalBAMs.list \
--f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--r autosomal.bed \
-2>&1 | tee log.txt
+#grep -P '^[1-22]' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed > autosomal.bed
+#/share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
+#-b FinalBAMs.list \
+#-f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+#-r autosomal.bed \
+#2>&1 | tee log.txt
 
 #print ExomeDepth metrics
 echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_exomedepth.metrics.txt

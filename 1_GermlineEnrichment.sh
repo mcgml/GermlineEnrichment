@@ -157,7 +157,6 @@ COMPRESSION_LEVEL=0
 -stand_emit_conf 10 \
 -stand_call_conf 30 \
 --emitRefConfidence GVCF \
---annotation TandemRepeatAnnotator \
 --bamOutput "$seqId"_"$sampleId"_HC.bam \
 -dt NONE
 
