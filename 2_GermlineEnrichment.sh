@@ -54,7 +54,7 @@ phoneTrello()
 -nt 8 \
 -dt NONE
 
-#annotate with LCR length
+#annotate with MDust low complexity region length
 /share/apps/bcftools-distros/bcftools-1.3.1/bcftools annotate \
 -a /data/db/human/gatk/2.8/b37/human_g1k_v37.mdust.bed \
 -c CHROM,FROM,TO,LCRLen \
