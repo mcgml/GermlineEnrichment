@@ -114,6 +114,9 @@ phoneTrello()
 --filterName "ReadPosRankSum" \
 --filterExpression "InbreedingCoeff < -0.7" \
 --filterName "InbreedingCoeff" \
+--mask /data/db/human/gatk/2.8/b37/human_g1k_v37.mdust.bed \
+--maskName "LCR" \
+--maskExtension 1 \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_indels_filtered.vcf \
 -dt NONE
