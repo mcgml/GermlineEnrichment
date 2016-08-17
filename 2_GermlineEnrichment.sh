@@ -54,11 +54,19 @@ phoneTrello()
 -nt 8 \
 -dt NONE
 
+#annotate with LCR length
+/share/apps/bcftools-distros/bcftools-1.3.1/bcftools annotate \
+-a /data/db/human/gatk/2.8/b37/human_g1k_v37.mdust.bed \
+-c CHROM,FROM,TO,LCRLen \
+-h <(echo '##INFO=<ID=LCRLen,Number=1,Type=Integer,Description="Overlapping MDust LCR length">') \
+-o "$seqId"_variants.lcr.vcf \
+"$seqId"_variants.vcf
+
 #Select SNPs
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T SelectVariants \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$seqId"_variants.vcf \
+-V "$seqId"_variants.lcr.vcf \
 -selectType SNP \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_snps.vcf \
@@ -90,7 +98,7 @@ phoneTrello()
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T SelectVariants \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$seqId"_variants.vcf \
+-V "$seqId"_variants.lcr.vcf \
 -selectType INDEL \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_indels.vcf \
@@ -114,9 +122,8 @@ phoneTrello()
 --filterName "ReadPosRankSum" \
 --filterExpression "InbreedingCoeff < -0.7" \
 --filterName "InbreedingCoeff" \
---mask /data/db/human/gatk/2.8/b37/human_g1k_v37.mdust.bed \
---maskName "LCR" \
---maskExtension 1 \
+--filterExpression "LCRLen > 8" \
+--filterName "LCRLen" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_indels_filtered.vcf \
 -dt NONE
