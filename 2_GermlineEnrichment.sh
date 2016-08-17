@@ -83,8 +83,6 @@ phoneTrello()
 --filterName "FS" \
 --filterExpression "MQ < 40.0" \
 --filterName "MQ" \
---filterExpression "SOR > 3.0" \
---filterName "SOR" \
 --filterExpression "MQRankSum < -12.5" \
 --filterName "MQRankSum" \
 --filterExpression "ReadPosRankSum < -8.0" \
@@ -113,16 +111,12 @@ phoneTrello()
 --filterName "QD" \
 --filterExpression "FS > 200.0" \
 --filterName "FS" \
---filterExpression "MQ < 40.0" \
---filterName "MQ" \
---filterExpression "SOR > 10.0" \
---filterName "SOR" \
 --filterExpression "ReadPosRankSum < -20.0" \
 --filterName "ReadPosRankSum" \
---filterExpression "InbreedingCoeff < -0.7" \
+--filterExpression "InbreedingCoeff < -0.8" \
 --filterName "InbreedingCoeff" \
 --filterExpression "LCRLen > 8" \
---filterName "LCRLen" \
+--filterName "LCR" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_indels_filtered.vcf \
 -dt NONE
