@@ -12,7 +12,6 @@ version="dev"
 #TODO add ExomeDepth output to VCF for DB import
 #TODO SNPRelate
 #TODO PCA for ancestry
-#TODO filter on LCR
 
 # Directory structure required for pipeline
 #
@@ -56,7 +55,7 @@ phoneTrello()
 
 #annotate with MDust low complexity region length
 /share/apps/bcftools-distros/bcftools-1.3.1/bcftools annotate \
--a /data/db/human/gatk/2.8/b37/human_g1k_v37.mdust.bed \
+-a /data/db/human/gatk/2.8/b37/human_g1k_v37.mdust.1bp.lpadd.bed.gz \
 -c CHROM,FROM,TO,LCRLen \
 -h <(echo '##INFO=<ID=LCRLen,Number=1,Type=Integer,Description="Overlapping MDust LCR length">') \
 -o "$seqId"_variants.lcr.vcf \
@@ -140,13 +139,11 @@ phoneTrello()
 -genotypeMergeOptions UNSORTED \
 -dt NONE
 
-#Filter Low GQ/DP calls
+#Filter Low DP calls
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T VariantFiltration \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_variants_filtered.vcf \
---genotypeFilterExpression "GQ < 20.0" \
---genotypeFilterName "LowGQ" \
 --genotypeFilterExpression "DP < 10" \
 --genotypeFilterName "LowDP" \
 -o "$seqId"_genotypes_filtered.vcf \
