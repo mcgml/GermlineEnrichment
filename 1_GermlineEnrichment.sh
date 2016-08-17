@@ -56,7 +56,7 @@ for fastqPair in $(ls "$sampleId"_*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     #Align reads to reference genome, sort by coordinate and convert to BAM
     /share/apps/bwa-distros/bwa-0.7.15/bwa mem \
     -M \
-    -R '@RG\tID:'"$seqId"_"$laneId"_"$sampleId"'\tSM:'"$sampleId"'\tPL:ILLUMINA\tLB:'"$worklistId"_"$panel"_"$sampleId" \
+    -R '@RG\tID:'"$seqId"_"$laneId"_"$sampleId"'\tSM:'"$sampleId"'\tPL:ILLUMINA\tLB:'"$worklistId"_"$panel"_"$sampleId"'\tPU:'"$seqId"_"$laneId" \
     -t 8 \
     /data/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
     $(echo "$read1Fastq" | sed 's/\.fastq\.gz/_trimmed\.fastq/g') $(echo "$read2Fastq" | sed 's/\.fastq\.gz/_trimmed\.fastq/g') | \
@@ -137,7 +137,7 @@ COMPRESSION_LEVEL=0
 -T PrintReads \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -I "$seqId"_"$sampleId"_realigned.bam \
--BQSR "$seqId"_"$sampleId"_post_recal_data.table \
+-BQSR "$seqId"_"$sampleId"_recal_data.table \
 -o "$seqId"_"$sampleId".bam \
 -compress 0 \
 -nct 8 \
