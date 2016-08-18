@@ -10,6 +10,7 @@ cd $PBS_O_WORKDIR
 version="dev"
 
 #TODO optimise pindel filter + ?LCR filter
+#TODO ?BQSR on all samples for a single lane
 
 # Directory structure required for pipeline
 #

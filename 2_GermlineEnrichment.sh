@@ -46,11 +46,11 @@ version="dev"
 -nt 8 \
 -dt NONE
 
-#annotate with MDust low complexity region length
+#annotate with low complexity region length using mdust
 /share/apps/bcftools-distros/bcftools-1.3.1/bcftools annotate \
 -a /data/db/human/gatk/2.8/b37/human_g1k_v37.mdust.v34.lpad1.bed.gz \
 -c CHROM,FROM,TO,LCRLen \
--h <(echo '##INFO=<ID=LCRLen,Number=1,Type=Integer,Description="Overlapping MDust LCR length (mask cutoff: 34)">') \
+-h <(echo '##INFO=<ID=LCRLen,Number=1,Type=Integer,Description="Overlapping mdust LCR length (mask cutoff: 34)">') \
 -o "$seqId"_variants.lcr.vcf \
 "$seqId"_variants.vcf
 
@@ -137,7 +137,7 @@ version="dev"
 -T VariantFiltration \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_variants_filtered.vcf \
---genotypeFilterExpression "DP < 10" \
+--genotypeFilterExpression "DP < $minimumCoverage" \
 --genotypeFilterName "LowDP" \
 -o "$seqId"_genotypes_filtered.vcf \
 -dt NONE
@@ -171,12 +171,12 @@ for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$
 done
 
 #Identify CNVs using read-depth
-#grep -P '^[1-22]' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed > autosomal.bed
-#/share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
-#-b FinalBAMs.list \
-#-f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
-#-r autosomal.bed \
-#2>&1 | tee log.txt
+grep -P '^[1-22]' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed > autosomal.bed
+/share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
+-b FinalBAMs.list \
+-f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-r autosomal.bed \
+2>&1 | tee log.txt
 
 #print ExomeDepth metrics
 echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_exomedepth.metrics.txt
