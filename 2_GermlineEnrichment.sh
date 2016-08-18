@@ -74,6 +74,8 @@ version="dev"
 --filterName "QD" \
 --filterExpression "FS > 60.0" \
 --filterName "FS" \
+--filterExpression "SOR > 4.0" \
+--filterName "SOR" \
 --filterExpression "MQ < 40.0" \
 --filterName "MQ" \
 --filterExpression "MQRankSum < -12.5" \
@@ -100,13 +102,17 @@ version="dev"
 -T VariantFiltration \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_indels.vcf \
---filterExpression "QD < 2.0" \
+--filterExpression "QD < 3.5" \
 --filterName "QD" \
---filterExpression "FS > 200.0" \
+--filterExpression "FS > 170.0" \
 --filterName "FS" \
+--filterExpression "SOR > 8.0" \
+--filterName "SOR" \
+--filterExpression "MQ < 40.0" \
+--filterName "MQ" \
 --filterExpression "ReadPosRankSum < -20.0" \
 --filterName "ReadPosRankSum" \
---filterExpression "InbreedingCoeff < -0.8" \
+--filterExpression "InbreedingCoeff < -0.7" \
 --filterName "InbreedingCoeff" \
 --filterExpression "LCRLen > 8" \
 --filterName "LCR" \

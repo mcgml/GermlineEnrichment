@@ -9,10 +9,7 @@ cd $PBS_O_WORKDIR
 #Mode: BY_SAMPLE
 version="dev"
 
-#TODO gender analysis use off target reads
-#TODO check verifyBamID
 #TODO optimise pindel filter + ?LCR filter
-#TODO annotate coverage gaps: HGVS & primer
 
 # Directory structure required for pipeline
 #
@@ -255,6 +252,27 @@ TARGET_INTERVALS="$bedFileName".interval_list
 -d"$minimumCoverage" \
 > "$seqId"_"$sampleId"_PercentageCoverage.txt
 
+#Gender analysis
+chromYCount=$(/share/apps/samtools-distros/samtools-1.3.1/samtools view \
+-c \
+-f0x0002 \
+-F0x0100 \
+-F0x0400 \
+-q60 \
+"$seqId"_"$sampleId".bam \
+Y)
+
+chromXCount=$(/share/apps/samtools-distros/samtools-1.3.1/samtools view \
+-c \
+-f0x0002 \
+-F0x0100 \
+-F0x0400 \
+-q60 \
+"$seqId"_"$sampleId".bam \
+X)
+
+gender=$(echo "print (($chromYCount / 59373566) / ($chromXCount / 155270560))" | perl)
+
 #Extract 1kg autosomal snps for contamination analysis
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -272,13 +290,15 @@ TARGET_INTERVALS="$bedFileName".interval_list
 
 #Calculate dna contamination: sample-to-sample contamination
 /share/apps/verifyBamID-distros/verifyBamID_1.1.3/verifyBamID/bin/verifyBamID \
---bam "$seqId"_"$sampleId".bam \
 --vcf 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf \
+--bam "$seqId"_"$sampleId".bam \
 --out "$seqId"_"$sampleId"_contamination \
---maxDepth 1000 \
---precise \
+--verbose \
 --ignoreRG \
---verbose
+--chip-none \
+--minMapQ 20 \
+--maxDepth 1000 \
+--precise
 
 #Gather QC metrics
 meanInsertSize=$(head -n8 "$seqId"_"$sampleId"_insert_metrics.txt | tail -n1 | cut -s -f5) #mean insert size
@@ -289,17 +309,17 @@ pctSelectedBases=$(head -n8 "$seqId"_"$sampleId"_hs_metrics.txt | tail -n1 | cut
 totalTargetedUsableBases=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f2) #total number of usable bases. NB BQSR requires >= 100M, ideally >= 1B
 meanOnTargetCoverage=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f3) #avg usable coverage
 pctTargetBasesCt=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f7) #percentage panel covered with good enough data for variant detection
-freemix=$(tail -n1 "$seqId"_"$sampleId"_contamination.selfSM | cut -s -f7) #percentage DNA contamination
+freemix=$(tail -n1 "$seqId"_"$sampleId"_contamination.selfSM | cut -s -f7) #percentage DNA contamination. Should be <= 0.02
 
 #Print QC metrics
-echo -e "TotalReads\tTotalTargetUsableBases\tDuplicationRate\tPctSelectedBases\tpctTargetBasesCt\tMeanOnTargetCoverage\tFreemix\tMeanInsertSize\tSDInsertSize" > "$seqId"_"$sampleId"_qc.txt
-echo -e "$totalReads\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedBases\t$pctTargetBasesCt\t$meanOnTargetCoverage\t$freemix\t$meanInsertSize\t$sdInsertSize" >> "$seqId"_"$sampleId"_qc.txt
+echo -e "TotalReads\tTotalTargetUsableBases\tDuplicationRate\tPctSelectedBases\tpctTargetBasesCt\tMeanOnTargetCoverage\tGender\tFreemix\tMeanInsertSize\tSDInsertSize" > "$seqId"_"$sampleId"_qc.txt
+echo -e "$totalReads\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedBases\t$pctTargetBasesCt\t$meanOnTargetCoverage\t$gender\t$freemix\t$meanInsertSize\t$sdInsertSize" >> "$seqId"_"$sampleId"_qc.txt
 
 #print metaline for final VCF
 echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",pctTargetBasesCt\="$pctTargetBasesCt",Freemix\="$freemix",Gender\="$gender",RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> > "$seqId"_"$sampleId"_meta.txt
 
 ### Clean up ###
-rm -r tmp 
+rm -r tmp
 
 #create BAM and VCF list for script 2
 find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../VCFsforFiltering.list
