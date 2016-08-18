@@ -29,13 +29,6 @@ version="dev"
 #
 # Script 2 runs in panel folder
 
-phoneTrello()
-{
-    /share/apps/node-distros/node-v0.12.7-linux-x64/bin/node \
-    /data/diagnostics/scripts/TrelloAPI.js \
-    "$1" "$2"
-}
-
 #load run & pipeline variables
 . variables
 . /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
@@ -55,9 +48,9 @@ phoneTrello()
 
 #annotate with MDust low complexity region length
 /share/apps/bcftools-distros/bcftools-1.3.1/bcftools annotate \
--a /data/db/human/gatk/2.8/b37/human_g1k_v37.mdust.1bp.lpadd.bed.gz \
+-a /data/db/human/gatk/2.8/b37/human_g1k_v37.mdust.v34.lpad1.bed.gz \
 -c CHROM,FROM,TO,LCRLen \
--h <(echo '##INFO=<ID=LCRLen,Number=1,Type=Integer,Description="Overlapping MDust LCR length">') \
+-h <(echo '##INFO=<ID=LCRLen,Number=1,Type=Integer,Description="Overlapping MDust LCR length (mask cutoff: 34)">') \
 -o "$seqId"_variants.lcr.vcf \
 "$seqId"_variants.vcf
 
@@ -190,4 +183,6 @@ paste FinalBAMs.list \
 rm -r tmp
 
 #log run complete
-phoneTrello "$seqId" "Analysis complete"
+/share/apps/node-distros/node-v0.12.7-linux-x64/bin/node \
+/data/diagnostics/scripts/TrelloAPI.js \
+"$seqId" "Analysis complete"
