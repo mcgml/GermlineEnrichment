@@ -169,12 +169,18 @@ COMPRESSION_LEVEL=0
 --bamOutput "$seqId"_"$sampleId"_HC.bam \
 -dt NONE
 
-#Structural variants with pindel
+#Structural variants with pindel using padded BED file
 echo -e "$seqId"_"$sampleId".bam"\t$expectedInsertSize\t""$sampleId" > pindel.txt
+
+/share/apps/bedtools-distros/bedtools-2.24.0/bin/bedtools slop \
+-i /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+-g /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
+-b 400 | /share/apps/bedtools-distros/bedtools-2.24.0/bin/bedtools merge > padded.bed
+
 /share/apps/pindel-distros/pindel-0.2.5b8/pindel \
 -f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-j padded.bed \
 -i pindel.txt \
--c ALL \
 -T 8 \
 --max_range_index 6 \
 -o "$seqId"_"$sampleId"_pindel
@@ -253,15 +259,27 @@ TARGET_INTERVALS="$bedFileName".interval_list
 -d"$minimumCoverage" \
 > "$seqId"_"$sampleId"_PercentageCoverage.txt
 
-#Gender analysis
+#Gender analysis using off-targed reads
+grep -P "^Y\t" /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | awk '{print $1"\t"0"\t"$2}' > Y.bed
+/share/apps/bedtools-distros/bedtools2/bin/bedtools subtract \
+-a Y.bed \
+-b padded.bed \
+-b /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/PAR.bed > Y.off.bed
+
+grep -P "^X\t" /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | awk '{print $1"\t"0"\t"$2}' > X.bed
+/share/apps/bedtools-distros/bedtools2/bin/bedtools subtract \
+-a X.bed \
+-b padded.bed \
+-b /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/PAR.bed > X.off.bed
+
 chromYCount=$(/share/apps/samtools-distros/samtools-1.3.1/samtools view \
 -c \
 -f0x0002 \
 -F0x0100 \
 -F0x0400 \
 -q60 \
-"$seqId"_"$sampleId".bam \
-Y)
+-L Y.off.bed \
+"$seqId"_"$sampleId".bam)
 
 chromXCount=$(/share/apps/samtools-distros/samtools-1.3.1/samtools view \
 -c \
@@ -269,10 +287,10 @@ chromXCount=$(/share/apps/samtools-distros/samtools-1.3.1/samtools view \
 -F0x0100 \
 -F0x0400 \
 -q60 \
-"$seqId"_"$sampleId".bam \
-X)
+-L X.off.bed \
+"$seqId"_"$sampleId".bam)
 
-gender=$(echo "print (($chromYCount / 59373566) / ($chromXCount / 155270560))" | perl)
+gender=$(echo "print ($chromYCount / $(awk '{n+= $3-$2} END {print n}' Y.off.bed)) / ($chromXCount / $(awk '{n+= $3-$2} END {print n}' X.off.bed))" | perl)
 
 #Extract 1kg autosomal snps for contamination analysis
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
