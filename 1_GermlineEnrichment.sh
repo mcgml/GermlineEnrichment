@@ -183,6 +183,9 @@ echo -e "$seqId"_"$sampleId".bam"\t$expectedInsertSize\t""$sampleId" > pindel.tx
 -i pindel.txt \
 -T 8 \
 --max_range_index 6 \
+--anchor_quality 20 \
+--report_interchromosomal_events \
+-L "$seqId"_"$sampleId"_pindel.log \
 -o "$seqId"_"$sampleId"_pindel
 
 #Convert pindel output to VCF format and filter calls
