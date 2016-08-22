@@ -73,10 +73,12 @@ echo -e "$seqId"_"$sampleId".bam"\t$expectedInsertSize\t""$sampleId" > pindel.tx
 -i pindel.txt \
 -T 12 \
 --max_range_index 6 \
+--minimum_support_for_event 3 \
 --anchor_quality 20 \
+--report_long_insertions \
 --report_interchromosomal_events \
--L "$seqId"_"$sampleId"_pindel.log \
--o "$seqId"_"$sampleId"_pindel
+--genotyping \
+-o "$seqId"_"$sampleId"_pindel > "$seqId"_"$sampleId"_pindel.log
 
 #Convert pindel output to VCF format and filter calls
 /share/apps/pindel-distros/pindel-0.2.5b8/pindel2vcf \
