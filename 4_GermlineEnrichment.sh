@@ -40,7 +40,7 @@ version="dev"
 -T GenotypeGVCFs \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
--V VCFsforFiltering.list \
+-V GVCFs.list \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_variants.vcf \
 -nt 8 \
@@ -173,14 +173,14 @@ done
 #Identify CNVs using read-depth
 grep -P '^[1-22]' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed > autosomal.bed
 /share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
--b FinalBAMs.list \
+-b FinalBams.list \
 -f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -r autosomal.bed \
 2>&1 | tee log.txt
 
 #print ExomeDepth metrics
 echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_exomedepth.metrics.txt
-paste FinalBAMs.list \
+paste FinalBams.list \
 <(grep "Number of counted fragments" log.txt | cut -d' ' -f6) \
 <(grep "Correlation between reference and tests count" log.txt | cut -d' ' -f8) \
 >> "$seqId"_exomedepth.metrics.txt

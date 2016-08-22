@@ -230,8 +230,9 @@ echo -e "$totalReads\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedB
 #print metaline for final VCF
 echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",pctTargetBasesCt\="$pctTargetBasesCt",Freemix\="$freemix",Gender\="$gender",RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> > "$seqId"_"$sampleId"_meta.txt
 
-#create VCF list for script 4
+#create file lists for script 4
 find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
+find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBams.list
 
 #check if all BAMs are written
 if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../GVCFs.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
