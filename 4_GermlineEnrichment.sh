@@ -11,7 +11,7 @@ version="dev"
 
 #TODO SNPRelate
 #TODO PCA for ancestry
-#TODO combine pindel & ED with HC
+#TODO combine manta & ED with HC
 
 # Directory structure required for pipeline
 #
@@ -27,7 +27,7 @@ version="dev"
 #             ├── sample2
 #             └── sample3
 #
-# Script 3 runs in panel folder
+# Script 4 runs in panel folder
 
 #load run & pipeline variables
 . variables
@@ -45,37 +45,6 @@ version="dev"
 -o "$seqId"_variants.vcf \
 -nt 8 \
 -dt NONE
-
-#Structural variants with pindel using padded BED file
-/share/apps/bedtools-distros/bedtools-2.24.0/bin/bedtools slop \
--i /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
--g /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
--b 500 | /share/apps/bedtools-distros/bedtools-2.24.0/bin/bedtools merge | \
-/share/apps/bedtools-distros/bedtools-2.24.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
-> padded.bed
-
-/share/apps/pindel-distros/pindel-0.2.5b8/pindel \
--f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--j padded.bed \
--i "$seqId"_pindel_config.txt \
--T 12 \
---max_range_index 6 \
---minimum_support_for_event 2 \
---anchor_quality 20 \
---report_long_insertions \
---report_interchromosomal_events \
--o "$seqId"_pindel > "$seqId"_pindel.log
-
-#Convert pindel output to VCF format and filter calls
-/share/apps/pindel-distros/pindel-0.2.5b8/pindel2vcf \
--P "$seqId"_pindel \
--r /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--R human_g1k_v37 \
--d none \
--e 2 \
--G \
---min_size 50 \
--v "$seqId"_pindel.vcf
 
 #annotate with low complexity region length using mdust
 /share/apps/bcftools-distros/bcftools-1.3.1/bcftools annotate \

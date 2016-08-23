@@ -59,6 +59,14 @@ version="dev"
 --bamOutput "$seqId"_"$sampleId"_HC.bam \
 -dt NONE
 
+#Structural variant calling with Manta
+/share/apps/manta-distros/manta-1.0.0.centros5_x86_x64/bin/configManta.py \
+--bam "$seqId"_"$sampleId".bam \
+--referenceFasta /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+--exome \
+--runDir manta > "$seqId"_"$sampleId"_manta.log
+gzip -dc manta/results/variants/diploidSV.vcf.gzip > "$seqId"_"$sampleId"_manta.vcf
+
 ### QC ###
 
 #Convert BED to interval_list for later
@@ -99,7 +107,7 @@ BAIT_INTERVALS="$bedFileName".interval_list \
 TARGET_INTERVALS="$bedFileName".interval_list
 
 #Generate per-base/per-target coverage: variant detection sensitivity
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T DepthOfCoverage \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_"$sampleId"_DepthOfCoverage \
@@ -110,7 +118,7 @@ TARGET_INTERVALS="$bedFileName".interval_list
 --minBaseQuality 10 \
 --omitIntervalStatistics \
 -ct "$minimumCoverage" \
--nt 8 \
+-nt 12 \
 -dt NONE
 
 #Calculate gene percentage coverage
@@ -167,7 +175,7 @@ gender=$(echo "print ($chromYCount / $(awk '{n+= $3-$2} END {print n}' Y.off.bed
 -ef \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -XL X -XL Y \
--nt 8 \
+-nt 12 \
 -dt NONE
 
 #Calculate dna contamination: sample-to-sample contamination
@@ -202,7 +210,7 @@ echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Pan
 
 #create file lists for script 4
 find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
-find $PWD -name "$seqId"_"$sampleId".bam -exec echo -e "{}\t$expectedInsertSize\t$sampleId" \; >> ../"$seqId"_pindel_config.txt
+find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBams.list
 
 #check if all VCFs are written
 if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../GVCFs.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
