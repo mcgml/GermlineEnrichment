@@ -73,8 +73,8 @@ echo -e "$seqId"_"$sampleId".bam"\t$expectedInsertSize\t""$sampleId" > pindel.tx
 -i pindel.txt \
 -T 12 \
 --max_range_index 6 \
---minimum_support_for_event 3 \
---anchor_quality 30 \
+--minimum_support_for_event 2 \
+--anchor_quality 20 \
 --report_long_insertions \
 --report_interchromosomal_events \
 -o "$seqId"_"$sampleId"_pindel > "$seqId"_"$sampleId"_pindel.log
@@ -85,9 +85,9 @@ echo -e "$seqId"_"$sampleId".bam"\t$expectedInsertSize\t""$sampleId" > pindel.tx
 -r /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -R human_g1k_v37 \
 -d none \
--e 3 \
+-e 2 \
+-G \
 --min_size 50 \
---min_coverage 10 \
 -v "$seqId"_"$sampleId"_pindel.vcf
 
 ### QC ###
