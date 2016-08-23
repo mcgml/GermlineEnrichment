@@ -44,7 +44,7 @@ version="dev"
 
 ### Variant calling ###
 
-#SNPs and Indels with Haplotypecaller
+#SNPs and Indels GVCF with Haplotypecaller
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T HaplotypeCaller \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -58,37 +58,6 @@ version="dev"
 --emitRefConfidence GVCF \
 --bamOutput "$seqId"_"$sampleId"_HC.bam \
 -dt NONE
-
-#Structural variants with pindel using padded BED file
-echo -e "$seqId"_"$sampleId".bam"\t$expectedInsertSize\t""$sampleId" > pindel.txt
-
-/share/apps/bedtools-distros/bedtools-2.24.0/bin/bedtools slop \
--i /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
--g /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
--b 400 | /share/apps/bedtools-distros/bedtools-2.24.0/bin/bedtools merge > padded.bed
-
-/share/apps/pindel-distros/pindel-0.2.5b8/pindel \
--f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--j padded.bed \
--i pindel.txt \
--T 12 \
---max_range_index 6 \
---minimum_support_for_event 2 \
---anchor_quality 20 \
---report_long_insertions \
---report_interchromosomal_events \
--o "$seqId"_"$sampleId"_pindel > "$seqId"_"$sampleId"_pindel.log
-
-#Convert pindel output to VCF format and filter calls
-/share/apps/pindel-distros/pindel-0.2.5b8/pindel2vcf \
--P "$seqId"_"$sampleId"_pindel \
--r /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--R human_g1k_v37 \
--d none \
--e 2 \
--G \
---min_size 50 \
--v "$seqId"_"$sampleId"_pindel.vcf
 
 ### QC ###
 
@@ -233,9 +202,9 @@ echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Pan
 
 #create file lists for script 4
 find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
-find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBams.list
+find $PWD -name "$seqId"_"$sampleId".bam -exec echo -e "{}\t$expectedInsertSize\t$sampleId" \; >> ../"$seqId"_pindel_config.txt
 
-#check if all BAMs are written
+#check if all VCFs are written
 if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../GVCFs.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
     cp 4_GermlineEnrichment.sh .. && cd .. && qsub 4_GermlineEnrichment.sh
 fi
