@@ -101,7 +101,7 @@ COMPRESSION_LEVEL=0
 
 ### Clean up ###
 rm -r tmp
-rm *fastq *sorted.bam *sorted.bai *rmdup.bam *rmdup.bai
+rm *fastq *sorted.bam *rmdup.bam *rmdup.bai
 
 #create BAM list for script 2
 find $PWD -name "$seqId"_"$sampleId"_realigned.bam >> ../RealignedBams.list
