@@ -37,7 +37,7 @@ version="dev"
 ### Joint variant calling and filtering ###
 
 #Joint genotyping
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T GenotypeGVCFs \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
@@ -56,7 +56,7 @@ version="dev"
 "$seqId"_variants.vcf
 
 #Select SNPs
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T SelectVariants \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_variants.lcr.vcf \
@@ -67,7 +67,7 @@ version="dev"
 -dt NONE
 
 #Filter SNPs
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T VariantFiltration \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_snps.vcf \
@@ -88,7 +88,7 @@ version="dev"
 -dt NONE
 
 #Select INDELs
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T SelectVariants \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_variants.lcr.vcf \
@@ -99,7 +99,7 @@ version="dev"
 -dt NONE
 
 #Filter INDELs
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T VariantFiltration \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_indels.vcf \
@@ -122,7 +122,7 @@ version="dev"
 -dt NONE
 
 #Combine filtered VCF files
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T CombineVariants \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --variant "$seqId"_snps_filtered.vcf \
@@ -134,7 +134,7 @@ version="dev"
 -dt NONE
 
 #Filter Low DP calls
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T VariantFiltration \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_variants_filtered.vcf \
@@ -151,7 +151,7 @@ done
 grep -v '^##' "$seqId"_genotypes_filtered.vcf >> "$seqId"_filtered_meta.vcf
 
 #Variant Evaluation
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T VariantEval \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_variant_evaluation.txt \

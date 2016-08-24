@@ -32,7 +32,7 @@ version="dev"
 ### Preprocessing ###
 
 #Analyse patterns of covariation in the sequence dataset
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T BaseRecalibrator \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -knownSites /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
@@ -46,7 +46,7 @@ version="dev"
 -dt NONE
 
 #Do a second pass to analyze covariation remaining after recalibration
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T BaseRecalibrator \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -knownSites /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
@@ -61,7 +61,7 @@ version="dev"
 -dt NONE
 
 #Generate BQSR plots
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx2g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx2g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T AnalyzeCovariates \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -before "$seqId"_recal_data.table \

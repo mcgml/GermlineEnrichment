@@ -67,7 +67,7 @@ done
 "$seqId"_"$sampleId"_*_sorted.bam
 
 #Mark duplicate reads
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MarkDuplicates \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MarkDuplicates \
 INPUT="$seqId"_"$sampleId"_all_sorted.bam \
 OUTPUT="$seqId"_"$sampleId"_rmdup.bam \
 METRICS_FILE="$seqId"_"$sampleId"_MarkDuplicatesMetrics.txt \
@@ -75,7 +75,7 @@ CREATE_INDEX=true \
 COMPRESSION_LEVEL=0
 
 #Identify regions requiring realignment
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T RealignerTargetCreator \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -known /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
@@ -88,7 +88,7 @@ COMPRESSION_LEVEL=0
 -dt NONE
 
 #Realign around indels
-/share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T IndelRealigner \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -known /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
