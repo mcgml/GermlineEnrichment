@@ -43,7 +43,7 @@ version="dev"
 -V GVCFs.list \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_variants.vcf \
--nt 8 \
+-nt 12 \
 -dt NONE
 
 #annotate with low complexity region length using mdust
@@ -62,7 +62,7 @@ version="dev"
 -selectType SNP \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_snps.vcf \
--nt 8 \
+-nt 12 \
 -dt NONE
 
 #Filter SNPs
@@ -94,7 +94,7 @@ version="dev"
 -selectType INDEL \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_indels.vcf \
--nt 8 \
+-nt 12 \
 -dt NONE
 
 #Filter INDELs
@@ -128,7 +128,7 @@ version="dev"
 --variant "$seqId"_indels_filtered.vcf \
 -o "$seqId"_variants_filtered.vcf \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
--nt 8 \
+-nt 12 \
 -genotypeMergeOptions UNSORTED \
 -dt NONE
 
@@ -157,7 +157,7 @@ grep -v '^##' "$seqId"_genotypes_filtered.vcf >> "$seqId"_genotypes_filtered_met
 --eval "$seqId"_genotypes_filtered_meta.vcf \
 --dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
--nt 8 \
+-nt 12 \
 -dt NONE
 
 ### ROH, CNV & SV analysis ###
