@@ -171,13 +171,13 @@ awk '{if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3"\tbin"NR}' \
 -b FinalBams.list \
 -f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -r autosomal.bed \
-2>&1 | tee log.txt
+2>&1 | tee ExomeDepth.log
 
 #print ExomeDepth metrics
 echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_exomedepth.metrics.txt
 paste FinalBams.list \
-<(grep "Number of counted fragments" log.txt | cut -d' ' -f6) \
-<(grep "Correlation between reference and tests count" log.txt | cut -d' ' -f8) \
+<(grep "Number of counted fragments" ExomeDepth.log | cut -d' ' -f6) \
+<(grep "Correlation between reference and tests count" ExomeDepth.log | cut -d' ' -f8) \
 >> "$seqId"_exomedepth.metrics.txt
 
 #Structural variant calling with Manta
@@ -203,11 +203,12 @@ for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$
 done
 
 ### Clean up ###
-rm -r tmp
+rm -r tmp manta
 rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_variants.lcr.vcf "$seqId"_variants.lcr.vcf.idx \
 "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_indels.vcf \
 "$seqId"_indels.vcf.idx "$seqId"_indels_filtered.vcf "$seqId"_indels_filtered.vcf.idx "$seqId"_variants_filtered.vcf \
-"$seqId"_variants_filtered.vcf.idx "$seqId"_genotypes_filtered.vcf "$seqId"_genotypes_filtered.vcf.idx
+"$seqId"_variants_filtered.vcf.idx "$seqId"_genotypes_filtered.vcf "$seqId"_genotypes_filtered.vcf.idx "$seqId"_filtered_meta.vcf.gz \
+"$seqId"_filtered_meta.vcf.gz.tbi autosomal.bed ExomeDepth.log
 
 #log with Trello
 /share/apps/node-distros/node-v4.4.7-linux-x64/bin/node \
