@@ -12,7 +12,6 @@ version="dev"
 #TODO SNPRelate
 #TODO PCA for ancestry
 #TODO combine manta & ED with HC
-#TODO trello
 
 # Directory structure required for pipeline
 #

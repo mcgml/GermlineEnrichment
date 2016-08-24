@@ -121,19 +121,19 @@ TARGET_INTERVALS="$bedFileName".interval_list
 > "$seqId"_"$sampleId"_PercentageCoverage.txt
 
 #Gender analysis using off-targed reads
-/share/apps/bedtools-distros/bedtools-2.24.0/bin/bedtools slop \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools slop \
 -i /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -g /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
 -b 300 > padded.bed
 
 grep -P "^Y\t" /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | awk '{print $1"\t"0"\t"$2}' > Y.bed
-/share/apps/bedtools-distros/bedtools-2.24.0/bin/bedtools subtract \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
 -a Y.bed \
 -b padded.bed \
 -b /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/PAR.bed > Y.off.bed
 
 grep -P "^X\t" /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | awk '{print $1"\t"0"\t"$2}' > X.bed
-/share/apps/bedtools-distros/bedtools-2.24.0/bin/bedtools subtract \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
 -a X.bed \
 -b padded.bed \
 -b /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/PAR.bed > X.off.bed
