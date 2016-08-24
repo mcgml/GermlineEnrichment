@@ -163,7 +163,7 @@ grep -v '^##' "$seqId"_genotypes_filtered.vcf >> "$seqId"_filtered_meta.vcf
 ### ROH, CNV & SV analysis ###
 
 #Identify CNVs using read-depth
-grep -P '^[1-22]' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed > autosomal.bed
+awk '{if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3"\t"NR}' > autosomal.bed
 /share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
 -b FinalBams.list \
 -f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -178,7 +178,7 @@ paste FinalBams.list \
 >> "$seqId"_exomedepth.metrics.txt
 
 #Structural variant calling with Manta
-/share/apps/manta-distros/manta-1.0.0.centos5_x86_x64/bin/configManta.py \
+/share/apps/manta-distros/manta-1.0.0.centos5_x86_64/bin/configManta.py \
 $(sed 's/^/--bam /' FinalBams.list | tr '\n' ' ') \
 --referenceFasta /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --exome \
