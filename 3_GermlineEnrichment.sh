@@ -38,7 +38,6 @@ version="dev"
 -I "$seqId"_"$sampleId"_realigned.bam \
 -BQSR ../"$seqId"_recal_data.table \
 -o "$seqId"_"$sampleId".bam \
--compress 0 \
 -nct 12 \
 -dt NONE
 
@@ -56,7 +55,6 @@ version="dev"
 -stand_emit_conf 10 \
 -stand_call_conf 30 \
 --emitRefConfidence GVCF \
---bamOutput "$seqId"_"$sampleId"_HC.bam \
 -dt NONE
 
 ### QC ###
@@ -98,7 +96,7 @@ R=/data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 BAIT_INTERVALS="$bedFileName".interval_list \
 TARGET_INTERVALS="$bedFileName".interval_list
 
-#Generate per-base/per-target coverage: variant detection sensitivity
+#Generate per-base coverage: variant detection sensitivity
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T DepthOfCoverage \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -123,14 +121,19 @@ TARGET_INTERVALS="$bedFileName".interval_list
 > "$seqId"_"$sampleId"_PercentageCoverage.txt
 
 #Gender analysis using off-targed reads
+/share/apps/bedtools-distros/bedtools-2.24.0/bin/bedtools slop \
+-i /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+-g /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
+-b 300 > padded.bed
+
 grep -P "^Y\t" /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | awk '{print $1"\t"0"\t"$2}' > Y.bed
-/share/apps/bedtools-distros/bedtools2/bin/bedtools subtract \
+/share/apps/bedtools-distros/bedtools-2.24.0/bin/bedtools subtract \
 -a Y.bed \
 -b padded.bed \
 -b /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/PAR.bed > Y.off.bed
 
 grep -P "^X\t" /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | awk '{print $1"\t"0"\t"$2}' > X.bed
-/share/apps/bedtools-distros/bedtools2/bin/bedtools subtract \
+/share/apps/bedtools-distros/bedtools-2.24.0/bin/bedtools subtract \
 -a X.bed \
 -b padded.bed \
 -b /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/PAR.bed > X.off.bed
@@ -199,6 +202,9 @@ echo -e "$totalReads\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedB
 
 #print metaline for final VCF
 echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",pctTargetBasesCt\="$pctTargetBasesCt",Freemix\="$freemix",Gender\="$gender",RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> > "$seqId"_"$sampleId"_meta.txt
+
+### Clean up ###
+rm *realigned.bam *realigned.bai
 
 #create file lists for script 4
 find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list

@@ -12,6 +12,7 @@ version="dev"
 #TODO SNPRelate
 #TODO PCA for ancestry
 #TODO combine manta & ED with HC
+#TODO trello
 
 # Directory structure required for pipeline
 #
@@ -143,32 +144,24 @@ version="dev"
 -dt NONE
 
 #Add VCF meta data
-grep '^##' "$seqId"_genotypes_filtered.vcf > "$seqId"_genotypes_filtered_meta.vcf
+grep '^##' "$seqId"_genotypes_filtered.vcf > "$seqId"_filtered_meta.vcf
 for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$seqId"_genotypes_filtered.vcf); do
-    cat "$sample"/"$seqId"_"$sample"_meta.txt >> "$seqId"_genotypes_filtered_meta.vcf
+    cat "$sample"/"$seqId"_"$sample"_meta.txt >> "$seqId"_filtered_meta.vcf
 done
-grep -v '^##' "$seqId"_genotypes_filtered.vcf >> "$seqId"_genotypes_filtered_meta.vcf
+grep -v '^##' "$seqId"_genotypes_filtered.vcf >> "$seqId"_filtered_meta.vcf
 
 #Variant Evaluation
 /share/apps/jre-distros/jre1.8.0_71/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T VariantEval \
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_variant_evaluation.txt \
---eval "$seqId"_genotypes_filtered_meta.vcf \
+--eval "$seqId"_filtered_meta.vcf \
 --dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -nt 12 \
 -dt NONE
 
 ### ROH, CNV & SV analysis ###
-
-#identify runs of homozygosity
-/share/apps/htslib-distros/htslib-1.3.1/bgzip -c "$seqId"_genotypes_filtered.vcf > "$seqId"_genotypes_filtered.vcf.gz
-/share/apps/htslib-distros/htslib-1.3.1/tabix -p vcf "$seqId"_genotypes_filtered.vcf.gz
-for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$seqId"_genotypes_filtered.vcf); do
-    /share/apps/bcftools-distros/bcftools-1.3.1/bcftools roh -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed -s "$sample" "$seqId"_genotypes_filtered.vcf.gz | \
-    grep -v '^#' | perl /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/bcftools_roh_range.pl | grep -v '#' | awk '{print $1"\t"$2-1"\t"$3"\t"$5}' > "$sample"/"$sample"_roh.bed
-done
 
 #Identify CNVs using read-depth
 grep -P '^[1-22]' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed > autosomal.bed
@@ -198,10 +191,18 @@ manta/runWorkflow.py \
 
 gzip -dc manta/results/variants/diploidSV.vcf.gzip > "$seqId"_manta.vcf
 
+#identify runs of homozygosity
+/share/apps/htslib-distros/htslib-1.3.1/bgzip -c "$seqId"_filtered_meta.vcf > "$seqId"_filtered_meta.vcf.gz
+/share/apps/htslib-distros/htslib-1.3.1/tabix -p vcf "$seqId"_filtered_meta.vcf.gz
+
+for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$seqId"_filtered_meta.vcf); do
+    /share/apps/bcftools-distros/bcftools-1.3.1/bcftools roh -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed -s "$sample" "$seqId"_filtered_meta.vcf.gz | \
+    grep -v '^#' | perl /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/bcftools_roh_range.pl | grep -v '#' | awk '{print $1"\t"$2-1"\t"$3"\t"$5}' > "$sample"/"$sample"_roh.bed
+done
+
 ### Clean up ###
 rm -r tmp
-
-#log run complete
-/share/apps/node-distros/node-v0.12.7-linux-x64/bin/node \
-/data/diagnostics/scripts/TrelloAPI.js \
-"$seqId" "Analysis complete"
+rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_variants.lcr.vcf "$seqId"_variants.lcr.vcf.idx \
+"$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_indels.vcf \
+"$seqId"_indels.vcf.idx "$seqId"_indels_filtered.vcf "$seqId"_indels_filtered.vcf.idx "$seqId"_variants_filtered.vcf \
+"$seqId"_variants_filtered.vcf.idx "$seqId"_genotypes_filtered.vcf "$seqId"_genotypes_filtered.vcf.idx
