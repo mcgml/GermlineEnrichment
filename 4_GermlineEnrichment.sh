@@ -163,7 +163,9 @@ grep -v '^##' "$seqId"_genotypes_filtered.vcf >> "$seqId"_filtered_meta.vcf
 ### ROH, CNV & SV analysis ###
 
 #Identify CNVs using read-depth
-awk '{if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3"\t"NR}' > autosomal.bed
+awk '{if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3"\t"NR}' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+> autosomal.bed
+
 /share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
 -b FinalBams.list \
 -f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -188,7 +190,7 @@ manta/runWorkflow.py \
 -m local \
 -j 12
 
-gzip -dc manta/results/variants/diploidSV.vcf.gzip > "$seqId"_manta.vcf
+gzip -dc manta/results/variants/diploidSV.vcf.gz > "$seqId"_manta.vcf
 
 #identify runs of homozygosity
 /share/apps/htslib-distros/htslib-1.3.1/bgzip -c "$seqId"_filtered_meta.vcf > "$seqId"_filtered_meta.vcf.gz
