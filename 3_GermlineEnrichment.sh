@@ -25,6 +25,8 @@ version="dev"
 #
 # Script 3 runs in sample folder
 
+#TODO - BUG - fastqc log file not updated
+
 #load sample & pipeline variables
 . *.variables
 . /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
@@ -204,7 +206,9 @@ echo -e "$totalReads\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedB
 echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",pctTargetBasesCt\="$pctTargetBasesCt",Freemix\="$freemix",Gender\="$gender",RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> > "$seqId"_"$sampleId"_meta.txt
 
 ### Clean up ###
-rm *realigned.bam *realigned.bai
+rm -r tmp
+rm *realigned.bam *realigned.bai X.off.bed X.bed Y.off.bed Y.bed 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf \
+1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx padded.bed 
 
 #create file lists for script 4
 find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list

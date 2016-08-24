@@ -72,6 +72,7 @@ version="dev"
 
 ### Clean up ###
 rm -r tmp
+rm RealignedBams.list
 
 #run script 3
 find -mindepth 1 -maxdepth 1 -type d -exec bash -c "cd {} && qsub 3_GermlineEnrichment.sh" \;
