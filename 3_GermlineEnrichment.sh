@@ -59,14 +59,6 @@ version="dev"
 --bamOutput "$seqId"_"$sampleId"_HC.bam \
 -dt NONE
 
-#Structural variant calling with Manta
-/share/apps/manta-distros/manta-1.0.0.centros5_x86_x64/bin/configManta.py \
---bam "$seqId"_"$sampleId".bam \
---referenceFasta /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
---exome \
---runDir manta > "$seqId"_"$sampleId"_manta.log
-gzip -dc manta/results/variants/diploidSV.vcf.gzip > "$seqId"_"$sampleId"_manta.vcf
-
 ### QC ###
 
 #Convert BED to interval_list for later

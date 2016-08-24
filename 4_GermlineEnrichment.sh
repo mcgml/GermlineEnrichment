@@ -160,7 +160,7 @@ grep -v '^##' "$seqId"_genotypes_filtered.vcf >> "$seqId"_genotypes_filtered_met
 -nt 8 \
 -dt NONE
 
-### ROH and CNV analysis ###
+### ROH, CNV & SV analysis ###
 
 #identify runs of homozygosity
 /share/apps/htslib-distros/htslib-1.3.1/bgzip -c "$seqId"_genotypes_filtered.vcf > "$seqId"_genotypes_filtered.vcf.gz
@@ -184,6 +184,19 @@ paste FinalBams.list \
 <(grep "Number of counted fragments" log.txt | cut -d' ' -f6) \
 <(grep "Correlation between reference and tests count" log.txt | cut -d' ' -f8) \
 >> "$seqId"_exomedepth.metrics.txt
+
+#Structural variant calling with Manta
+/share/apps/manta-distros/manta-1.0.0.centos5_x86_x64/bin/configManta.py \
+$(sed 's/^/--bam /' FinalBams.list | tr '\n' ' ') \
+--referenceFasta /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+--exome \
+--runDir manta
+
+manta/runWorkflow.py \
+-m local \
+-j 12
+
+gzip -dc manta/results/variants/diploidSV.vcf.gzip > "$seqId"_manta.vcf
 
 ### Clean up ###
 rm -r tmp
