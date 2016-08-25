@@ -36,7 +36,7 @@ version="dev"
 #Apply the recalibration to your sequence data
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T PrintReads \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -I "$seqId"_"$sampleId"_realigned.bam \
 -BQSR ../"$seqId"_recal_data.table \
 -o "$seqId"_"$sampleId".bam \
@@ -48,8 +48,8 @@ version="dev"
 #SNPs and Indels GVCF with Haplotypecaller
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T HaplotypeCaller \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
---dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+--dbsnp /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -I "$seqId"_"$sampleId".bam \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_"$sampleId".g.vcf \
@@ -65,7 +65,7 @@ version="dev"
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar BedToIntervalList \
 I=/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 O="$bedFileName".interval_list \
-SD=/data/db/human/gatk/2.8/b37/human_g1k_v37.dict
+SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
 
 #Fastqc: raw sequence quality
 echo -e "File\tBasicStatistics\tPerBaseSequenceQuality\tPerTileSequenceQuality\tPerSequenceQualityScores\tPerBaseNContent\tOverrepresentedSequences\tAdapterContent" > "$seqId"_"$sampleId"_fastqc.txt
@@ -94,14 +94,14 @@ H="$seqId"_"$sampleId"_insert_metrics.pdf
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar CollectHsMetrics \
 I="$seqId"_"$sampleId".bam \
 O="$seqId"_"$sampleId"_hs_metrics.txt \
-R=/data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+R=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 BAIT_INTERVALS="$bedFileName".interval_list \
 TARGET_INTERVALS="$bedFileName".interval_list
 
 #Generate per-base coverage: variant detection sensitivity
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T DepthOfCoverage \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_"$sampleId"_DepthOfCoverage \
 -I "$seqId"_"$sampleId".bam \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
@@ -117,7 +117,7 @@ TARGET_INTERVALS="$bedFileName".interval_list
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /data/diagnostics/apps/CoverageCalculator-2.0.0/CoverageCalculator-2.0.0.jar \
 "$seqId"_"$sampleId"_DepthOfCoverage \
 /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_genes.txt \
-/data/db/human/refseq/ref_GRCh37.p13_top_level.gff3 \
+/state/partition1/db/human/refseq/ref_GRCh37.p13_top_level.gff3 \
 -p"$spliceSitePadding" \
 -d"$minimumCoverage" \
 > "$seqId"_"$sampleId"_PercentageCoverage.txt
@@ -125,16 +125,16 @@ TARGET_INTERVALS="$bedFileName".interval_list
 #Gender analysis using off-targed reads
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools slop \
 -i /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
--g /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
+-g /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
 -b 300 > padded.bed
 
-grep -P "^Y\t" /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | awk '{print $1"\t"0"\t"$2}' > Y.bed
+grep -P "^Y\t" /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | awk '{print $1"\t"0"\t"$2}' > Y.bed
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
 -a Y.bed \
 -b padded.bed \
 -b /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/PAR.bed > Y.off.bed
 
-grep -P "^X\t" /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | awk '{print $1"\t"0"\t"$2}' > X.bed
+grep -P "^X\t" /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | awk '{print $1"\t"0"\t"$2}' > X.bed
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
 -a X.bed \
 -b padded.bed \
@@ -162,9 +162,9 @@ gender=$(echo "print ($chromYCount / $(awk '{n+= $3-$2} END {print n}' Y.off.bed
 
 #Extract 1kg autosomal snps for contamination analysis
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -T SelectVariants \
---variant /data/db/human/gatk/2.8/b37/1000G_phase1.snps.high_confidence.b37.vcf \
+--variant /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.snps.high_confidence.b37.vcf \
 -o 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf \
 -selectType SNP \
 -restrictAllelesTo BIALLELIC \

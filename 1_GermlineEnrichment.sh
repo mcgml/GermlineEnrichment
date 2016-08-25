@@ -54,7 +54,7 @@ for fastqPair in $(ls "$sampleId"_*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     -M \
     -R '@RG\tID:'"$seqId"_"$laneId"_"$sampleId"'\tSM:'"$sampleId"'\tPL:ILLUMINA\tLB:'"$worklistId"_"$panel"_"$sampleId"'\tPU:'"$seqId"_"$laneId" \
     -t 8 \
-    /data/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
+    /state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
     $(echo "$read1Fastq" | sed 's/\.fastq\.gz/_trimmed\.fastq/g') $(echo "$read2Fastq" | sed 's/\.fastq\.gz/_trimmed\.fastq/g') | \
     /share/apps/samtools-distros/samtools-1.3.1/samtools sort -m8G -@4 -l0 -o "$seqId"_"$sampleId"_"$laneId"_sorted.bam
 
@@ -77,9 +77,9 @@ COMPRESSION_LEVEL=0
 #Identify regions requiring realignment
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T RealignerTargetCreator \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--known /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
--known /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-known /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
+-known /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -I "$seqId"_"$sampleId"_rmdup.bam \
 -o "$seqId"_"$sampleId"_realign.intervals \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
@@ -90,9 +90,9 @@ COMPRESSION_LEVEL=0
 #Realign around indels
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T IndelRealigner \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--known /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
--known /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-known /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
+-known /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -targetIntervals "$seqId"_"$sampleId"_realign.intervals \
 -I "$seqId"_"$sampleId"_rmdup.bam \
 -o "$seqId"_"$sampleId"_realigned.bam \

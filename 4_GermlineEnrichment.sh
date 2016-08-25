@@ -38,8 +38,8 @@ version="dev"
 #Joint genotyping
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T GenotypeGVCFs \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
---dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+--dbsnp /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -V GVCFs.list \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_variants.vcf \
@@ -48,7 +48,7 @@ version="dev"
 
 #annotate with low complexity region length using mdust
 /share/apps/bcftools-distros/bcftools-1.3.1/bcftools annotate \
--a /data/db/human/gatk/2.8/b37/human_g1k_v37.mdust.v34.lpad1.bed.gz \
+-a /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.mdust.v34.lpad1.bed.gz \
 -c CHROM,FROM,TO,LCRLen \
 -h <(echo '##INFO=<ID=LCRLen,Number=1,Type=Integer,Description="Overlapping mdust LCR length (mask cutoff: 34)">') \
 -o "$seqId"_variants.lcr.vcf \
@@ -57,7 +57,7 @@ version="dev"
 #Select SNPs
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T SelectVariants \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_variants.lcr.vcf \
 -selectType SNP \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
@@ -68,7 +68,7 @@ version="dev"
 #Filter SNPs
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T VariantFiltration \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_snps.vcf \
 --filterExpression "QD < 2.0" \
 --filterName "QD" \
@@ -89,7 +89,7 @@ version="dev"
 #Select INDELs
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T SelectVariants \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_variants.lcr.vcf \
 -selectType INDEL \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
@@ -100,7 +100,7 @@ version="dev"
 #Filter INDELs
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T VariantFiltration \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_indels.vcf \
 --filterExpression "QD < 3.5" \
 --filterName "QD" \
@@ -123,7 +123,7 @@ version="dev"
 #Combine filtered VCF files
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T CombineVariants \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --variant "$seqId"_snps_filtered.vcf \
 --variant "$seqId"_indels_filtered.vcf \
 -o "$seqId"_variants_filtered.vcf \
@@ -135,7 +135,7 @@ version="dev"
 #Filter Low DP calls
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T VariantFiltration \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_variants_filtered.vcf \
 --genotypeFilterExpression "DP < $minimumCoverage" \
 --genotypeFilterName "LowDP" \
@@ -152,10 +152,10 @@ grep -v '^##' "$seqId"_genotypes_filtered.vcf >> "$seqId"_filtered_meta.vcf
 #Variant Evaluation
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T VariantEval \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_variant_evaluation.txt \
 --eval "$seqId"_filtered_meta.vcf \
---dbsnp /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
+--dbsnp /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -nt 12 \
 -dt NONE
@@ -169,7 +169,7 @@ awk '{if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3"\tbin"NR}' \
 
 /share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
 -b FinalBams.list \
--f /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-f /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -r autosomal.bed \
 2>&1 | tee ExomeDepth.log
 
@@ -183,7 +183,7 @@ paste FinalBams.list \
 #Structural variant calling with Manta
 /share/apps/manta-distros/manta-1.0.0.centos5_x86_64/bin/configManta.py \
 $(sed 's/^/--bam /' FinalBams.list | tr '\n' ' ') \
---referenceFasta /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+--referenceFasta /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --exome \
 --runDir manta
 

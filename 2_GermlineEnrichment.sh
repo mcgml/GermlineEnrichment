@@ -34,10 +34,10 @@ version="dev"
 #Analyse patterns of covariation in the sequence dataset
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T BaseRecalibrator \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--knownSites /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
--knownSites /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
--knownSites /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-knownSites /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
+-knownSites /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
+-knownSites /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -I RealignedBams.list \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_recal_data.table \
@@ -48,10 +48,10 @@ version="dev"
 #Do a second pass to analyze covariation remaining after recalibration
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T BaseRecalibrator \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--knownSites /data/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
--knownSites /data/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
--knownSites /data/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-knownSites /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
+-knownSites /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
+-knownSites /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -BQSR "$seqId"_recal_data.table \
 -I RealignedBams.list \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
@@ -63,7 +63,7 @@ version="dev"
 #Generate BQSR plots
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx2g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T AnalyzeCovariates \
--R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -before "$seqId"_recal_data.table \
 -after "$seqId"_post_recal_data.table \
 -plots "$seqId"_recalibration_plots.pdf \
