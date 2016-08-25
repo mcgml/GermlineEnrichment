@@ -2,7 +2,8 @@
 #PBS -l walltime=12:00:00
 #PBS -l ncpus=12
 PBS_O_WORKDIR=(`echo $PBS_O_WORKDIR | sed "s/^\/state\/partition1//" `)
-cd $PBS_O_WORKDIR
+mkdir /tmp/"$PBS_JOBID"
+cd /tmp/"$PBS_JOBID"
 
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
@@ -26,16 +27,16 @@ version="dev"
 # Script 1 runs in sample folder
 
 #load sample & pipeline variables
-. *.variables
+. "$PBS_O_WORKDIR"/*.variables
 . /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
 
 ### Preprocessing ###
 
 #map one or more lanes of data for a single sample
-for fastqPair in $(ls "$sampleId"_*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
+for fastqPair in $(ls "$PBS_O_WORKDIR"/"$sampleId"_*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
         
     #parse fastq filenames
-    laneId=$(echo "$fastqPair" | cut -d_ -f3)
+    laneId=$(basename "$fastqPair" | cut -d_ -f3)
     read1Fastq=$(ls "$fastqPair"_R1*fastq.gz)
     read2Fastq=$(ls "$fastqPair"_R2*fastq.gz)
     
@@ -102,6 +103,9 @@ COMPRESSION_LEVEL=0
 ### Clean up ###
 rm -r tmp
 rm *fastq *sorted.bam *rmdup.bam *rmdup.bai
+
+mv * "$PBS_O_WORKDIR"
+cd "$PBS_O_WORKDIR"
 
 #create BAM list for script 2
 find $PWD -name "$seqId"_"$sampleId"_realigned.bam >> ../RealignedBams.list
