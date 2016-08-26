@@ -51,11 +51,11 @@ for fastqPair in $(ls "$sampleId"_*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     /share/apps/bwa-distros/bwa-0.7.15/bwa mem \
     -M \
     -R '@RG\tID:'"$seqId"_"$laneId"_"$sampleId"'\tSM:'"$sampleId"'\tPL:ILLUMINA\tLB:'"$worklistId"_"$panel"_"$sampleId"'\tPU:'"$seqId"_"$laneId" \
-    -t 8 \
+    -t 9 \
     /state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
     /state/partition1/tmpdir/"$JOB_ID"/$(echo "$read1Fastq" | sed 's/\.fastq\.gz/_trimmed\.fastq/g') \
     /state/partition1/tmpdir/"$JOB_ID"/$(echo "$read2Fastq" | sed 's/\.fastq\.gz/_trimmed\.fastq/g') | \
-    /share/apps/samtools-distros/samtools-1.3.1/samtools sort -m8G -@4 -l0 -o /state/partition1/tmpdir/"$JOB_ID"/"$seqId"_"$sampleId"_"$laneId"_sorted.bam
+    /share/apps/samtools-distros/samtools-1.3.1/samtools sort -m8G -@3 -l0 -o /state/partition1/tmpdir/"$JOB_ID"/"$seqId"_"$sampleId"_"$laneId"_sorted.bam
 
 done
 
