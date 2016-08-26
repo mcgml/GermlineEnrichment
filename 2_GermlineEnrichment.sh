@@ -3,6 +3,7 @@
 #PBS -l ncpus=12
 PBS_O_WORKDIR=(`echo $PBS_O_WORKDIR | sed "s/^\/state\/partition1//" `)
 cd $PBS_O_WORKDIR
+mkdir /state/partition1/tmpdir/"$JOB_ID"
 
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
@@ -32,7 +33,7 @@ version="dev"
 ### Preprocessing ###
 
 #Analyse patterns of covariation in the sequence dataset
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir/"$JOB_ID"/tmp -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T BaseRecalibrator \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -knownSites /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
@@ -46,7 +47,7 @@ version="dev"
 -dt NONE
 
 #Do a second pass to analyze covariation remaining after recalibration
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir/"$JOB_ID"/tmp -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T BaseRecalibrator \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -knownSites /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
@@ -61,7 +62,7 @@ version="dev"
 -dt NONE
 
 #Generate BQSR plots
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=tmp -Xmx2g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir/"$JOB_ID"/tmp -Xmx2g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T AnalyzeCovariates \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -before "$seqId"_recal_data.table \
@@ -71,7 +72,7 @@ version="dev"
 -dt NONE
 
 ### Clean up ###
-rm -r tmp
+rm -r /state/partition1/tmpdir/"$JOB_ID"
 rm RealignedBams.list
 
 #run script 3
