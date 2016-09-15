@@ -1,9 +1,8 @@
-#!/bin/bash -e
+#!/bin/bash -euxfo pipefail
 #PBS -l walltime=12:00:00
 #PBS -l ncpus=12
 PBS_O_WORKDIR=(`echo $PBS_O_WORKDIR | sed "s/^\/state\/partition1//" `)
 cd $PBS_O_WORKDIR
-mkdir /state/partition1/tmpdir/"$JOB_ID"
 
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
@@ -27,15 +26,16 @@ version="dev"
 # Script 3 runs in sample folder
 
 #TODO - BUG - fastqc log file not updated
+#TODO - BUG - fastqc looks for FASTQ files that dont exist
 
 #load sample & pipeline variables
-. *.variables
+. variables
 . /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
 
 ### Preprocessing ###
 
 #Apply the recalibration to your sequence data
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir/"$JOB_ID"/tmp -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T PrintReads \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -I "$seqId"_"$sampleId"_realigned.bam \
@@ -47,7 +47,7 @@ version="dev"
 ### Variant calling ###
 
 #SNPs and Indels GVCF with Haplotypecaller
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir/"$JOB_ID"/tmp -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T HaplotypeCaller \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --dbsnp /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
@@ -63,7 +63,7 @@ version="dev"
 ### QC ###
 
 #Convert BED to interval_list for later
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir/"$JOB_ID"/tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar BedToIntervalList \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdirr -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar BedToIntervalList \
 I=/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 O="$bedFileName".interval_list \
 SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
@@ -86,13 +86,13 @@ for i in $(ls *_trimmed.fastq); do
 done
 
 #Calculate insert size: fragmentation performance
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir/"$JOB_ID"/tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar CollectInsertSizeMetrics \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar CollectInsertSizeMetrics \
 I="$seqId"_"$sampleId".bam \
 O="$seqId"_"$sampleId"_insert_metrics.txt \
 H="$seqId"_"$sampleId"_insert_metrics.pdf
 
 #HsMetrics: capture & pooling performance
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir/"$JOB_ID"/tmp -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar CollectHsMetrics \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar CollectHsMetrics \
 I="$seqId"_"$sampleId".bam \
 O="$seqId"_"$sampleId"_hs_metrics.txt \
 R=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -100,7 +100,7 @@ BAIT_INTERVALS="$bedFileName".interval_list \
 TARGET_INTERVALS="$bedFileName".interval_list
 
 #Generate per-base coverage: variant detection sensitivity
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir/"$JOB_ID"/tmp -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T DepthOfCoverage \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_"$sampleId"_DepthOfCoverage \
@@ -115,7 +115,7 @@ TARGET_INTERVALS="$bedFileName".interval_list
 -dt NONE
 
 #Calculate gene percentage coverage
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir/"$JOB_ID"/tmp -Xmx8g -jar /data/diagnostics/apps/CoverageCalculator-2.0.0/CoverageCalculator-2.0.0.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /data/diagnostics/apps/CoverageCalculator-2.0.0/CoverageCalculator-2.0.0.jar \
 "$seqId"_"$sampleId"_DepthOfCoverage \
 /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_genes.txt \
 /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level.gff3 \
@@ -162,7 +162,7 @@ chromXCount=$(/share/apps/samtools-distros/samtools-1.3.1/samtools view \
 gender=$(echo "print ($chromYCount / $(awk '{n+= $3-$2} END {print n}' Y.off.bed)) / ($chromXCount / $(awk '{n+= $3-$2} END {print n}' X.off.bed))" | perl)
 
 #Extract 1kg autosomal snps for contamination analysis
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir/"$JOB_ID"/tmp -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -T SelectVariants \
 --variant /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.snps.high_confidence.b37.vcf \
@@ -207,8 +207,7 @@ echo -e "$totalReads\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedB
 echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",pctTargetBasesCt\="$pctTargetBasesCt",Freemix\="$freemix",Gender\="$gender",RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> > "$seqId"_"$sampleId"_meta.txt
 
 ### Clean up ###
-rm -r /state/partition1/tmpdir/"$JOB_ID"
-rm *realigned.bam *realigned.bai X.off.bed X.bed Y.off.bed Y.bed 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf \
+rm "$seqId"_"$sampleId"_realigned.bam "$seqId"_"$sampleId"_realigned.bam X.off.bed X.bed Y.off.bed Y.bed 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf \
 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx padded.bed 
 
 #create file lists for script 4
