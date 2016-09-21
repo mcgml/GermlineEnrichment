@@ -1,5 +1,5 @@
 read1Adapter=CTGTCTCTTATACACATCT #read 1 adapter to trim
 read2Adapter=CTGTCTCTTATACACATCT #read 2 adapter to trim
-padding=230 #Amount of padding for GATK preprocessing. Should be higher for small panels to capture enough data for BQSR.
+padding=100 #Amount of padding for GATK preprocessing. Should be higher for small panels to capture enough data for BQSR.
 minimumCoverage=30 # for passing regions. Need to determine during clinical validation
-spliceSitePadding=5 #Padding of transcripts for per-gene coverage analysis 
+includeBQSR=true 
