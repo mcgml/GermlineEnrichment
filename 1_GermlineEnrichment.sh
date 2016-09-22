@@ -37,7 +37,7 @@ version="dev"
 I="$seqId"_"$sampleId"_unaligned.bam \
 FASTQ=/dev/stdout \
 INTERLEAVE=true \
-NON_PF=true \ 
+NON_PF=true \
 MAX_RECORDS_IN_RAM=2000000 \
 TMP_DIR=/state/partition1/tmpdir | \
 /share/apps/cutadapt-distros/cutadapt-1.10/bin/cutadapt \
@@ -45,9 +45,9 @@ TMP_DIR=/state/partition1/tmpdir | \
 -A "$read2Adapter" \
 --interleaved \
 --minimum-length 30 \
---quiet \ 
+--quiet \
 - | \
-/share/apps/bwa-distros/bwa-0.7.15/bwa mem -M -t 12 -p /state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta /dev/stdin | \  
+/share/apps/bwa-distros/bwa-0.7.15/bwa mem -M -t 12 -p /state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta /dev/stdin | \
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MergeBamAlignment \
 EXPECTED_ORIENTATIONS=FR \
 ATTRIBUTES_TO_RETAIN=X0 \
