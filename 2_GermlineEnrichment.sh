@@ -15,6 +15,7 @@ version="dev"
 #TODO upgrade dbSNP for variant evaluation
 #TODO process ED output
 #TODO annotate output
+#TODO optimise ED
 
 # Directory structure required for pipeline
 #
@@ -58,7 +59,7 @@ version="dev"
 "$seqId"_variants.vcf
 
 #Select SNPs
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T SelectVariants \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_variants.lcr.vcf \
@@ -85,6 +86,10 @@ version="dev"
 --filterName "MQRankSum" \
 --filterExpression "ReadPosRankSum < -8.0" \
 --filterName "ReadPosRankSum" \
+--genotypeFilterExpression "DP < 20" \
+--filterName "LowDP" \
+--genotypeFilterExpression "GQ < 20" \
+--filterName "LowGQ" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_snps_filtered.vcf \
 -dt NONE
@@ -119,6 +124,10 @@ version="dev"
 --filterName "InbreedingCoeff" \
 --filterExpression "LCRLen > 8" \
 --filterName "LowComplexity" \
+--genotypeFilterExpression "DP < 20" \
+--filterName "LowDP" \
+--genotypeFilterExpression "GQ < 20" \
+--filterName "LowGQ" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_indels_filtered.vcf \
 -dt NONE
@@ -146,12 +155,14 @@ manta/runWorkflow.py \
 -genotypeMergeOptions UNSORTED \
 -dt NONE
 
-#Add VCF meta data
+#Add VCF meta data to final VCF
 grep '^##' "$seqId"_variants_filtered.vcf > "$seqId"_filtered_meta.vcf
 for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$seqId"_variants_filtered.vcf); do
     cat "$sample"/"$seqId"_"$sample"_meta.txt >> "$seqId"_filtered_meta.vcf
 done
 grep -v '^##' "$seqId"_variants_filtered.vcf >> "$seqId"_filtered_meta.vcf
+
+### QC ###
 
 #Variant Evaluation
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
@@ -192,6 +203,30 @@ for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$
     /share/apps/bcftools-distros/bcftools-1.3.1/bcftools roh -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed -s "$sample" "$seqId"_filtered_meta.vcf.gz | \
     grep -v '^#' | perl /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/bcftools_roh_range.pl | grep -v '#' | awk '{print $1"\t"$2-1"\t"$3"\t"$5}' > "$sample"/"$sample"_roh.bed
 done
+
+### Funcitonal annotation ###
+
+#annotate VCF with VEP
+perl /share/apps/vep-distros/ensembl-tools-release-85/scripts/variant_effect_predictor/variant_effect_predictor.pl \
+--cache \
+--fasta /share/apps/vep-distros/ensembl-tools-release-85/scripts/variant_effect_predictor/annotations/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa \
+--dir /share/apps/vep-distros/ensembl-tools-release-85/scripts/variant_effect_predictor/annotations \
+--no_progress \
+--everything \
+--fork 12 \
+--species homo_sapiens \
+--assembly GRCh37 \
+--format vcf \
+--no_stats \
+--offline \
+--refseq \
+--allele_number \
+--no_escape \
+--shift_hgvs 1 \
+--vcf \
+--no_intergenic \
+-i "$seqId"_filtered_meta.vcf \
+-o "$seqId"_filtered_meta_annotated.vcf
 
 ### Clean up ###
 
