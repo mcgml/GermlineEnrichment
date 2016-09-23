@@ -40,7 +40,7 @@ INTERLEAVE=true \
 NON_PF=true \
 MAX_RECORDS_IN_RAM=2000000 \
 TMP_DIR=/state/partition1/tmpdir | \
-/share/apps/cutadapt-distros/cutadapt-1.10/bin/cutadapt \
+/share/apps/cutadapt-distros/cutadapt-1.10/build/scripts-2.6/cutadapt \
 -a "$read1Adapter" \
 -A "$read2Adapter" \
 --interleaved \
