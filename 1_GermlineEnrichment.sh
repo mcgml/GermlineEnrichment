@@ -128,7 +128,7 @@ if [ "$includeBQSR" = true ] ; then
     -knownSites /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
     -knownSites /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
     -knownSites /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
-    -BQSR "$seqId"_recal_data.table \
+    -BQSR "$seqId"_"$sampleId"_recal_data.table \
     -I "$seqId"_"$sampleId"_realigned.bam \
     -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
     -o "$seqId"_"$sampleId"_post_recal_data.table \
