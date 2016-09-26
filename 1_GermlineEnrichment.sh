@@ -40,6 +40,13 @@ INTERLEAVE=true \
 NON_PF=true \
 MAX_RECORDS_IN_RAM=2000000 \
 TMP_DIR=/state/partition1/tmpdir | \
+/share/apps/cutadapt-distros/cutadapt-1.10/bin/cutadapt \
+-a "$read1Adapter" \
+-A "$read2Adapter" \
+--interleaved \
+--minimum-length 30 \
+--quiet \
+- | \
 /share/apps/bwa-distros/bwa-0.7.15/bwa mem \
 -M \
 -t 12 \
