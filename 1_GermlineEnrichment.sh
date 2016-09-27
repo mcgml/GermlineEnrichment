@@ -24,7 +24,20 @@ version="dev"
 #             ├── sample2
 #             └── sample3
 #
-# Script 1 runs in sample folder, requires uBAM
+# Script 1 runs in sample folder, requires fastq files split by lane
+
+phoneTrello() {
+    /share/apps/node-distros/node-v4.4.7-linux-x64/bin/node \
+    /data/diagnostics/scripts/TrelloAPI.js \
+    "$1" "$2" #seqId & message
+}
+
+countQCFlagFails() {
+    grep -E "Basic Statistics|Per base sequence quality|Per tile sequence quality|Per sequence quality scores|Per base N content" "$1" | \
+    grep -v ^PASS | \
+    wc -l | \
+    sed 's/^[[:space:]]*//g'
+}
 
 #load sample & pipeline variables
 . *.variables
@@ -32,7 +45,71 @@ version="dev"
 
 ### Preprocessing ###
 
-#uBam2fq, trim, map & MergeBamAlignment
+#convert FASTQ to uBAM & add RGIDs
+for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
+
+    #parse fastq filenames
+    laneId=$(echo "$fastqPair" | cut -d_ -f3)
+    read1Fastq=$(ls "$fastqPair"_R1_*fastq.gz)
+    read2Fastq=$(ls "$fastqPair"_R2_*fastq.gz)
+
+    #trim adapters
+    /share/apps/cutadapt-distros/cutadapt-1.10/build/scripts-2.6/cutadapt \
+    -a "$read1Adapter" \
+    -A "$read2Adapter" \
+    --minimum-length 30 \
+    -o "$seqId"_"$sampleId"_"$laneId"_R1.fastq \
+    -p "$seqId"_"$sampleId"_"$laneId"_R2.fastq \
+    "$read1Fastq" \
+    "$read2Fastq"
+
+    #convert fastq to ubam
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar FastqToSam \
+    F1="$seqId"_"$sampleId"_"$laneId"_R1.fastq \
+    F2="$seqId"_"$sampleId"_"$laneId"_R2.fastq \
+    O="$seqId"_"$sampleId"_"$laneId"_unaligned.bam \
+    QUALITY_FORMAT="standard" \
+    READ_GROUP_NAME="$seqId"_"$laneId"_"$sampleId" \
+    SAMPLE_NAME="$sampleId" \
+    LIBRARY_NAME="$worklistId"_"$sampleId"_"$panel" \
+    PLATFORM_UNIT="$seqId"_"$laneId" \
+    PLATFORM="ILLUMINA" \
+    SEQUENCING_CENTER="AWMGS" \
+    PREDICTED_INSERT_SIZE="$expectedInsertSize" \
+    SORT_ORDER=queryname \
+    MAX_RECORDS_IN_RAM=2000000 \
+    TMP_DIR=/state/partition1/tmpdir
+
+    #fastqc
+    /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -d /state/partition1/tmpdir --threads 12 --extract -o Data/"$sampleId" "$seqId"_"$sampleId"_"$laneId"_R1.fastq
+    /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -d /state/partition1/tmpdir --threads 12 --extract -o Data/"$sampleId" "$seqId"_"$sampleId"_"$laneId"_R2.fastq
+
+    #check FASTQ output
+    if [ $(countQCFlagFails Data/"$sampleId"/"$(echo "$seqId"_"$sampleId"_"$laneId"_R1.fastq | sed 's/\.fastq/_fastqc/g')/summary.txt") -gt 0 ]; then
+         phoneTrello "$seqId" "$seqId_$sampleId_$laneId_R1.fastq failed QC"
+         echo "$seqId_$sampleId_$laneId_R1.fastq is low quality" >> QC_FAIL
+    fi
+
+    if [ $(countQCFlagFails Data/"$sampleId"/"$(echo "$seqId"_"$sampleId"_"$laneId"_R2.fastq | sed 's/\.fastq/_fastqc/g')/summary.txt") -gt 0 ]; then
+         phoneTrello "$seqId" "$seqId_$sampleId_$laneId_R2.fastq failed QC"
+         echo "$seqId_$sampleId_$laneId_R2.fastq is low quality" >> QC_FAIL
+    fi
+
+    #clean up
+    rm "$seqId"_"$sampleId"_"$laneId"_R1.fastq "$seqId"_"$sampleId"_"$laneId"_R2.fastq
+
+done
+
+#merge lane ubams
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MergeSamFiles \
+$(ls "$seqId"_"$sampleId"_*_unaligned.bam | sed 's/^/I=/' | tr '\n' ' ') \
+SORT_ORDER=queryname \
+USE_THREADING=true \
+MAX_RECORDS_IN_RAM=2000000 \
+TMP_DIR=/state/partition1/tmpdir \
+O="$seqId"_"$sampleId"_unaligned.bam
+
+#uBam2fq, map & MergeBamAlignment
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar SamToFastq \
 I="$seqId"_"$sampleId"_unaligned.bam \
 FASTQ=/dev/stdout \
@@ -40,16 +117,9 @@ INTERLEAVE=true \
 NON_PF=true \
 MAX_RECORDS_IN_RAM=2000000 \
 TMP_DIR=/state/partition1/tmpdir | \
-/share/apps/cutadapt-distros/cutadapt-1.10/build/scripts-2.6/cutadapt \
--a "$read1Adapter" \
--A "$read2Adapter" \
---interleaved \
---minimum-length 30 \
---quiet \
-- | \
 /share/apps/bwa-distros/bwa-0.7.15/bwa mem \
 -M \
--t 12 \
+-t 8 \
 -p \
 /state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
 /dev/stdin | \
@@ -58,7 +128,7 @@ EXPECTED_ORIENTATIONS=FR \
 ATTRIBUTES_TO_RETAIN=X0 \
 ALIGNED_BAM=/dev/stdin \
 UNMAPPED_BAM="$seqId"_"$sampleId"_unaligned.bam \
-OUTPUT="$seqId"_"$sampleId"_clean.bam \
+OUTPUT="$seqId"_"$sampleId"_aligned.bam \
 R=/state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
 PAIRED_RUN=true \
 SORT_ORDER="coordinate" \
@@ -69,7 +139,7 @@ MAX_RECORDS_IN_RAM=2000000 \
 ADD_MATE_CIGAR=true \
 MAX_INSERTIONS_OR_DELETIONS=-1 \
 PRIMARY_ALIGNMENT_STRATEGY=MostDistant \
-UNMAP_CONTAMINANT_READS=true \
+UNMAP_CONTAMINANT_READS=false \
 CLIP_OVERLAPPING_READS=true \
 ALIGNER_PROPER_PAIR_FLAGS=false \
 ATTRIBUTES_TO_RETAIN=XS \
@@ -79,7 +149,7 @@ TMP_DIR=/state/partition1/tmpdir
 
 #Mark duplicate reads
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MarkDuplicates \
-INPUT="$seqId"_"$sampleId"_clean.bam \
+INPUT="$seqId"_"$sampleId"_aligned.bam \
 OUTPUT="$seqId"_"$sampleId"_rmdup.bam \
 METRICS_FILE="$seqId"_"$sampleId"_MarkDuplicatesMetrics.txt \
 CREATE_INDEX=true \
@@ -318,7 +388,8 @@ find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
 find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBams.list
 
 #delete unused files
-rm "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam "$seqId"_"$sampleId"_realigned.bam X.off.bed X.bed Y.off.bed Y.bed 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf \
+rm "$seqId"_"$sampleId"*unaligned.bam "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam \ 
+"$seqId"_"$sampleId"_realigned.bam X.off.bed X.bed Y.off.bed Y.bed 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf \
 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx padded.bed
 
 #check if all VCFs are written
