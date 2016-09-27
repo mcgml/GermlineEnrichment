@@ -378,7 +378,7 @@ find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBams.list
 
 #delete unused files
 rm "$seqId"_"$sampleId"*unaligned.bam "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam \ 
-"$seqId"_"$sampleId"_realigned.bam X.off.bed X.bed Y.off.bed Y.bed 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf \
+"$seqId"_"$sampleId"_realigned.bai X.off.bed X.bed Y.off.bed Y.bed 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf \
 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx padded.bed
 
 #check if all VCFs are written
