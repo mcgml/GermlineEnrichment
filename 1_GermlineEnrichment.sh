@@ -54,10 +54,10 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     read2Fastq=$(ls "$fastqPair"_R2_*fastq.gz)
 
     #trim adapters
-    /share/apps/cutadapt-distros/cutadapt-1.10/build/scripts-2.6/cutadapt \
+    /share/apps/cutadapt-distros/cutadapt-1.9.1/build/scripts-2.6/cutadapt \
     -a "$read1Adapter" \
     -A "$read2Adapter" \
-    --minimum-length 30 \
+    -m 30 \
     -o "$seqId"_"$sampleId"_"$laneId"_R1.fastq \
     -p "$seqId"_"$sampleId"_"$laneId"_R2.fastq \
     "$read1Fastq" \
