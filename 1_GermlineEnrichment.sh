@@ -68,7 +68,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     F1="$seqId"_"$sampleId"_"$laneId"_R1.fastq \
     F2="$seqId"_"$sampleId"_"$laneId"_R2.fastq \
     O="$seqId"_"$sampleId"_"$laneId"_unaligned.bam \
-    QUALITY_FORMAT="standard" \
+    QUALITY_FORMAT=Standard \
     READ_GROUP_NAME="$seqId"_"$laneId"_"$sampleId" \
     SAMPLE_NAME="$sampleId" \
     LIBRARY_NAME="$worklistId"_"$sampleId"_"$panel" \
