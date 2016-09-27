@@ -183,7 +183,7 @@ TMP_DIR=/state/partition1/tmpdir
 if [ "$includeBQSR" = true ] ; then
 
     #Analyse patterns of covariation in the sequence dataset
-    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
     -T BaseRecalibrator \
     -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
     -knownSites /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
@@ -197,7 +197,7 @@ if [ "$includeBQSR" = true ] ; then
     -dt NONE
 
     #Do a second pass to analyze covariation remaining after recalibration
-    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
     -T BaseRecalibrator \
     -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
     -knownSites /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
@@ -257,7 +257,7 @@ fi
 #Convert BED to interval_list for later
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar BedToIntervalList \
 I=/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
-O="$bedFileName".interval_list \
+O="$panel"_ROI.interval_list \
 SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
 
 #Calculate insert size: fragmentation performance
@@ -271,8 +271,8 @@ H="$seqId"_"$sampleId"_insert_metrics.pdf
 I="$seqId"_"$sampleId".bam \
 O="$seqId"_"$sampleId"_hs_metrics.txt \
 R=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
-BAIT_INTERVALS="$bedFileName".interval_list \
-TARGET_INTERVALS="$bedFileName".interval_list
+BAIT_INTERVALS="$panel"_ROI.interval_list \
+TARGET_INTERVALS="$panel"_ROI.interval_list
 
 #Generate per-base coverage: variant detection sensitivity
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
