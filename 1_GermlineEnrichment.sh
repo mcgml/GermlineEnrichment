@@ -81,16 +81,16 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     TMP_DIR=/state/partition1/tmpdir
 
     #fastqc
-    /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -d /state/partition1/tmpdir --threads 12 --extract -o Data/"$sampleId" "$seqId"_"$sampleId"_"$laneId"_R1.fastq
-    /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -d /state/partition1/tmpdir --threads 12 --extract -o Data/"$sampleId" "$seqId"_"$sampleId"_"$laneId"_R2.fastq
+    /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -d /state/partition1/tmpdir --threads 12 --extract -o "$sampleId" "$seqId"_"$sampleId"_"$laneId"_R1.fastq
+    /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -d /state/partition1/tmpdir --threads 12 --extract -o "$sampleId" "$seqId"_"$sampleId"_"$laneId"_R2.fastq
 
     #check FASTQ output
-    if [ $(countQCFlagFails Data/"$sampleId"/"$(echo "$seqId"_"$sampleId"_"$laneId"_R1.fastq | sed 's/\.fastq/_fastqc/g')/summary.txt") -gt 0 ]; then
+    if [ $(countQCFlagFails "$sampleId"/"$(echo "$seqId"_"$sampleId"_"$laneId"_R1.fastq | sed 's/\.fastq/_fastqc/g')/summary.txt") -gt 0 ]; then
          phoneTrello "$seqId" "$seqId_$sampleId_$laneId_R1.fastq failed QC"
          echo "$seqId_$sampleId_$laneId_R1.fastq is low quality" >> QC_FAIL
     fi
 
-    if [ $(countQCFlagFails Data/"$sampleId"/"$(echo "$seqId"_"$sampleId"_"$laneId"_R2.fastq | sed 's/\.fastq/_fastqc/g')/summary.txt") -gt 0 ]; then
+    if [ $(countQCFlagFails "$sampleId"/"$(echo "$seqId"_"$sampleId"_"$laneId"_R2.fastq | sed 's/\.fastq/_fastqc/g')/summary.txt") -gt 0 ]; then
          phoneTrello "$seqId" "$seqId_$sampleId_$laneId_R2.fastq failed QC"
          echo "$seqId_$sampleId_$laneId_R2.fastq is low quality" >> QC_FAIL
     fi
