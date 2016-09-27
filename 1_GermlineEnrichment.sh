@@ -54,7 +54,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     read2Fastq=$(ls "$fastqPair"_R2_*fastq.gz)
 
     #trim adapters
-    /share/apps/cutadapt-distros/cutadapt-1.9.1/build/scripts-2.6/cutadapt \
+    /share/apps/cutadapt-distros/cutadapt-1.9.1/bin/cutadapt \
     -a "$read1Adapter" \
     -A "$read2Adapter" \
     -m 30 \
