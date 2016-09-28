@@ -27,12 +27,14 @@ version="dev"
 # Script 1 runs in sample folder, requires fastq files split by lane
 
 phoneTrello() {
+    #Call trello API
     /share/apps/node-distros/node-v4.4.7-linux-x64/bin/node \
     /data/diagnostics/scripts/TrelloAPI.js \
     "$1" "$2" #seqId & message
 }
 
 countQCFlagFails() {
+    #count how many core FASTQC tests failed
     grep -E "Basic Statistics|Per base sequence quality|Per tile sequence quality|Per sequence quality scores|Per base N content" "$1" | \
     grep -v ^PASS | \
     wc -l | \
@@ -43,7 +45,12 @@ countQCFlagFails() {
 . *.variables
 . /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
 
+phoneTrello "$seqId" "Starting GermlineEnrichment analysis for $sampleId ..."
+
 ### Preprocessing ###
+
+#record FASTQC pass/fail
+rawSequenceQuality=PASS
 
 #convert FASTQ to uBAM & add RGIDs
 for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
@@ -83,6 +90,12 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     #fastqc
     /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -d /state/partition1/tmpdir --threads 12 --extract "$seqId"_"$sampleId"_"$laneId"_R1.fastq
     /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -d /state/partition1/tmpdir --threads 12 --extract "$seqId"_"$sampleId"_"$laneId"_R2.fastq
+
+    #check FASTQC output
+    if [ countQCFlagFails("$seqId"_"$sampleId"_"$laneId"_R1_fastqc) -gt 0 ] || [ countQCFlagFails("$seqId"_"$sampleId"_"$laneId"_R2_fastqc) -gt 0 ]; then
+        phoneTrello "$seqId" "$sampleId has failed raw sequence quality check for $laneId"
+        rawSequenceQuality=FAIL
+    fi
 
     #clean up
     rm "$seqId"_"$sampleId"_"$laneId"_R1.fastq "$seqId"_"$sampleId"_"$laneId"_R2.fastq
@@ -171,6 +184,8 @@ TMP_DIR=/state/partition1/tmpdir
 
 if [ "$includeBQSR" = true ] ; then
 
+    echo "Performing BQSR ..."
+
     #Analyse patterns of covariation in the sequence dataset
     /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
     -T BaseRecalibrator \
@@ -221,8 +236,12 @@ if [ "$includeBQSR" = true ] ; then
     -dt NONE
 
 else
+    
+    echo "Skipping BQSR ..."
+
     cp "$seqId"_"$sampleId"_realigned.bam "$seqId"_"$sampleId".bam
     cp "$seqId"_"$sampleId"_realigned.bai "$seqId"_"$sampleId".bai
+
 fi
 
 ### Variant calling ###
@@ -247,7 +266,7 @@ fi
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar BedToIntervalList \
 I=/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 O="$panel"_ROI.interval_list \
-SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
+SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict 
 
 #Calculate insert size: fragmentation performance
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar CollectInsertSizeMetrics \
@@ -363,12 +382,12 @@ meanOnTargetCoverage=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summ
 pctTargetBasesCt=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f7) #percentage panel covered with good enough data for variant detection
 freemix=$(tail -n1 "$seqId"_"$sampleId"_contamination.selfSM | cut -s -f7) #percentage DNA contamination. Should be <= 0.02
 
-#Print QC metrics
-echo -e "TotalReads\tTotalTargetUsableBases\tDuplicationRate\tPctSelectedBases\tpctTargetBasesCt\tMeanOnTargetCoverage\tGender\tFreemix\tMeanInsertSize\tSDInsertSize" > "$seqId"_"$sampleId"_qc.txt
-echo -e "$totalReads\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedBases\t$pctTargetBasesCt\t$meanOnTargetCoverage\t$gender\t$freemix\t$meanInsertSize\t$sdInsertSize" >> "$seqId"_"$sampleId"_qc.txt
+#Print QC metricss
+echo -e "TotalReads\tRawSequenceQuality\tTotalTargetUsableBases\tDuplicationRate\tPctSelectedBases\tpctTargetBasesCt\tMeanOnTargetCoverage\tGender\tFreemix\tMeanInsertSize\tSDInsertSize" > "$seqId"_"$sampleId"_qc.txt
+echo -e "$totalReads\t$rawSequenceQuality\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedBases\t$pctTargetBasesCt\t$meanOnTargetCoverage\t$gender\t$freemix\t$meanInsertSize\t$sdInsertSize" >> "$seqId"_"$sampleId"_qc.txt
 
 #print metaline for final VCF
-echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",pctTargetBasesCt\="$pctTargetBasesCt",Freemix\="$freemix",Gender\="$gender",RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> > "$seqId"_"$sampleId"_meta.txt
+echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Panel\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",RawSequenceQuality\="$rawSequenceQuality",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",pctTargetBasesCt\="$pctTargetBasesCt",Freemix\="$freemix",Gender\="$gender",TotalTargetedUsableBases\="$totalTargetedUsableBases",RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> > "$seqId"_"$sampleId"_meta.txt
 
 ### Clean up ###
 
@@ -377,9 +396,9 @@ find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
 find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBams.list
 
 #delete unused files
-rm "$seqId"_"$sampleId"*unaligned.bam "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam \ 
-"$seqId"_"$sampleId"_realigned.bai X.off.bed X.bed Y.off.bed Y.bed 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf \
-1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx padded.bed
+rm "$seqId"_"$sampleId"*unaligned.bam "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam 
+rm "$seqId"_"$sampleId"_realigned.bai X.off.bed X.bed Y.off.bed Y.bed 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf
+rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx padded.bed
 
 #check if all VCFs are written
 if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../GVCFs.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then

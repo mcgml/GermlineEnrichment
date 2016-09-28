@@ -33,6 +33,13 @@ version="dev"
 #
 # Script 2 runs in panel folder, requires final Bams &gVCFs
 
+phoneTrello() {
+    #Call trello API
+    /share/apps/node-distros/node-v4.4.7-linux-x64/bin/node \
+    /data/diagnostics/scripts/TrelloAPI.js \
+    "$1" "$2" #seqId & message
+}
+
 #load run & pipeline variables
 . variables
 . /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
@@ -87,9 +94,9 @@ version="dev"
 --filterExpression "ReadPosRankSum < -8.0" \
 --filterName "ReadPosRankSum" \
 --genotypeFilterExpression "DP < 20" \
---filterName "LowDP" \
+--genotypeFilterName "LowDP" \
 --genotypeFilterExpression "GQ < 20" \
---filterName "LowGQ" \
+--genotypeFilterName "LowGQ" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_snps_filtered.vcf \
 -dt NONE
@@ -125,9 +132,9 @@ version="dev"
 --filterExpression "LCRLen > 8" \
 --filterName "LowComplexity" \
 --genotypeFilterExpression "DP < 20" \
---filterName "LowDP" \
+--genotypeFilterName "LowDP" \
 --genotypeFilterExpression "GQ < 20" \
---filterName "LowGQ" \
+--genotypeFilterName "LowGQ" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_indels_filtered.vcf \
 -dt NONE
@@ -232,13 +239,11 @@ perl /share/apps/vep-distros/ensembl-tools-release-85/scripts/variant_effect_pre
 
 #delete unused files
 rm -r manta
-rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_variants.lcr.vcf "$seqId"_variants.lcr.vcf.idx \
-"$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_indels.vcf \
-"$seqId"_indels.vcf.idx "$seqId"_indels_filtered.vcf "$seqId"_indels_filtered.vcf.idx "$seqId"_variants_filtered.vcf \
-"$seqId"_variants_filtered.vcf.idx "$seqId"_genotypes_filtered.vcf "$seqId"_genotypes_filtered.vcf.idx "$seqId"_filtered_meta.vcf.gz \
-"$seqId"_filtered_meta.vcf.gz.tbi autosomal.bed ExomeDepth.log GVCFs.list FinalBams.list
+rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_variants.lcr.vcf "$seqId"_variants.lcr.vcf.idx
+rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_indels.vcf
+rm "$seqId"_indels.vcf.idx "$seqId"_indels_filtered.vcf "$seqId"_indels_filtered.vcf.idx "$seqId"_variants_filtered.vcf
+rm "$seqId"_variants_filtered.vcf.idx "$seqId"_genotypes_filtered.vcf "$seqId"_genotypes_filtered.vcf.idx "$seqId"_filtered_meta.vcf.gz
+rm "$seqId"_filtered_meta.vcf.gz.tbi autosomal.bed ExomeDepth.log GVCFs.list FinalBams.list
 
 #log with Trello
-/share/apps/node-distros/node-v4.4.7-linux-x64/bin/node \
-/data/diagnostics/scripts/TrelloAPI.js \
-"$seqId" "Pipeline complete. Ready for bioinformatics check"
+phoneTrello "$seqId" "Analysis complete"
