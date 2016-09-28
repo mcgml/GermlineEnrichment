@@ -398,7 +398,7 @@ find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBams.list
 #delete unused files
 rm "$seqId"_"$sampleId"*unaligned.bam "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam 
 rm "$seqId"_"$sampleId"_realigned.bai X.off.bed X.bed Y.off.bed Y.bed 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf
-rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx padded.bed
+rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx padded.bed "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai
 
 #check if all VCFs are written
 if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../GVCFs.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then

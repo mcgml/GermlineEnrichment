@@ -157,7 +157,6 @@ manta/runWorkflow.py \
 --variant "$seqId"_indels_filtered.vcf \
 --variant manta/results/variants/diploidSV.vcf.gz \
 -o "$seqId"_variants_filtered.vcf \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -nt 12 \
 -genotypeMergeOptions UNSORTED \
 -dt NONE
