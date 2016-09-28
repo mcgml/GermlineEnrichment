@@ -92,7 +92,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -d /state/partition1/tmpdir --threads 12 --extract "$seqId"_"$sampleId"_"$laneId"_R2.fastq
 
     #check FASTQC output
-    if [ countQCFlagFails("$seqId"_"$sampleId"_"$laneId"_R1_fastqc) -gt 0 ] || [ countQCFlagFails("$seqId"_"$sampleId"_"$laneId"_R2_fastqc) -gt 0 ]; then
+    if [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R1_fastqc/summary.txt) -gt 0 ] || [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R2_fastqc/summary.txt) -gt 0 ]; then
         phoneTrello "$seqId" "$sampleId has failed raw sequence quality check for $laneId"
         rawSequenceQuality=FAIL
     fi
