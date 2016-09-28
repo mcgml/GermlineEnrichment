@@ -46,6 +46,12 @@ phoneTrello() {
 
 ### Joint variant calling and filtering ###
 
+#sort file lists so that output files are in the same order
+sort GVCFs.list > GVCFs_sorted.list
+sort FinalBams.list > FinalBams_sorted.list
+mv GVCFs_sorted.list GVCFs.list
+mv FinalBams_sorted.list FinalBams.list
+
 #Joint genotyping
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T GenotypeGVCFs \
@@ -153,6 +159,7 @@ manta/runWorkflow.py \
 --variant "$seqId"_snps_filtered.vcf \
 --variant "$seqId"_indels_filtered.vcf \
 --variant manta/results/variants/diploidSV.vcf.gz \
+--printComplexMerges \
 -o "$seqId"_variants_filtered.vcf \
 -nt 12 \
 -genotypeMergeOptions UNSORTED \
