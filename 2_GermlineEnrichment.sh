@@ -95,8 +95,6 @@ phoneTrello() {
 --filterName "ReadPosRankSum" \
 --genotypeFilterExpression "DP < 20" \
 --genotypeFilterName "LowDP" \
---genotypeFilterExpression "GQ < 20" \
---genotypeFilterName "LowGQ" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_snps_filtered.vcf \
 -dt NONE
@@ -133,8 +131,6 @@ phoneTrello() {
 --filterName "LowComplexity" \
 --genotypeFilterExpression "DP < 20" \
 --genotypeFilterName "LowDP" \
---genotypeFilterExpression "GQ < 20" \
---genotypeFilterName "LowGQ" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -o "$seqId"_indels_filtered.vcf \
 -dt NONE
@@ -146,6 +142,7 @@ $(sed 's/^/--bam /' FinalBams.list | tr '\n' ' ') \
 --exome \
 --runDir manta
 manta/runWorkflow.py \
+--quiet \
 -m local \
 -j 12
 
