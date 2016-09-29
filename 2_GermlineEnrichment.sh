@@ -12,10 +12,7 @@ version="dev"
 
 #TODO SNPRelate
 #TODO PCA for ancestry
-#TODO upgrade dbSNP for variant evaluation
-#TODO process ED output
-#TODO annotate output
-#TODO optimise ED
+#TODO optimise ED, output to BED and annotate with VEP
 
 # Directory structure required for pipeline
 #
@@ -40,17 +37,43 @@ phoneTrello() {
     "$1" "$2" #seqId & message
 }
 
+addMetaDataToVCF(){
+    output=$(echo "$1" | sed 's/\.vcf/_meta\.vcf/g')
+    grep '^##' "$1" > "$output"
+    for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$1"); do
+        cat "$sample"/"$seqId"_"$sample"_meta.txt >> "$output"
+    done
+    grep -v '^##' "$1" >> "$output"
+}
+
+annotateVCFWithVEP(){
+    perl /share/apps/vep-distros/ensembl-tools-release-85/scripts/variant_effect_predictor/variant_effect_predictor.pl \
+    --cache \
+    --fasta /share/apps/vep-distros/ensembl-tools-release-85/scripts/variant_effect_predictor/annotations/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa \
+    --dir /share/apps/vep-distros/ensembl-tools-release-85/scripts/variant_effect_predictor/annotations \
+    --no_progress \
+    --everything \
+    --fork 8 \
+    --species homo_sapiens \
+    --assembly GRCh37 \
+    --format vcf \
+    --no_stats \
+    --offline \
+    --refseq \
+    --allele_number \
+    --no_escape \
+    --shift_hgvs 1 \
+    --vcf \
+    --no_intergenic \
+    -i "$1" \
+    -o $(echo "$1" | sed 's/\.vcf/_annotated\.vcf/g')
+}
+
 #load run & pipeline variables
 . variables
 . /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
 
 ### Joint variant calling and filtering ###
-
-#sort file lists so that output files are in the same order
-sort GVCFs.list > GVCFs_sorted.list
-sort FinalBams.list > FinalBams_sorted.list
-mv GVCFs_sorted.list GVCFs.list
-mv FinalBams_sorted.list FinalBams.list
 
 #Joint genotyping
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
@@ -141,6 +164,23 @@ mv FinalBams_sorted.list FinalBams.list
 -o "$seqId"_indels_filtered.vcf \
 -dt NONE
 
+#Combine filtered VCF files
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+-T CombineVariants \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+--variant "$seqId"_snps_filtered.vcf \
+--variant "$seqId"_indels_filtered.vcf \
+--printComplexMerges \
+-o "$seqId"_filtered.vcf \
+-nt 12 \
+-genotypeMergeOptions UNSORTED \
+-dt NONE
+
+#Add VCF meta data to final VCF
+addMetaDataToVCF "$seqId"_filtered.vcf
+
+### ROH, SV & CNV analysis ###
+
 #Structural variant calling with Manta
 /share/apps/manta-distros/manta-1.0.0.centos5_x86_64/bin/configManta.py \
 $(sed 's/^/--bam /' FinalBams.list | tr '\n' ' ') \
@@ -152,40 +192,10 @@ manta/runWorkflow.py \
 -m local \
 -j 12
 
-#Combine filtered VCF files
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
--T CombineVariants \
--R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
---variant "$seqId"_snps_filtered.vcf \
---variant "$seqId"_indels_filtered.vcf \
---variant manta/results/variants/diploidSV.vcf.gz \
---printComplexMerges \
--o "$seqId"_variants_filtered.vcf \
--nt 12 \
--genotypeMergeOptions UNSORTED \
--dt NONE
+gzip -dc manta/results/variants/diploidSV.vcf.gz > "$seqId"_sv_filtered.vcf
 
-#Add VCF meta data to final VCF
-grep '^##' "$seqId"_variants_filtered.vcf > "$seqId"_filtered_meta.vcf
-for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$seqId"_variants_filtered.vcf); do
-    cat "$sample"/"$seqId"_"$sample"_meta.txt >> "$seqId"_filtered_meta.vcf
-done
-grep -v '^##' "$seqId"_variants_filtered.vcf >> "$seqId"_filtered_meta.vcf
-
-### QC ###
-
-#Variant Evaluation
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
--T VariantEval \
--R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--o "$seqId"_variant_evaluation.txt \
---eval "$seqId"_filtered_meta.vcf \
---dbsnp /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
--nt 12 \
--dt NONE
-
-### ROH & CNV analysis ###
+#Add VCF meta data to SV VCF
+addMetaDataToVCF "$seqId"_sv_filtered.vcf
 
 #Identify autosomal CNVs using read-depth
 awk '{if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3"\tbin"NR}' \
@@ -214,29 +224,24 @@ for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$
     grep -v '^#' | perl /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/bcftools_roh_range.pl | grep -v '#' | awk '{print $1"\t"$2-1"\t"$3"\t"$5}' > "$sample"/"$sample"_roh.bed
 done
 
-### Funcitonal annotation ###
+### Functional annotation ###
 
-#annotate VCF with VEP
-perl /share/apps/vep-distros/ensembl-tools-release-85/scripts/variant_effect_predictor/variant_effect_predictor.pl \
---cache \
---fasta /share/apps/vep-distros/ensembl-tools-release-85/scripts/variant_effect_predictor/annotations/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa \
---dir /share/apps/vep-distros/ensembl-tools-release-85/scripts/variant_effect_predictor/annotations \
---no_progress \
---everything \
---fork 12 \
---species homo_sapiens \
---assembly GRCh37 \
---format vcf \
---no_stats \
---offline \
---refseq \
---allele_number \
---no_escape \
---shift_hgvs 1 \
---vcf \
---no_intergenic \
--i "$seqId"_filtered_meta.vcf \
--o "$seqId"_filtered_meta_annotated.vcf
+#annotate VCFs with VEP
+annotateVCFWithVEP "$seqId"_filtered_meta.vcf
+annotateVCFWithVEP "$seqId"_sv_filtered.vcf
+
+### QC ###
+
+#Variant Evaluation
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+-T VariantEval \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-o "$seqId"_variant_evaluation.txt \
+--eval "$seqId"_filtered_meta_annotated.vcf \
+--dbsnp /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+-nt 12 \
+-dt NONE
 
 ### Clean up ###
 
@@ -246,7 +251,7 @@ rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_variants.lcr.vcf "$s
 rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_indels.vcf
 rm "$seqId"_indels.vcf.idx "$seqId"_indels_filtered.vcf "$seqId"_indels_filtered.vcf.idx "$seqId"_variants_filtered.vcf
 rm "$seqId"_variants_filtered.vcf.idx "$seqId"_genotypes_filtered.vcf "$seqId"_genotypes_filtered.vcf.idx "$seqId"_filtered_meta.vcf.gz
-rm "$seqId"_filtered_meta.vcf.gz.tbi autosomal.bed ExomeDepth.log GVCFs.list FinalBams.list
+rm "$seqId"_filtered_meta.vcf.gz.tbi autosomal.bed ExomeDepth.log GVCFs.list FinalBams.list "$seqId"_sv_filtered.vcf 
 
 #log with Trello
 phoneTrello "$seqId" "Analysis complete"
