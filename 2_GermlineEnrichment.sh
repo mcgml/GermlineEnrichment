@@ -58,7 +58,7 @@ addMetaDataToVCF(){
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --dbsnp /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -V GVCFs.list \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_variants.vcf \
 -nt 12 \
 -dt NONE
@@ -77,7 +77,7 @@ addMetaDataToVCF(){
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_variants.lcr.vcf \
 -selectType SNP \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_snps.vcf \
 -nt 12 \
 -dt NONE
@@ -101,7 +101,7 @@ addMetaDataToVCF(){
 --filterName "ReadPosRankSum" \
 --genotypeFilterExpression "DP < 20" \
 --genotypeFilterName "LowDP" \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_snps_filtered.vcf \
 -dt NONE
 
@@ -111,7 +111,7 @@ addMetaDataToVCF(){
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_variants.lcr.vcf \
 -selectType INDEL \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_indels.vcf \
 -nt 12 \
 -dt NONE
@@ -137,7 +137,7 @@ addMetaDataToVCF(){
 --filterName "LowComplexity" \
 --genotypeFilterExpression "DP < 20" \
 --genotypeFilterName "LowDP" \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_indels_filtered.vcf \
 -dt NONE
 
@@ -175,7 +175,7 @@ addMetaDataToVCF "$seqId"_sv_filtered.vcf
 
 #Identify autosomal CNVs using read-depth
 awk '{if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3"\tbin"NR}' \
-/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 > autosomal.bed
 
 /share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
@@ -196,8 +196,8 @@ paste FinalBams.list \
 /share/apps/htslib-distros/htslib-1.3.1/tabix -p vcf "$seqId"_filtered_meta.vcf.gz
 
 for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$seqId"_filtered_meta.vcf); do
-    /share/apps/bcftools-distros/bcftools-1.3.1/bcftools roh -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed -s "$sample" "$seqId"_filtered_meta.vcf.gz | \
-    grep -v '^#' | perl /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/bcftools_roh_range.pl | grep -v '#' | awk '{print $1"\t"$2-1"\t"$3"\t"$5}' > "$sample"/"$sample"_roh.bed
+    /share/apps/bcftools-distros/bcftools-1.3.1/bcftools roh -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed -s "$sample" "$seqId"_filtered_meta.vcf.gz | \
+    grep -v '^#' | perl /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/bcftools_roh_range.pl | grep -v '#' | awk '{print $1"\t"$2-1"\t"$3"\t"$5}' > "$sample"/"$seqId"_"$sample"_roh.bed
 done
 
 ### QC ###
@@ -209,7 +209,7 @@ done
 -o "$seqId"_variant_evaluation.txt \
 --eval "$seqId"_filtered_meta.vcf \
 --dbsnp /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -nt 12 \
 -dt NONE
 

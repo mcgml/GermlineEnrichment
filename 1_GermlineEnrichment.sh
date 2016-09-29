@@ -166,7 +166,7 @@ TMP_DIR=/state/partition1/tmpdir
 -known /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
 -I "$seqId"_"$sampleId"_rmdup.bam \
 -o "$seqId"_"$sampleId"_realign.intervals \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip "$padding" \
 -nt 12 \
 -dt NONE
@@ -194,7 +194,7 @@ if [ "$includeBQSR" = true ] ; then
     -knownSites /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
     -knownSites /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
     -I "$seqId"_"$sampleId"_realigned.bam \
-    -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+    -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
     -o "$seqId"_"$sampleId"_recal_data.table \
     -ip "$padding" \
     -nct 12 \
@@ -209,7 +209,7 @@ if [ "$includeBQSR" = true ] ; then
     -knownSites /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
     -BQSR "$seqId"_"$sampleId"_recal_data.table \
     -I "$seqId"_"$sampleId"_realigned.bam \
-    -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+    -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
     -o "$seqId"_"$sampleId"_post_recal_data.table \
     -nct 12 \
     -ip "$padding" \
@@ -252,7 +252,7 @@ fi
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --dbsnp /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -I "$seqId"_"$sampleId".bam \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_"$sampleId".g.vcf \
 --genotyping_mode DISCOVERY \
 -stand_emit_conf 10 \
@@ -264,7 +264,7 @@ fi
 
 #Convert BED to interval_list for later
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar BedToIntervalList \
-I=/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+I=/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 O="$panel"_ROI.interval_list \
 SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict 
 
@@ -288,7 +288,7 @@ TARGET_INTERVALS="$panel"_ROI.interval_list
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_"$sampleId"_DepthOfCoverage \
 -I "$seqId"_"$sampleId".bam \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 --countType COUNT_FRAGMENTS \
 --minMappingQuality 20 \
 --minBaseQuality 10 \
@@ -308,7 +308,7 @@ TARGET_INTERVALS="$panel"_ROI.interval_list
 
 #Gender analysis using off-targed reads
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools slop \
--i /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+-i /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -g /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
 -b 300 > padded.bed
 
@@ -354,7 +354,7 @@ gender=$(echo "print ($chromYCount / $(awk '{n+= $3-$2} END {print n}' Y.off.bed
 -restrictAllelesTo BIALLELIC \
 -env \
 -ef \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -XL X -XL Y -XL MT \
 -nt 12 \
 -dt NONE
