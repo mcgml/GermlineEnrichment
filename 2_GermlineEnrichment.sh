@@ -46,29 +46,6 @@ addMetaDataToVCF(){
     grep -v '^##' "$1" >> "$output"
 }
 
-annotateVCFWithVEP(){
-    perl /share/apps/vep-distros/ensembl-tools-release-85/scripts/variant_effect_predictor/variant_effect_predictor.pl \
-    --cache \
-    --fasta /share/apps/vep-distros/ensembl-tools-release-85/scripts/variant_effect_predictor/annotations/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa \
-    --dir /share/apps/vep-distros/ensembl-tools-release-85/scripts/variant_effect_predictor/annotations \
-    --no_progress \
-    --everything \
-    --fork 8 \
-    --species homo_sapiens \
-    --assembly GRCh37 \
-    --format vcf \
-    --no_stats \
-    --offline \
-    --refseq \
-    --allele_number \
-    --no_escape \
-    --shift_hgvs 1 \
-    --vcf \
-    --no_intergenic \
-    -i "$1" \
-    -o $(echo "$1" | sed 's/\.vcf/_annotated\.vcf/g')
-}
-
 #load run & pipeline variables
 . variables
 . /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
@@ -170,7 +147,6 @@ annotateVCFWithVEP(){
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --variant "$seqId"_snps_filtered.vcf \
 --variant "$seqId"_indels_filtered.vcf \
---printComplexMerges \
 -o "$seqId"_filtered.vcf \
 -nt 12 \
 -genotypeMergeOptions UNSORTED \
@@ -224,12 +200,6 @@ for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$
     grep -v '^#' | perl /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/bcftools_roh_range.pl | grep -v '#' | awk '{print $1"\t"$2-1"\t"$3"\t"$5}' > "$sample"/"$sample"_roh.bed
 done
 
-### Functional annotation ###
-
-#annotate VCFs with VEP
-annotateVCFWithVEP "$seqId"_filtered_meta.vcf
-annotateVCFWithVEP "$seqId"_sv_filtered.vcf
-
 ### QC ###
 
 #Variant Evaluation
@@ -251,7 +221,7 @@ rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_variants.lcr.vcf "$s
 rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_indels.vcf
 rm "$seqId"_indels.vcf.idx "$seqId"_indels_filtered.vcf "$seqId"_indels_filtered.vcf.idx "$seqId"_variants_filtered.vcf
 rm "$seqId"_variants_filtered.vcf.idx "$seqId"_genotypes_filtered.vcf "$seqId"_genotypes_filtered.vcf.idx "$seqId"_filtered_meta.vcf.gz
-rm "$seqId"_filtered_meta.vcf.gz.tbi autosomal.bed ExomeDepth.log GVCFs.list FinalBams.list "$seqId"_sv_filtered.vcf 
+rm "$seqId"_filtered_meta.vcf.gz.tbi autosomal.bed ExomeDepth.log GVCFs.list FinalBams.list "$seqId"_sv_filtered.vcf
 
 #log with Trello
 phoneTrello "$seqId" "Analysis complete"
