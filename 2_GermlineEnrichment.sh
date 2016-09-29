@@ -207,7 +207,7 @@ done
 -T VariantEval \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_variant_evaluation.txt \
---eval "$seqId"_filtered_meta_annotated.vcf \
+--eval "$seqId"_filtered_meta.vcf \
 --dbsnp /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI.bed \
 -nt 12 \
