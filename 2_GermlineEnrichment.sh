@@ -13,7 +13,6 @@ version="dev"
 #TODO SNPRelate
 #TODO PCA for ancestry
 #TODO optimise ED & output to BED
-#TODO add JEXL SNP/Indel filter to VariantEval
 #TODO import to variant database
 
 # Directory structure required for pipeline
@@ -215,8 +214,10 @@ done
 -T VariantEval \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_variant_evaluation.txt \
---eval "$seqId"_filtered_meta.vcf \
---dbsnp /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
+--eval:"$seqId" "$seqId"_filtered_meta.vcf \
+--dbsnp:dbsnp138 /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
+-ST JexlExpression --select_names "snp" --select_exps "vc.isSNP()" \
+-ST JexlExpression --select_names "indel" --select_exps "vc.isIndel()" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -nt 12 \
 -dt NONE

@@ -26,6 +26,8 @@ version="dev"
 #
 # Script 1 runs in sample folder, requires fastq files split by lane
 
+#TODO bin gender score
+
 phoneTrello() {
     #Call trello API
     /share/apps/node-distros/node-v4.4.7-linux-x64/bin/node \
@@ -81,7 +83,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     LIBRARY_NAME="$worklistId"_"$sampleId"_"$panel" \
     PLATFORM_UNIT="$seqId"_"$laneId" \
     PLATFORM="ILLUMINA" \
-    SEQUENCING_CENTER="AWMGS" \
+    SEQUENCING_CENTER="IMG" \
     PREDICTED_INSERT_SIZE="$expectedInsertSize" \
     SORT_ORDER=queryname \
     MAX_RECORDS_IN_RAM=2000000 \
