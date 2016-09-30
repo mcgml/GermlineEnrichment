@@ -12,7 +12,6 @@ version="dev"
 
 #TODO SNPRelate
 #TODO PCA for ancestry
-#TODO optimise ED & output to BED
 #TODO import to variant database
 
 # Directory structure required for pipeline
@@ -179,9 +178,7 @@ addMetaDataToVCF "$seqId"_sv_filtered.vcf
 
 #Identify autosomal CNVs using read-depth
 awk '{if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3"\tbin"NR}' \
-/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
-> autosomal.bed
-
+/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed > autosomal.bed
 /share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
 -b FinalBams.list \
 -f /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -189,14 +186,21 @@ awk '{if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3"\tbin"NR}' \
 2>&1 | tee ExomeDepth.log
 
 #convert ExomeDepth output to BED format & move to sample folder
+for i in $(ls X*bam.txt); do
+    filename=$(echo "$i" | cut -c2- | sed 's/\./-/g' | sed 's/-bam-txt//g')
+    sample=$(echo "$filename" | cut -d_ -f4)
+    
+    #Chrom,Start,Stop,Call;DQ,BF
+    grep -v start "$i" | grep -v '^$' | awk '{print $7"\t"$5-1"\t"$6"\t"$3";"$12"\t"$9}' > "$sample"/"$filename"_cnv.bed
 
+    rm "$i"
+done
 
 #print ExomeDepth metrics
 echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_exomedepth.metrics.txt
 paste FinalBams.list \
 <(grep "Number of counted fragments" ExomeDepth.log | cut -d' ' -f6) \
-<(grep "Correlation between reference and tests count" ExomeDepth.log | cut -d' ' -f8) \
->> "$seqId"_exomedepth.metrics.txt
+<(grep "Correlation between reference and tests count" ExomeDepth.log | cut -d' ' -f8) >> "$seqId"_exomedepth.metrics.txt
 
 #identify runs of homozygosity
 /share/apps/htslib-distros/htslib-1.3.1/bgzip -c "$seqId"_filtered_meta.vcf > "$seqId"_filtered_meta.vcf.gz
