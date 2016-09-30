@@ -170,11 +170,11 @@ manta/runWorkflow.py \
 
 gzip -dc manta/results/variants/diploidSV.vcf.gz > "$seqId"_sv_filtered.vcf
 
-#index manta VCF
-/share/apps/bcftools-distros/bcftools-1.3.1/bcftools index "$seqId"_sv_filtered.vcf
-
 #Add VCF meta data to SV VCF
 addMetaDataToVCF "$seqId"_sv_filtered.vcf
+
+#index manta VCF
+/share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$seqId"_sv_filtered_meta.vcf
 
 #make CNV target BED file
 awk '{if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3"\tbin"NR}' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed | \
