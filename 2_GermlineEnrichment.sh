@@ -176,19 +176,27 @@ gzip -dc manta/results/variants/diploidSV.vcf.gz > "$seqId"_sv_filtered.vcf
 #Add VCF meta data to SV VCF
 addMetaDataToVCF "$seqId"_sv_filtered.vcf
 
-#Identify autosomal CNVs using read-depth
-awk '{if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3"\tbin"NR}' \
-/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed > autosomal.bed
+#make CNV target BED file
+awk '{if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3"\tbin"NR}' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools makewindows -w 200 -b - | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools nuc -fi /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta -bed - | \
+awk '{ if ($5 >= 0.1 && $5 <= 0.9) print "chr"$1,$2,$3,$1"-"$2"-"$3 }' | sed 's/ /	/g' > "$panel"_ROI_b37_window_gc.bed
+/share/apps/bigWigAverageOverBed-distros/bigWigAverageOverBed /data/db/human/wgEncodeMapability/wgEncodeCrgMapabilityAlign100mer.bigWig "$panel"_ROI_b37_window_gc.bed "$panel"_ROI_b37_window_gc_mappability.txt
+awk '{ if ($5 == 1 && $6 == 1) print $1"\tbin" }' "$panel"_ROI_b37_window_gc_mappability.txt | sed 's/-/     /g' > "$panel"_ROI_b37_CNV.bed
+
+#call CNVs using read depth
 /share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
 -b FinalBams.list \
 -f /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--r autosomal.bed \
+-r "$panel"_ROI_b37_CNV.bed \
 2>&1 | tee ExomeDepth.log
 
 #convert ExomeDepth output to BED format & move to sample folder
 for i in $(ls X*bam.txt); do
     filename=$(echo "$i" | cut -c2- | sed 's/\./-/g' | sed 's/-bam-txt//g')
-    sample=$(echo "$filename" | cut -d_ -f4)
+    sample=$(echo "$filename" | cut -d_ -f5)
     
     #Chrom,Start,Stop,Call;DQ,BF
     grep -v start "$i" | grep -v '^$' | awk '{print $7"\t"$5-1"\t"$6"\t"$3";"$12"\t"$9}' > "$sample"/"$filename"_cnv.bed
@@ -230,10 +238,10 @@ done
 
 #delete unused files
 rm -r manta
-rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_variants.lcr.vcf "$seqId"_variants.lcr.vcf.idx
+rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_variants.lcr.vcf "$seqId"_variants.lcr.vcf.idx "$panel"_ROI_b37_window_gc_mappability.txt
 rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_indels.vcf
 rm "$seqId"_indels.vcf.idx "$seqId"_indels_filtered.vcf "$seqId"_indels_filtered.vcf.idx "$seqId"_filtered.vcf "$seqId"_filtered.vcf.idx
-rm "$seqId"_filtered_meta.vcf.gz "$seqId"_filtered_meta.vcf.gz.tbi autosomal.bed ExomeDepth.log GVCFs.list FinalBams.list "$seqId"_sv_filtered.vcf
+rm "$seqId"_filtered_meta.vcf.gz "$seqId"_filtered_meta.vcf.gz.tbi ExomeDepth.log GVCFs.list FinalBams.list "$seqId"_sv_filtered.vcf "$panel"_ROI_b37_window_gc.bed
 
 #log with Trello
 phoneTrello "$seqId" "Analysis complete"
