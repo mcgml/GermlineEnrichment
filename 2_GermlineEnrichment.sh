@@ -176,11 +176,12 @@ addMetaDataToVCF "$seqId"_sv_filtered.vcf
 #index manta VCF
 /share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$seqId"_sv_filtered_meta.vcf
 
-#make CNV target BED file - sort, merge, increase bins to min 200bp, remove extreme GC & poor mappability bins
+#make CNV target BED file - sort, merge, increase bins to min 160bp, remove extreme GC & poor mappability bins
 awk '{ if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3 }' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge | \
-awk '{ if ($3 - $2 < 200) {slop=200-($3-$2); print $1"\t"$2-$slop"\t"$3+$slop} else {print $1"\t"$2"\t"$3} }' | \
+awk '{ len=$3-($2+1); if (len < 160) { slop=(160-len)/2; adjStart=$2-slop; adjEnd=$3+slop; printf "%s\t%.0f\t%.0f\n", $1,adjStart,adjEnd; } else {print $1"\t"$2"\t"$3} }' | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools nuc -fi /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta -bed - | \
 awk '{ if ($5 >= 0.1 && $5 <= 0.9) print "chr"$1,$2,$3,$1"-"$2"-"$3 }' | tr ' ' '\t' > "$panel"_ROI_b37_window_gc.bed
 /share/apps/bigWigAverageOverBed-distros/bigWigAverageOverBed /data/db/human/wgEncodeMapability/wgEncodeCrgMapabilityAlign100mer.bigWig "$panel"_ROI_b37_window_gc.bed "$panel"_ROI_b37_window_gc_mappability.txt
