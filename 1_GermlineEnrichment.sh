@@ -39,6 +39,7 @@ countQCFlagFails() {
     #count how many core FASTQC tests failed
     grep -E "Basic Statistics|Per base sequence quality|Per tile sequence quality|Per sequence quality scores|Per base N content" "$1" | \
     grep -v ^PASS | \
+    grep -v ^WARN | \
     wc -l | \
     sed 's/^[[:space:]]*//g'
 }
@@ -108,18 +109,21 @@ done
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MergeSamFiles \
 $(ls "$seqId"_"$sampleId"_*_unaligned.bam | sed 's/^/I=/' | tr '\n' ' ') \
 SORT_ORDER=queryname \
+ASSUME_SORTED=true \
+VALIDATION_STRINGENCY=SILENT \
 USE_THREADING=true \
 MAX_RECORDS_IN_RAM=2000000 \
 TMP_DIR=/state/partition1/tmpdir \
 O="$seqId"_"$sampleId"_unaligned.bam
 
 #uBam2fq, map & MergeBamAlignment
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar SamToFastq \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar SamToFastq \
 I="$seqId"_"$sampleId"_unaligned.bam \
 FASTQ=/dev/stdout \
 INTERLEAVE=true \
 NON_PF=true \
 MAX_RECORDS_IN_RAM=2000000 \
+VALIDATION_STRINGENCY=SILENT \
 TMP_DIR=/state/partition1/tmpdir | \
 /share/apps/bwa-distros/bwa-0.7.15/bwa mem \
 -M \
@@ -127,7 +131,7 @@ TMP_DIR=/state/partition1/tmpdir | \
 -p \
 /state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
 /dev/stdin | \
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MergeBamAlignment \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MergeBamAlignment \
 EXPECTED_ORIENTATIONS=FR \
 ATTRIBUTES_TO_RETAIN=X0 \
 ALIGNED_BAM=/dev/stdin \
