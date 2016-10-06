@@ -127,7 +127,7 @@ VALIDATION_STRINGENCY=SILENT \
 TMP_DIR=/state/partition1/tmpdir | \
 /share/apps/bwa-distros/bwa-0.7.15/bwa mem \
 -M \
--t 8 \
+-t 10 \
 -p \
 /state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
 /dev/stdin | \
