@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l walltime=20:00:00
+#PBS -l walltime=40:00:00
 #PBS -l ncpus=12
 set -euo pipefail
 PBS_O_WORKDIR=(`echo $PBS_O_WORKDIR | sed "s/^\/state\/partition1//" `)
