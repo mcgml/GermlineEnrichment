@@ -165,7 +165,7 @@ MAX_RECORDS_IN_RAM=2000000 \
 TMP_DIR=/state/partition1/tmpdir
 
 #Identify regions requiring realignment
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T RealignerTargetCreator \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -known /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
@@ -178,7 +178,7 @@ TMP_DIR=/state/partition1/tmpdir
 -dt NONE
 
 #Realign around indels
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T IndelRealigner \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -known /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
@@ -193,7 +193,7 @@ if [ "$includeBQSR" = true ] ; then
     echo "Performing BQSR ..."
 
     #Analyse patterns of covariation in the sequence dataset
-    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx6g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
     -T BaseRecalibrator \
     -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
     -knownSites /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
@@ -207,7 +207,7 @@ if [ "$includeBQSR" = true ] ; then
     -dt NONE
 
     #Do a second pass to analyze covariation remaining after recalibration
-    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx6g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
     -T BaseRecalibrator \
     -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
     -knownSites /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
@@ -253,7 +253,7 @@ fi
 ### Variant calling ###
 
 #SNPs and Indels GVCF with Haplotypecaller
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T HaplotypeCaller \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --dbsnp /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
