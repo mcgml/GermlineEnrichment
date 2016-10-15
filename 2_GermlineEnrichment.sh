@@ -228,7 +228,22 @@ done
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_variant_evaluation.txt \
 --eval:"$seqId" "$seqId"_filtered_meta.vcf \
---dbsnp:dbsnp138 /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
+--comp:omni2.5 /state/partition1/db/human/gatk/2.8/b37/1000G_omni2.5.b37.vcf \
+--comp:hapmap3.3 /state/partition1/db/human/gatk/2.8/b37/hapmap_3.3.b37.vcf \
+-ST JexlExpression --select_names "snp" --select_exps "vc.isSNP()" \
+-ST JexlExpression --select_names "indel" --select_exps "vc.isIndel()" \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-nt 12 \
+-dt NONE
+
+#Genotype Concordance
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+-T GenotypeConcordance \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-o "$seqId"_genotype_evaluation.txt \
+--eval:"$seqId" "$seqId"_filtered_meta.vcf \
+--comp:omni2.5 /state/partition1/db/human/gatk/2.8/b37/1000G_omni2.5.b37.vcf \
+--comp:hapmap3.3 /state/partition1/db/human/gatk/2.8/b37/hapmap_3.3.b37.vcf \
 -ST JexlExpression --select_names "snp" --select_exps "vc.isSNP()" \
 -ST JexlExpression --select_names "indel" --select_exps "vc.isIndel()" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
