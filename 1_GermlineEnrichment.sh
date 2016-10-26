@@ -74,7 +74,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     "$read2Fastq"
 
     #convert fastq to ubam
-    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar FastqToSam \
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar FastqToSam \
     F1="$seqId"_"$sampleId"_"$laneId"_R1.fastq \
     F2="$seqId"_"$sampleId"_"$laneId"_R2.fastq \
     O="$seqId"_"$sampleId"_"$laneId"_unaligned.bam \
@@ -106,7 +106,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
 done
 
 #merge lane bams
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MergeSamFiles \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar MergeSamFiles \
 $(ls "$seqId"_"$sampleId"_*_unaligned.bam | sed 's/^/I=/' | tr '\n' ' ') \
 SORT_ORDER=queryname \
 ASSUME_SORTED=true \
@@ -117,7 +117,7 @@ TMP_DIR=/state/partition1/tmpdir \
 O="$seqId"_"$sampleId"_unaligned.bam
 
 #uBam2fq, map & MergeBamAlignment
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar SamToFastq \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar SamToFastq \
 I="$seqId"_"$sampleId"_unaligned.bam \
 FASTQ=/dev/stdout \
 INTERLEAVE=true \
@@ -131,7 +131,7 @@ TMP_DIR=/state/partition1/tmpdir | \
 -p \
 /state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
 /dev/stdin | \
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MergeBamAlignment \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar MergeBamAlignment \
 EXPECTED_ORIENTATIONS=FR \
 ATTRIBUTES_TO_RETAIN=X0 \
 ALIGNED_BAM=/dev/stdin \
@@ -156,7 +156,7 @@ CREATE_INDEX=true \
 TMP_DIR=/state/partition1/tmpdir
 
 #Mark duplicate reads
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar MarkDuplicates \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar MarkDuplicates \
 INPUT="$seqId"_"$sampleId"_aligned.bam \
 OUTPUT="$seqId"_"$sampleId"_rmdup.bam \
 METRICS_FILE="$seqId"_"$sampleId"_MarkDuplicatesMetrics.txt \
@@ -270,19 +270,19 @@ fi
 ### QC ###
 
 #Convert BED to interval_list for later
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar BedToIntervalList \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar BedToIntervalList \
 I=/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 O="$panel"_ROI.interval_list \
 SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict 
 
 #Calculate insert size: fragmentation performance
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar CollectInsertSizeMetrics \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar CollectInsertSizeMetrics \
 I="$seqId"_"$sampleId".bam \
 O="$seqId"_"$sampleId"_insert_metrics.txt \
 H="$seqId"_"$sampleId"_insert_metrics.pdf
 
 #HsMetrics: capture & pooling performance
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.5.0/picard.jar CollectHsMetrics \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar CollectHsMetrics \
 I="$seqId"_"$sampleId".bam \
 O="$seqId"_"$sampleId"_hs_metrics.txt \
 R=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
