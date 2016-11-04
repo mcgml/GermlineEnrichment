@@ -1,4 +1,4 @@
-# Beta:GermlineEnrichment
+# GermlineEnrichment (Beta)
 
 Diagnostic NGS pipeline for SNPs/Indels/CNVs/SVs/LOH from germline panel/exome data
 
