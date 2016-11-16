@@ -13,6 +13,8 @@ version="dev"
 #TODO SNPRelate
 #TODO PCA for ancestry
 #TODO import to variant database
+#TODO upgrade bcftools and remove ROH scripts
+#TODO ROH perl script has bug
 
 # Directory structure required for pipeline
 #
