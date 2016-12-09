@@ -256,7 +256,6 @@ fi
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
 -T HaplotypeCaller \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
---dbsnp /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -I "$seqId"_"$sampleId".bam \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_"$sampleId".g.vcf \
