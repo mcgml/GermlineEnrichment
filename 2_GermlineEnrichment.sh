@@ -15,6 +15,8 @@ version="dev"
 #TODO import to variant database
 #TODO upgrade bcftools and remove ROH scripts
 #TODO ROH perl script has bug
+#TODO bcftools family relatedness
+#TODO akt illumina relationship analysis
 
 # Directory structure required for pipeline
 #
