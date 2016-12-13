@@ -57,7 +57,7 @@ addMetaDataToVCF(){
 ### Joint variant calling and filtering ###
 
 #Joint genotyping
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx16g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T GenotypeGVCFs \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V GVCFs.list \
@@ -75,7 +75,7 @@ addMetaDataToVCF(){
 "$seqId"_variants.vcf
 
 #Select SNPs
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T SelectVariants \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_variants.lcr.vcf \
@@ -86,7 +86,7 @@ addMetaDataToVCF(){
 -dt NONE
 
 #Filter SNPs
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T VariantFiltration \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_snps.vcf \
@@ -109,7 +109,7 @@ addMetaDataToVCF(){
 -dt NONE
 
 #Select INDELs
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx16g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx16g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T SelectVariants \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_variants.lcr.vcf \
@@ -120,7 +120,7 @@ addMetaDataToVCF(){
 -dt NONE
 
 #Filter INDELs
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T VariantFiltration \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_indels.vcf \
@@ -145,7 +145,7 @@ addMetaDataToVCF(){
 -dt NONE
 
 #Combine filtered VCF files
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T CombineVariants \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --variant "$seqId"_snps_filtered.vcf \
@@ -161,7 +161,7 @@ addMetaDataToVCF "$seqId"_filtered.vcf
 ### ROH, SV & CNV analysis ###
 
 #Structural variant calling with Manta
-/share/apps/manta-distros/manta-1.0.0.centos5_x86_64/bin/configManta.py \
+/share/apps/manta-distros/manta-1.0.3.centos5_x86_64/bin/configManta.py \
 $(sed 's/^/--bam /' FinalBams.list | tr '\n' ' ') \
 --referenceFasta /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --exome \
@@ -226,7 +226,7 @@ done
 ### QC ###
 
 #Variant Evaluation
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T VariantEval \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_variant_evaluation.txt \
@@ -240,7 +240,7 @@ done
 -dt NONE
 
 #Genotype Concordance
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T GenotypeConcordance \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_genotype_evaluation.txt \

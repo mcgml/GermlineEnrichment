@@ -74,7 +74,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     "$read2Fastq"
 
     #convert fastq to ubam
-    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar FastqToSam \
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.0/picard.jar FastqToSam \
     F1="$seqId"_"$sampleId"_"$laneId"_R1.fastq \
     F2="$seqId"_"$sampleId"_"$laneId"_R2.fastq \
     O="$seqId"_"$sampleId"_"$laneId"_unaligned.bam \
@@ -106,7 +106,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
 done
 
 #merge lane bams
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar MergeSamFiles \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.0/picard.jar MergeSamFiles \
 $(ls "$seqId"_"$sampleId"_*_unaligned.bam | sed 's/^/I=/' | tr '\n' ' ') \
 SORT_ORDER=queryname \
 ASSUME_SORTED=true \
@@ -117,7 +117,7 @@ TMP_DIR=/state/partition1/tmpdir \
 O="$seqId"_"$sampleId"_unaligned.bam
 
 #uBam2fq, map & MergeBamAlignment
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar SamToFastq \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.0/picard.jar SamToFastq \
 I="$seqId"_"$sampleId"_unaligned.bam \
 FASTQ=/dev/stdout \
 INTERLEAVE=true \
@@ -131,7 +131,7 @@ TMP_DIR=/state/partition1/tmpdir | \
 -p \
 /state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
 /dev/stdin | \
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar MergeBamAlignment \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.0/picard.jar MergeBamAlignment \
 EXPECTED_ORIENTATIONS=FR \
 ATTRIBUTES_TO_RETAIN=X0 \
 ALIGNED_BAM=/dev/stdin \
@@ -156,7 +156,7 @@ CREATE_INDEX=true \
 TMP_DIR=/state/partition1/tmpdir
 
 #Mark duplicate reads
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar MarkDuplicates \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.0/picard.jar MarkDuplicates \
 INPUT="$seqId"_"$sampleId"_aligned.bam \
 OUTPUT="$seqId"_"$sampleId"_rmdup.bam \
 METRICS_FILE="$seqId"_"$sampleId"_MarkDuplicatesMetrics.txt \
@@ -165,7 +165,7 @@ MAX_RECORDS_IN_RAM=2000000 \
 TMP_DIR=/state/partition1/tmpdir
 
 #Identify regions requiring realignment
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx24g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx24g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T RealignerTargetCreator \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -known /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
@@ -178,7 +178,7 @@ TMP_DIR=/state/partition1/tmpdir
 -dt NONE
 
 #Realign around indels
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T IndelRealigner \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -known /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
@@ -193,7 +193,7 @@ if [ "$includeBQSR" = true ] ; then
     echo "Performing BQSR ..."
 
     #Analyse patterns of covariation in the sequence dataset
-    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx6g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx6g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
     -T BaseRecalibrator \
     -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
     -knownSites /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
@@ -207,7 +207,7 @@ if [ "$includeBQSR" = true ] ; then
     -dt NONE
 
     #Do a second pass to analyze covariation remaining after recalibration
-    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx6g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx6g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
     -T BaseRecalibrator \
     -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
     -knownSites /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
@@ -222,7 +222,7 @@ if [ "$includeBQSR" = true ] ; then
     -dt NONE
 
     #Generate BQSR plots
-    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
     -T AnalyzeCovariates \
     -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
     -before "$seqId"_"$sampleId"_recal_data.table \
@@ -232,7 +232,7 @@ if [ "$includeBQSR" = true ] ; then
     -dt NONE
 
     #Apply the recalibration to your sequence data
-    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
     -T PrintReads \
     -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
     -I "$seqId"_"$sampleId"_realigned.bam \
@@ -253,7 +253,7 @@ fi
 ### Variant calling ###
 
 #SNPs and Indels GVCF with Haplotypecaller
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T HaplotypeCaller \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -I "$seqId"_"$sampleId".bam \
@@ -269,19 +269,19 @@ fi
 ### QC ###
 
 #Convert BED to interval_list for later
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar BedToIntervalList \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.0/picard.jar BedToIntervalList \
 I=/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 O="$panel"_ROI.interval_list \
 SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict 
 
 #Calculate insert size: fragmentation performance
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar CollectInsertSizeMetrics \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.0/picard.jar CollectInsertSizeMetrics \
 I="$seqId"_"$sampleId".bam \
 O="$seqId"_"$sampleId"_insert_metrics.txt \
 H="$seqId"_"$sampleId"_insert_metrics.pdf
 
 #HsMetrics: capture & pooling performance
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.7.1/picard.jar CollectHsMetrics \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.0/picard.jar CollectHsMetrics \
 I="$seqId"_"$sampleId".bam \
 O="$seqId"_"$sampleId"_hs_metrics.txt \
 R=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -289,7 +289,7 @@ BAIT_INTERVALS="$panel"_ROI.interval_list \
 TARGET_INTERVALS="$panel"_ROI.interval_list
 
 #Generate per-base coverage: variant detection sensitivity
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T DepthOfCoverage \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_"$sampleId"_DepthOfCoverage \
@@ -351,7 +351,7 @@ chromXCount=$(/share/apps/samtools-distros/samtools-1.3.1/samtools view \
 gender=$(echo "print ($chromYCount / $(awk '{n+= $3-$2} END {print n}' Y.off.bed)) / ($chromXCount / $(awk '{n+= $3-$2} END {print n}' X.off.bed))" | perl)
 
 #Extract 1kg autosomal snps for contamination analysis
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.6.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -T SelectVariants \
 --variant /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.snps.high_confidence.b37.vcf \
