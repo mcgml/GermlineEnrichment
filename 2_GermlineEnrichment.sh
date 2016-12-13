@@ -237,8 +237,6 @@ done
 --eval:"$seqId" "$seqId"_filtered_meta.vcf \
 --comp:omni2.5 /state/partition1/db/human/gatk/2.8/b37/1000G_omni2.5.b37.vcf \
 --comp:hapmap3.3 /state/partition1/db/human/gatk/2.8/b37/hapmap_3.3.b37.vcf \
--ST JexlExpression --select_names "snp" --select_exps "vc.isSNP()" \
--ST JexlExpression --select_names "indel" --select_exps "vc.isIndel()" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -nt 12 \
 -dt NONE
@@ -251,8 +249,6 @@ done
 --eval:"$seqId" "$seqId"_filtered_meta.vcf \
 --comp:omni2.5 /state/partition1/db/human/gatk/2.8/b37/1000G_omni2.5.b37.vcf \
 --comp:hapmap3.3 /state/partition1/db/human/gatk/2.8/b37/hapmap_3.3.b37.vcf \
--ST JexlExpression --select_names "snp" --select_exps "vc.isSNP()" \
--ST JexlExpression --select_names "indel" --select_exps "vc.isIndel()" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -nt 12 \
 -dt NONE
