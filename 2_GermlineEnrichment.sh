@@ -205,9 +205,9 @@ awk '{ if ($5 > 0.95 && $6 > 0.95) print $1"\tbin" }' "$panel"_ROI_b37_window_gc
 for i in $(ls X*bam.txt); do
     filename=$(echo "$i" | cut -c2- | sed 's/\./-/g' | sed 's/-bam-txt//g')
     sample=$(echo "$filename" | cut -d_ -f5)
-    
-    #Chrom,Start,Stop,Call;DQ,BF
-    grep -v start "$i" | grep -v '^$' | awk '{print $7"\t"$5-1"\t"$6"\t"$3";"$12"\t"$9}' > "$sample"/"$filename"_cnv.bed
+
+    #remove empty lines
+    grep -v '^$' "$i" > "$sample"/"$filename"_cnv.bed
 
     rm "$i"
 done
