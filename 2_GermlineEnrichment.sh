@@ -90,6 +90,8 @@ addMetaDataToVCF(){
 -T VariantFiltration \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_snps.vcf \
+--filterExpression "QUAL < 30.0" \
+--filterName "LowQual" \
 --filterExpression "QD < 2.0" \
 --filterName "QD" \
 --filterExpression "FS > 60.0" \
@@ -124,6 +126,8 @@ addMetaDataToVCF(){
 -T VariantFiltration \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_indels.vcf \
+--filterExpression "QUAL < 30.0" \
+--filterName "LowQual" \
 --filterExpression "QD < 3.5" \
 --filterName "QD" \
 --filterExpression "FS > 170.0" \

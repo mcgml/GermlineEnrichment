@@ -261,8 +261,6 @@ fi
 -o "$seqId"_"$sampleId".g.vcf \
 --genotyping_mode DISCOVERY \
 -bamout "$seqId"_"$sampleId"_HC.bam \
--stand_emit_conf 10 \
--stand_call_conf 30 \
 --emitRefConfidence GVCF \
 -dt NONE
 
