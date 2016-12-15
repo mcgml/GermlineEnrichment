@@ -267,7 +267,7 @@ done
 ### Annotation ###
 
 #annotate with VEP
-annotateVCF "$seqId"_"$sampleId"_filtered_meta.vcf "$seqId"_"$sampleId"_filtered_meta_annotated.vcf
+annotateVCF "$seqId"_filtered_meta.vcf "$seqId"_filtered_meta_annotated.vcf
 annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vcf
 
 #index annotated VCFs
