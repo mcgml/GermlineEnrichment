@@ -96,15 +96,13 @@ addMetaDataToVCF(){
 --filterName "QD" \
 --filterExpression "FS > 60.0" \
 --filterName "FS" \
---filterExpression "SOR > 4.0" \
---filterName "SOR" \
 --filterExpression "MQ < 40.0" \
 --filterName "MQ" \
 --filterExpression "MQRankSum < -12.5" \
 --filterName "MQRankSum" \
 --filterExpression "ReadPosRankSum < -8.0" \
 --filterName "ReadPosRankSum" \
---genotypeFilterExpression "DP < 20" \
+--genotypeFilterExpression "DP < 15" \
 --genotypeFilterName "LowDP" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_snps_filtered.vcf \
@@ -128,21 +126,15 @@ addMetaDataToVCF(){
 -V "$seqId"_indels.vcf \
 --filterExpression "QUAL < 30.0" \
 --filterName "LowQual" \
---filterExpression "QD < 3.5" \
+--filterExpression "QD < 2.0" \
 --filterName "QD" \
---filterExpression "FS > 170.0" \
+--filterExpression "FS > 200.0" \
 --filterName "FS" \
---filterExpression "SOR > 8.0" \
---filterName "SOR" \
---filterExpression "MQ < 40.0" \
---filterName "MQ" \
 --filterExpression "ReadPosRankSum < -20.0" \
 --filterName "ReadPosRankSum" \
---filterExpression "InbreedingCoeff < -0.7" \
---filterName "InbreedingCoeff" \
 --filterExpression "LCRLen > 8" \
 --filterName "LowComplexity" \
---genotypeFilterExpression "DP < 20" \
+--genotypeFilterExpression "DP < 15" \
 --genotypeFilterName "LowDP" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_indels_filtered.vcf \
