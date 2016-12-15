@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="1.1.0"
+version="1.1.1"
 
 #TODO SNPRelate
 #TODO PCA for ancestry
@@ -223,7 +223,7 @@ for i in $(ls X*bam.txt); do
     
     #Chrom,Start,Stop,Call;DQ,BF
     grep -v start "$i" | sed '/^$/d' | awk '{print $7"\t"$5-1"\t"$6"\t"$3";"$12"\t"$9}' > "$sample"/"$filename"_cnv.bed
-    grep -v start "$i" | sed '/^$/d' | awk '{print $7"\t"$5-1"\t"$6"\t"$3"}' > "$filename"_cnv.bed
+    grep -v start "$i" | sed '/^$/d' | awk '{print $7"\t"$5-1"\t"$6"\t"$3}' > "$filename"_cnv.bed
 
     #annotate bed
     perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/variant_effect_predictor.pl \
