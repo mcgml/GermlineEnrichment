@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="1.0.9"
+version="1.1.0"
 
 #TODO SNPRelate
 #TODO PCA for ancestry
@@ -48,6 +48,31 @@ addMetaDataToVCF(){
         cat "$sample"/"$seqId"_"$sample"_meta.txt >> "$output"
     done
     grep -v '^##' "$1" >> "$output"
+}
+
+annotateVCF(){
+    perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/variant_effect_predictor.pl \
+    --verbose \
+    --no_progress \
+    --everything \
+    --fork 12 \
+    --species homo_sapiens \
+    --assembly GRCh37 \
+    --input_file "$1" \
+    --format vcf \
+    --output_file "$2" \
+    --force_overwrite \
+    --no_stats \
+    --cache \
+    --dir /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/annotations \
+    --fasta /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/annotations \
+    --offline \
+    --cache_version 86 \
+    --allele_number \
+    --no_escape \
+    --shift_hgvs 1 \
+    --vcf \
+    --refseq
 }
 
 #load run & pipeline variables
@@ -167,13 +192,11 @@ manta/runWorkflow.py \
 -m local \
 -j 12
 
+#unzip VCF
 gzip -dc manta/results/variants/diploidSV.vcf.gz > "$seqId"_sv_filtered.vcf
 
 #Add VCF meta data to SV VCF
 addMetaDataToVCF "$seqId"_sv_filtered.vcf
-
-#index manta VCF
-/share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$seqId"_sv_filtered_meta.vcf
 
 #make CNV target BED file - sort, merge, increase bins to min 160bp, remove extreme GC & poor mappability bins
 awk '{ if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3 }' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed | \
@@ -200,8 +223,31 @@ for i in $(ls X*bam.txt); do
     
     #Chrom,Start,Stop,Call;DQ,BF
     grep -v start "$i" | sed '/^$/d' | awk '{print $7"\t"$5-1"\t"$6"\t"$3";"$12"\t"$9}' > "$sample"/"$filename"_cnv.bed
+    grep -v start "$i" | sed '/^$/d' | awk '{print $7"\t"$5-1"\t"$6"\t"$3"}' > "$filename"_cnv.bed
+
+    #annotate bed
+    perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/variant_effect_predictor.pl \
+    --verbose \
+    --no_progress \
+    --numbers \
+    --symbol \
+    --no_intergenic \
+    --species homo_sapiens \
+    --assembly GRCh37 \
+    --input_file "$filename"_cnv.bed \
+    --output_file "$sample"/"$filename"_cnv_annotated.txt \
+    --force_overwrite \
+    --no_stats \
+    --cache \
+    --dir /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/annotations \
+    --fasta /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/annotations \
+    --offline \
+    --cache_version 86 \
+    --fields Location,Allele,SYMBOL,Feature,EXON,INTRON \
+    --refseq
 
     rm "$i"
+    rm "$filename"_cnv.bed
 done
 
 #print ExomeDepth metrics
@@ -213,11 +259,20 @@ paste FinalBams.list \
 #identify runs of homozygosity
 /share/apps/htslib-distros/htslib-1.3.1/bgzip -c "$seqId"_filtered_meta.vcf > "$seqId"_filtered_meta.vcf.gz
 /share/apps/htslib-distros/htslib-1.3.1/tabix -p vcf "$seqId"_filtered_meta.vcf.gz
-
 for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$seqId"_filtered_meta.vcf); do
     /share/apps/bcftools-distros/bcftools-1.3.1/bcftools roh -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed -s "$sample" "$seqId"_filtered_meta.vcf.gz | \
     grep -v '^#' | perl /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/bcftools_roh_range.pl | grep -v '#' | awk '{print $1"\t"$2-1"\t"$3"\t"$5}' > "$sample"/"$seqId"_"$sample"_roh.bed
 done
+
+### Annotation ###
+
+#annotate with VEP
+annotateVCF "$seqId"_"$sampleId"_filtered_meta.vcf "$seqId"_"$sampleId"_filtered_meta_annotated.vcf
+annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vcf
+
+#index annotated VCFs
+/share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$seqId"_"$sampleId"_filtered_meta_annotated.vcf
+/share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$seqId"_sv_filtered_meta_annotated.vcf
 
 ### QC ###
 
@@ -226,7 +281,7 @@ done
 -T VariantEval \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_variant_evaluation.txt \
---eval:"$seqId" "$seqId"_filtered_meta.vcf \
+--eval:"$seqId"_"$sampleId"_filtered_meta_annotated.vcf \
 --comp:omni2.5 /state/partition1/db/human/gatk/2.8/b37/1000G_omni2.5.b37.vcf \
 --comp:hapmap3.3 /state/partition1/db/human/gatk/2.8/b37/hapmap_3.3.b37.vcf \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
@@ -240,7 +295,8 @@ rm -r manta
 rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_variants.lcr.vcf "$seqId"_variants.lcr.vcf.idx "$panel"_ROI_b37_window_gc_mappability.txt
 rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_indels.vcf igv.log
 rm "$seqId"_indels.vcf.idx "$seqId"_indels_filtered.vcf "$seqId"_indels_filtered.vcf.idx "$seqId"_filtered.vcf "$seqId"_filtered.vcf.idx
-rm "$seqId"_filtered_meta.vcf.gz "$seqId"_filtered_meta.vcf.gz.tbi ExomeDepth.log GVCFs.list FinalBams.list "$seqId"_sv_filtered.vcf "$panel"_ROI_b37_window_gc.bed
+rm "$seqId"_filtered_meta.vcf.gz "$seqId"_filtered_meta.vcf.gz.tbi ExomeDepth.log GVCFs.list FinalBams.list "$seqId"_sv_filtered.vcf "$panel"_ROI_b37_window_gc.bed 
+rm "$seqId"_"$sampleId"_filtered_meta.vcf "$seqId"_sv_filtered_meta.vcf
 
 #log with Trello
 phoneTrello "$seqId" "Analysis complete"
