@@ -397,7 +397,11 @@ echo \#\#SAMPLE\=\<ID\="$sampleId",WorklistId\="$worklistId",SeqId\="$seqId",Pan
 
 #create final file lists
 find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
-find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBams.list
+
+#filter low coverage samples 
+if [ "$meanOnTargetCoverage" > 100 ]; then
+    find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBams.list
+fi
 
 #delete unused files
 rm "$seqId"_"$sampleId"*unaligned.bam "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam 
