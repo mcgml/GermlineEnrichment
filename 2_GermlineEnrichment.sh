@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="1.1.2"
+version="1.1.3"
 
 #TODO SNPRelate
 #TODO PCA for ancestry
@@ -271,7 +271,7 @@ annotateVCF "$seqId"_filtered_meta.vcf "$seqId"_filtered_meta_annotated.vcf
 annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vcf
 
 #index annotated VCFs
-/share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$seqId"_"$sampleId"_filtered_meta_annotated.vcf
+/share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$seqId"_filtered_meta_annotated.vcf
 /share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$seqId"_sv_filtered_meta_annotated.vcf
 
 ### QC ###
@@ -281,7 +281,7 @@ annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vc
 -T VariantEval \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -o "$seqId"_variant_evaluation.txt \
---eval:"$seqId"_"$sampleId"_filtered_meta_annotated.vcf \
+--eval:"$seqId"_filtered_meta_annotated.vcf \
 --comp:omni2.5 /state/partition1/db/human/gatk/2.8/b37/1000G_omni2.5.b37.vcf \
 --comp:hapmap3.3 /state/partition1/db/human/gatk/2.8/b37/hapmap_3.3.b37.vcf \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
@@ -296,7 +296,7 @@ rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_variants.lcr.vcf "$s
 rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_indels.vcf igv.log
 rm "$seqId"_indels.vcf.idx "$seqId"_indels_filtered.vcf "$seqId"_indels_filtered.vcf.idx "$seqId"_filtered.vcf "$seqId"_filtered.vcf.idx
 rm "$seqId"_filtered_meta.vcf.gz "$seqId"_filtered_meta.vcf.gz.tbi ExomeDepth.log GVCFs.list FinalBams.list "$seqId"_sv_filtered.vcf "$panel"_ROI_b37_window_gc.bed 
-rm "$seqId"_"$sampleId"_filtered_meta.vcf "$seqId"_sv_filtered_meta.vcf
+rm "$seqId"_filtered_meta.vcf "$seqId"_sv_filtered_meta.vcf
 
 #log with Trello
 phoneTrello "$seqId" "Analysis complete"
