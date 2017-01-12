@@ -88,7 +88,6 @@ annotateVCF(){
 -V GVCFs.list \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_variants.vcf \
--nt 12 \
 -dt NONE
 
 #Annotate with low complexity region length using mdust
