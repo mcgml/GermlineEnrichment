@@ -1,6 +1,5 @@
 #Description: Rscript to run ExomeDepth on a set of BAM files
 #Author: Matt Lyon
-#Status: Development
 #Mode: BY_COHORT
 
 #load modules
