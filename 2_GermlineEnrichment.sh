@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="1.1.5"
+version="1.1.6"
 
 #TODO SNPRelate
 #TODO PCA for ancestry
@@ -51,6 +51,7 @@ addMetaDataToVCF(){
 }
 
 annotateVCF(){
+    #annotate VCF
     perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/variant_effect_predictor.pl \
     --verbose \
     --no_progress \
@@ -73,6 +74,11 @@ annotateVCF(){
     --shift_hgvs 1 \
     --vcf \
     --refseq
+    
+    #check VEP has produced annotated VCF
+    if [ ! -e "$2" ]; then
+        cp "$1" "$2"
+    fi
 }
 
 #load run & pipeline variables
