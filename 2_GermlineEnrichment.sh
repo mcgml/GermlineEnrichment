@@ -132,8 +132,10 @@ annotateVCF(){
 --filterName "MQRankSum" \
 --filterExpression "ReadPosRankSum < -8.0" \
 --filterName "ReadPosRankSum" \
---genotypeFilterExpression "DP < 15" \
+--genotypeFilterExpression "DP < 10" \
 --genotypeFilterName "LowDP" \
+--genotypeFilterExpression "GQ < 20" \
+--genotypeFilterName "LowGQ" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_snps_filtered.vcf \
 -dt NONE
@@ -164,8 +166,10 @@ annotateVCF(){
 --filterName "ReadPosRankSum" \
 --filterExpression "LCRLen > 8" \
 --filterName "LowComplexity" \
---genotypeFilterExpression "DP < 15" \
+--genotypeFilterExpression "DP < 10" \
 --genotypeFilterName "LowDP" \
+--genotypeFilterExpression "GQ < 20" \
+--genotypeFilterName "LowGQ" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_indels_filtered.vcf \
 -dt NONE
