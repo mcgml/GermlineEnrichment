@@ -28,13 +28,6 @@ version="1.1.6"
 
 #TODO bin gender score
 
-phoneTrello() {
-    #Call trello API
-    /share/apps/node-distros/node-v4.4.7-linux-x64/bin/node \
-    /data/diagnostics/scripts/TrelloAPI.js \
-    "$1" "$2" #seqId & message
-}
-
 countQCFlagFails() {
     #count how many core FASTQC tests failed
     grep -E "Basic Statistics|Per base sequence quality|Per tile sequence quality|Per sequence quality scores|Per base N content" "$1" | \
@@ -47,8 +40,6 @@ countQCFlagFails() {
 #load sample & pipeline variables
 . *.variables
 . /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
-
-phoneTrello "$seqId" "Starting GermlineEnrichment analysis for $sampleId ..."
 
 ### Preprocessing ###
 
@@ -96,7 +87,6 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
 
     #check FASTQC output
     if [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R1_fastqc/summary.txt) -gt 0 ] || [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R2_fastqc/summary.txt) -gt 0 ]; then
-        phoneTrello "$seqId" "$sampleId has failed FASTQC for $laneId"
         rawSequenceQuality=FAIL
     fi
 

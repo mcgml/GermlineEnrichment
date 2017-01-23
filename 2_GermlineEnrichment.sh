@@ -34,13 +34,6 @@ version="1.1.6"
 #
 # Script 2 runs in panel folder, requires final Bams &gVCFs
 
-phoneTrello() {
-    #Call trello API
-    /share/apps/node-distros/node-v4.4.7-linux-x64/bin/node \
-    /data/diagnostics/scripts/TrelloAPI.js \
-    "$1" "$2" #seqId & message
-}
-
 addMetaDataToVCF(){
     output=$(echo "$1" | sed 's/\.vcf/_meta\.vcf/g')
     grep '^##' "$1" > "$output"
@@ -306,6 +299,3 @@ rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_s
 rm "$seqId"_indels.vcf.idx "$seqId"_indels_filtered.vcf "$seqId"_indels_filtered.vcf.idx "$seqId"_filtered.vcf "$seqId"_filtered.vcf.idx
 rm "$seqId"_filtered_meta.vcf.gz "$seqId"_filtered_meta.vcf.gz.tbi ExomeDepth.log GVCFs.list FinalBams.list "$seqId"_sv_filtered.vcf "$panel"_ROI_b37_window_gc.bed 
 rm "$seqId"_filtered_meta.vcf "$seqId"_sv_filtered_meta.vcf
-
-#log with Trello
-phoneTrello "$seqId" "Analysis complete"
