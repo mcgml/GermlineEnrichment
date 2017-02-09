@@ -10,14 +10,6 @@ cd $PBS_O_WORKDIR
 #Mode: BY_COHORT
 version="1.1.6"
 
-#TODO SNPRelate
-#TODO PCA for ancestry
-#TODO import to variant database
-#TODO upgrade bcftools and remove ROH scripts
-#TODO ROH perl script has bug
-#TODO bcftools family relatedness
-#TODO akt illumina relationship analysis
-
 # Directory structure required for pipeline
 #
 # /data
@@ -60,6 +52,7 @@ annotateVCF(){
     --cache \
     --dir /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/annotations \
     --fasta /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/annotations \
+    --no_intergenic \
     --offline \
     --cache_version 86 \
     --allele_number \
