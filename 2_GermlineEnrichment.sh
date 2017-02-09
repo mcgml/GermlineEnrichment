@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="1.1.6"
+version="1.2.0"
 
 # Directory structure required for pipeline
 #
@@ -259,7 +259,7 @@ for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$
     grep -v '^#' | perl /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/bcftools_roh_range.pl | grep -v '#' | awk '{print $1"\t"$2-1"\t"$3"\t"$5}' > "$sample"/"$seqId"_"$sample"_roh.bed
 done
 
-### Annotation ###
+### Annotation & Reporting ###
 
 #annotate with VEP
 annotateVCF "$seqId"_filtered_meta.vcf "$seqId"_filtered_meta_annotated.vcf
@@ -268,6 +268,11 @@ annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vc
 #index annotated VCFs
 /share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$seqId"_filtered_meta_annotated.vcf
 /share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$seqId"_sv_filtered_meta_annotated.vcf
+
+#write full dataset to table
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.0.0/VCFParse.jar \
+-V "$seqId"_filtered_meta_annotated.vcf \
+-K
 
 ### QC ###
 
