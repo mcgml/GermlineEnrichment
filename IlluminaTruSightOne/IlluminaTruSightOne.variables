@@ -1,6 +1,6 @@
 read1Adapter=CTGTCTCTTATACACATCT #read 1 adapter to trim
 read2Adapter=CTGTCTCTTATACACATCT #read 2 adapter to trim
 padding=150 #Amount of padding for GATK preprocessing. Should be higher for small panels to capture enough data for BQSR.
-minimumCoverage=30 # for passing regions. Need to determine during clinical validation
+minimumCoverage=20 # for passing regions. Need to determine during clinical validation
 includeBQSR=true #recalibrate base quality scores. Requires >100M bases ontarget
 expectedInsertSize=300 #insert size

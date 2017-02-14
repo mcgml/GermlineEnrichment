@@ -98,7 +98,6 @@ annotateVCF(){
 -selectType SNP \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_snps.vcf \
--nt 12 \
 -dt NONE
 
 #Filter SNPs
@@ -134,7 +133,6 @@ annotateVCF(){
 -selectType INDEL \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_indels.vcf \
--nt 12 \
 -dt NONE
 
 #Filter INDELs
@@ -270,7 +268,7 @@ annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vc
 /share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$seqId"_sv_filtered_meta_annotated.vcf
 
 #write full dataset to table
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.0.0/VCFParse.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.1.2/VCFParse.jar \
 -V "$seqId"_filtered_meta_annotated.vcf \
 -K
 

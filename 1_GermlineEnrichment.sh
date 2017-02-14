@@ -348,7 +348,6 @@ gender=$(echo "print ($chromYCount / $(awk '{n+= $3-$2} END {print n}' Y.off.bed
 -ef \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -XL X -XL Y -XL MT \
--nt 12 \
 -dt NONE
 
 #Calculate dna contamination: sample-to-sample contamination
@@ -387,7 +386,7 @@ echo \#\#SAMPLE\=\<ID\="$sampleId",Tissue\=Germline,WorklistId\="$worklistId",Se
 find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
 
 #filter low coverage samples 
-if [ "$meanOnTargetCoverage" > 100 ]; then
+if [ "$meanOnTargetCoverage" > 50 ]; then
     find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBams.list
 fi
 
