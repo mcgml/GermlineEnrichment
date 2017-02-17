@@ -53,7 +53,8 @@ for (i in 1:nsamples) {
   
   # Now call the CNVs
   all.exons <- CallCNVs(x = all.exons,
-  transition.probability = 0.01,
+  transition.probability = 0.05,
+  expected.CNV.length = 10000,
   chromosome = ExomeCount.dafr$space,
   start = ExomeCount.dafr$start,
   end = ExomeCount.dafr$end,
