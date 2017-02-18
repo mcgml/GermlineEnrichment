@@ -176,7 +176,7 @@ addMetaDataToVCF "$seqId"_filtered.vcf
 
 #Structural variant calling with Manta
 /share/apps/manta-distros/manta-1.0.3.centos5_x86_64/bin/configManta.py \
-$(sed 's/^/--bam /' FinalBams.list | tr '\n' ' ') \
+$(sed 's/^/--bam /' HighCoverageBams.list | tr '\n' ' ') \
 --referenceFasta /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --exome \
 --runDir manta
@@ -204,7 +204,7 @@ awk '{ if ($5 > 0.95 && $6 > 0.95) print $1"\ttarget_"NR }' "$panel"_ROI_b37_win
 
 #call CNVs using read depth
 /share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
--b FinalBams.list \
+-b HighCoverageBams.list \
 -f /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -r "$panel"_ROI_b37_CNV.bed \
 2>&1 | tee ExomeDepth.log
@@ -245,7 +245,7 @@ done
 
 #print ExomeDepth metrics
 echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_exomedepth.metrics.txt
-paste FinalBams.list \
+paste HighCoverageBams.list \
 <(grep "Number of counted fragments" ExomeDepth.log | cut -d' ' -f6) \
 <(grep "Correlation between reference and tests count" ExomeDepth.log | cut -d' ' -f8) >> "$seqId"_exomedepth.metrics.txt
 
@@ -300,5 +300,5 @@ rm -r manta
 rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_variants.lcr.vcf "$seqId"_variants.lcr.vcf.idx "$panel"_ROI_b37_window_gc_mappability.txt
 rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_indels.vcf igv.log
 rm "$seqId"_indels.vcf.idx "$seqId"_indels_filtered.vcf "$seqId"_indels_filtered.vcf.idx "$seqId"_filtered.vcf "$seqId"_filtered.vcf.idx
-rm "$seqId"_filtered_meta.vcf.gz "$seqId"_filtered_meta.vcf.gz.tbi ExomeDepth.log GVCFs.list FinalBams.list "$seqId"_sv_filtered.vcf "$panel"_ROI_b37_window_gc.bed 
+rm "$seqId"_filtered_meta.vcf.gz "$seqId"_filtered_meta.vcf.gz.tbi ExomeDepth.log GVCFs.list HighCoverageBams.list "$seqId"_sv_filtered.vcf "$panel"_ROI_b37_window_gc.bed 
 rm "$seqId"_filtered_meta.vcf "$seqId"_sv_filtered_meta.vcf

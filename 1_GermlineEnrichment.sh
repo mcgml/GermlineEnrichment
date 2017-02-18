@@ -387,7 +387,7 @@ find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
 
 #filter low coverage samples 
 if [ "$meanOnTargetCoverage" > 50 ]; then
-    find $PWD -name "$seqId"_"$sampleId".bam >> ../FinalBams.list
+    find $PWD -name "$seqId"_"$sampleId".bam >> ../HighCoverageBams.list
 fi
 
 #delete unused files
