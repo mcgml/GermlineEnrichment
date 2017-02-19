@@ -384,6 +384,7 @@ echo \#\#SAMPLE\=\<ID\="$sampleId",Tissue\=Germline,WorklistId\="$worklistId",Se
 
 #create final file lists
 find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
+find $PWD -name "$seqId"_"$sampleId".bam >> ../BAMs.list
 
 #filter low coverage samples 
 if [ "$meanOnTargetCoverage" > 50 ]; then

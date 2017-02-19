@@ -176,7 +176,7 @@ addMetaDataToVCF "$seqId"_filtered.vcf
 
 #Structural variant calling with Manta
 /share/apps/manta-distros/manta-1.0.3.centos5_x86_64/bin/configManta.py \
-$(sed 's/^/--bam /' HighCoverageBams.list | tr '\n' ' ') \
+$(sed 's/^/--bam /' Bams.list | tr '\n' ' ') \
 --referenceFasta /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --exome \
 --runDir manta
@@ -301,4 +301,4 @@ rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_variants.lcr.vcf "$s
 rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_indels.vcf igv.log
 rm "$seqId"_indels.vcf.idx "$seqId"_indels_filtered.vcf "$seqId"_indels_filtered.vcf.idx "$seqId"_filtered.vcf "$seqId"_filtered.vcf.idx
 rm "$seqId"_filtered_meta.vcf.gz "$seqId"_filtered_meta.vcf.gz.tbi ExomeDepth.log GVCFs.list HighCoverageBams.list "$seqId"_sv_filtered.vcf "$panel"_ROI_b37_window_gc.bed 
-rm "$seqId"_filtered_meta.vcf "$seqId"_sv_filtered_meta.vcf
+rm "$seqId"_filtered_meta.vcf "$seqId"_sv_filtered_meta.vcf BAMs.list
