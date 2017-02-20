@@ -334,7 +334,7 @@ chromXCount=$(/share/apps/samtools-distros/samtools-1.3.1/samtools view \
 -L X.off.bed \
 "$seqId"_"$sampleId".bam)
 
-gender=$(echo "print ($chromYCount / $(awk '{n+= $3-$2} END {print n}' Y.off.bed)) / ($chromXCount / $(awk '{n+= $3-$2} END {print n}' X.off.bed))" | perl | awk '{if ($0 > 0.0002) print "MALE" else if ($0 < 0.00005) print "FEMALE" else print "UKNOWN" }')
+gender=$(echo "print ($chromYCount / $(awk '{n+= $3-$2} END {print n}' Y.off.bed)) / ($chromXCount / $(awk '{n+= $3-$2} END {print n}' X.off.bed))" | perl | awk '{if ($0 > 0.0002) print "MALE"; else if ($0 < 0.00005) print "FEMALE"; else print "UKNOWN"; }')
 
 #Extract 1kg autosomal snps for contamination analysis
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
