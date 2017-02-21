@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.2.1"
+version="1.2.2"
 
 # Directory structure required for pipeline
 #
@@ -56,7 +56,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     /share/apps/cutadapt-distros/cutadapt-1.9.1/bin/cutadapt \
     -a "$read1Adapter" \
     -A "$read2Adapter" \
-    -m 30 \
+    -m 35 \
     -o "$seqId"_"$sampleId"_"$laneId"_R1.fastq \
     -p "$seqId"_"$sampleId"_"$laneId"_R2.fastq \
     "$read1Fastq" \
@@ -387,7 +387,7 @@ find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
 find $PWD -name "$seqId"_"$sampleId".bam >> ../BAMs.list
 
 #filter low coverage samples 
-if [ "$meanOnTargetCoverage" > 50 ]; then
+if [ $(echo "$meanOnTargetCoverage" | awk '{if ($1 > 50) print "true"; else print "false"}') = true ]; then
     find $PWD -name "$seqId"_"$sampleId".bam >> ../HighCoverageBams.list
 fi
 

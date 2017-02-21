@@ -6,6 +6,12 @@
 require(ExomeDepth)
 require(optparse)
 
+#check exomedepth version
+if (packageDescription("ExomeDepth")$Version != "1.1.10") {
+  print("ExomeDepth package version is not correct!")
+  quit(save = "no", status = 1, runLast = FALSE)
+}
+
 #parse command line args
 option_list = list(
   make_option(c("-b", "--bamlist"), action="store", default='', type='character', help="Path to list of BAMs"),
@@ -54,7 +60,6 @@ for (i in 1:nsamples) {
   # Now call the CNVs
   all.exons <- CallCNVs(x = all.exons,
   transition.probability = 0.05,
-  expected.CNV.length = 10000,
   chromosome = ExomeCount.dafr$space,
   start = ExomeCount.dafr$start,
   end = ExomeCount.dafr$end,
