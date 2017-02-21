@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.2.2"
+version="1.2.3"
 
 # Directory structure required for pipeline
 #
@@ -112,6 +112,7 @@ INTERLEAVE=true \
 NON_PF=true \
 MAX_RECORDS_IN_RAM=2000000 \
 VALIDATION_STRINGENCY=SILENT \
+COMPRESSION_LEVEL=0 \
 TMP_DIR=/state/partition1/tmpdir | \
 /share/apps/bwa-distros/bwa-0.7.15/bwa mem \
 -M \
@@ -121,7 +122,6 @@ TMP_DIR=/state/partition1/tmpdir | \
 /dev/stdin | \
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar MergeBamAlignment \
 EXPECTED_ORIENTATIONS=FR \
-ATTRIBUTES_TO_RETAIN=X0 \
 ALIGNED_BAM=/dev/stdin \
 UNMAPPED_BAM="$seqId"_"$sampleId"_unaligned.bam \
 OUTPUT="$seqId"_"$sampleId"_aligned.bam \
@@ -138,7 +138,6 @@ PRIMARY_ALIGNMENT_STRATEGY=MostDistant \
 UNMAP_CONTAMINANT_READS=false \
 CLIP_OVERLAPPING_READS=true \
 ALIGNER_PROPER_PAIR_FLAGS=false \
-ATTRIBUTES_TO_RETAIN=XS \
 INCLUDE_SECONDARY_ALIGNMENTS=true \
 CREATE_INDEX=true \
 TMP_DIR=/state/partition1/tmpdir
@@ -150,6 +149,7 @@ OUTPUT="$seqId"_"$sampleId"_rmdup.bam \
 METRICS_FILE="$seqId"_"$sampleId"_MarkDuplicatesMetrics.txt \
 CREATE_INDEX=true \
 MAX_RECORDS_IN_RAM=2000000 \
+VALIDATION_STRINGENCY=SILENT \
 TMP_DIR=/state/partition1/tmpdir
 
 #Identify regions requiring realignment
@@ -162,7 +162,6 @@ TMP_DIR=/state/partition1/tmpdir
 -o "$seqId"_"$sampleId"_realign.intervals \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip "$padding" \
--nt 12 \
 -dt NONE
 
 #Realign around indels
@@ -248,7 +247,6 @@ fi
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_"$sampleId".g.vcf \
 --genotyping_mode DISCOVERY \
--bamout "$seqId"_"$sampleId"_HC.bam \
 --emitRefConfidence GVCF \
 -dt NONE
 
