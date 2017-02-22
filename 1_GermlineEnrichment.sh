@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.2.4"
+version="1.2.5"
 
 # Directory structure required for pipeline
 #
@@ -89,7 +89,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     fi
 
     #clean up
-    rm "$seqId"_"$sampleId"_"$laneId"_R1.fastq "$seqId"_"$sampleId"_"$laneId"_R2.fastq
+    rm "$seqId"_"$sampleId"_"$laneId"_R1.fastq "$seqId"_"$sampleId"_"$laneId"_R2.fastq *_fastqc.zip
 
 done
 
@@ -296,6 +296,9 @@ TARGET_INTERVALS="$panel"_ROI.interval_list
 -d"$minimumCoverage" \
 > "$seqId"_"$sampleId"_PercentageCoverage.txt
 
+#add file prefix
+mv "$sampleId"_gaps.bed "$seqId"_"$sampleId"_gaps.bed
+
 #Gender analysis using off-targed reads
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools slop \
 -i /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
@@ -332,7 +335,7 @@ chromXCount=$(/share/apps/samtools-distros/samtools-1.3.1/samtools view \
 -L X.off.bed \
 "$seqId"_"$sampleId".bam)
 
-gender=$(echo "print ($chromYCount / $(awk '{n+= $3-$2} END {print n}' Y.off.bed)) / ($chromXCount / $(awk '{n+= $3-$2} END {print n}' X.off.bed))" | perl | awk '{if ($0 > 0.0002) print "MALE"; else if ($0 < 0.00005) print "FEMALE"; else print "UKNOWN"; }')
+gender=$(echo "print ($chromYCount / $(awk '{n+= $3-$2} END {print n}' Y.off.bed)) / ($chromXCount / $(awk '{n+= $3-$2} END {print n}' X.off.bed))" | perl | awk '{if ($0 > 0.0002) print "MALE"; else if ($0 < 0.00005) print "FEMALE"; else print "UNKNOWN"; }')
 
 #Extract 1kg autosomal snps for contamination analysis
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
