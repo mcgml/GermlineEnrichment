@@ -225,7 +225,6 @@ if [ "$includeBQSR" = true ] ; then
     -I "$seqId"_"$sampleId"_realigned.bam \
     -BQSR "$seqId"_"$sampleId"_recal_data.table \
     -o "$seqId"_"$sampleId".bam \
-    -nct 12 \
     -dt NONE
 
 else

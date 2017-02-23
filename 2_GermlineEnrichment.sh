@@ -165,7 +165,6 @@ annotateVCF(){
 --variant "$seqId"_snps_filtered.vcf \
 --variant "$seqId"_indels_filtered.vcf \
 -o "$seqId"_filtered.vcf \
--nt 12 \
 -genotypeMergeOptions UNSORTED \
 -dt NONE
 
@@ -302,7 +301,6 @@ done
 --comp:omni2.5 /state/partition1/db/human/gatk/2.8/b37/1000G_omni2.5.b37.vcf \
 --comp:hapmap3.3 /state/partition1/db/human/gatk/2.8/b37/hapmap_3.3.b37.vcf \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--nt 12 \
 -dt NONE
 
 ### Clean up ###
