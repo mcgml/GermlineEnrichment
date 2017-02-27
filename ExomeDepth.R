@@ -5,12 +5,7 @@
 #load modules
 require(ExomeDepth)
 require(optparse)
-
-#check exomedepth version
-if (packageDescription("ExomeDepth")$Version != "1.1.10") {
-  print("ExomeDepth package version is not correct!")
-  quit(save = "no", status = 1, runLast = FALSE)
-}
+require(Rsamtools)
 
 #parse command line args
 option_list = list(
@@ -21,16 +16,13 @@ option_list = list(
 opt = parse_args(OptionParser(option_list=option_list))
 
 # get bamlist
-bams = read.table(opt$bamlist,
-header=FALSE,
-stringsAsFactors=FALSE)$V1
+bams = read.table(opt$bamlist,header=FALSE,stringsAsFactors=FALSE)$V1
+
+#load FASTA index
+fasta.file <- FaFile(opt$fasta)
 
 # get bam counts
-ExomeCount = getBamCounts(bed.file = opt$bed,
-bam.files = bams,
-min.mapq = 20,
-include.chr = FALSE,
-referenceFasta = opt$fasta)
+ExomeCount = getBamCounts(bed.file = opt$bed,bam.files = bams,min.mapq = 20,include.chr = FALSE,referenceFasta = opt$fasta)
 
 # prepare the main matrix of read count data
 ExomeCount.dafr <- as(ExomeCount[, colnames(ExomeCount)], 'data.frame')
@@ -39,35 +31,74 @@ nsamples <- ncol(ExomeCount.mat)
 
 # start looping over each sample
 for (i in 1:nsamples) {
-  print(paste("Processing sample", i, colnames(ExomeCount.mat)[i], sep = " ", collapse = NULL))
+
+  #extract run info from filename
+  sampleName <- gsub(".bam", "", gsub(".*_", "", colnames(ExomeCount.mat)[i]))
+  outputPrefix <- runId <- gsub("-bam", "", gsub("\\.", "-", gsub("^X", "", colnames(ExomeCount.mat)[i])))
+  print(paste("Processing sample", i, ":", sampleName, sep = " ", collapse = NULL))
   
   # Create the aggregate reference set for this sample
-  my.choice <- select.reference.set(test.counts = ExomeCount.mat[,i],
-  reference.counts = ExomeCount.mat[,-i],
-  bin.length = (ExomeCount.dafr$end - ExomeCount.dafr$start)/1000,
-  n.bins.reduced = 100000)
-  
-  my.reference.selected <- apply(X = ExomeCount.mat[, my.choice$reference.choice, drop = FALSE],
-  MAR = 1,
-  FUN = sum)
+  my.choice <- select.reference.set(test.counts = ExomeCount.mat[,i],reference.counts = ExomeCount.mat[,-i],bin.length = (ExomeCount.dafr$end - ExomeCount.dafr$start)/1000,n.bins.reduced = 100000)
+
+  #print reference sample(s)
+  print(paste("Reference sample(s):", my.choice$reference.choice, sep = " ", collapse = NULL))
+
+  #create reference set
+  my.reference.selected <- apply(X = ExomeCount.mat[, my.choice$reference.choice, drop = FALSE],MAR = 1,FUN = sum)
   
   # Now creating the ExomeDepth object
-  all.exons <- new('ExomeDepth',
-  test = ExomeCount.mat[,i], 
-  reference = my.reference.selected,
-  formula = 'cbind(test, reference) ~ 1')
+  all.exons <- new('ExomeDepth',test = ExomeCount.mat[,i], reference = my.reference.selected,formula = 'cbind(test, reference) ~ 1')
   
   # Now call the CNVs
-  all.exons <- CallCNVs(x = all.exons,
-  transition.probability = 0.05,
-  chromosome = ExomeCount.dafr$space,
-  start = ExomeCount.dafr$start,
-  end = ExomeCount.dafr$end,
-  name = ExomeCount.dafr$names)
-  
-  #write to file
-  write.table(file = paste(colnames(ExomeCount.mat)[i], 'txt', sep = '.'), x = all.exons@CNV.calls, row.names = FALSE, quote = FALSE, sep = "\t")
-  
+  all.exons <- CallCNVs(x = all.exons,transition.probability = 0.05,chromosome = ExomeCount.dafr$space,start = ExomeCount.dafr$start,end = ExomeCount.dafr$end,name = ExomeCount.dafr$names)
+
+  #genotype CNVs
+  genotype <- function(x){
+    if (x >= 0.2 && x <= 1.8){
+      "0/1"
+    } else if (x > 1.8 || x < 0.2) {
+      "1/1"
+    }
+  }
+
+  #ad reference base allele to each CNV call for VCF output later
+  fasta.ranges <- GRanges(seqnames=all.exons@CNV.calls$chromosome, ranges=IRanges(all.exons@CNV.calls$start, all.exons@CNV.calls$start), strand="+")
+  fasta.sequence <- getSeq(fasta.file, fasta.ranges)
+  all.exons@CNV.calls$ref.allele <- as.character(fasta.sequence)
+
+  #write results to VCF file
+  vcf.filename <- paste(c(outputPrefix, "_cnv.vcf"), collapse="")
+
+  #write header
+  write(
+    paste(
+        "##fileformat=VCFv4.1\n",
+        paste("##fileDate=", format(Sys.Date(), format="%Y%m%d"), "\n", collapse = NULL, sep = ""),
+        paste("##source=ExomeDepth", packageDescription("ExomeDepth")$Version, "\n", collapse = NULL, sep = ""),
+        paste("##reference=file://", "opt$fasta", "\n", collapse = NULL, sep=""),
+        "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n",
+        "##FORMAT=<ID=BF,Number=1,Type=Float,Description=\"Bayes factor\">\n",
+        "##FORMAT=<ID=RE,Number=1,Type=Integer,Description=\"Reads expected\">\n",
+        "##FORMAT=<ID=RO,Number=1,Type=Integer,Description=\"Reads observed\">\n",
+        "##FORMAT=<ID=RR,Number=1,Type=Float,Description=\"Reads ratio\">\n",
+        "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End position of the variant described in this record\">\n",
+        "##INFO=<ID=Regions,Number=1,Type=Integer,Description=\"Number of affected regions of interest\">\n",
+        "##INFO=<ID=StartPosition,Number=1,Type=Integer,Description=\"Position of first affected region\">\n",
+        "##INFO=<ID=EndPosition,Number=1,Type=Integer,Description=\"Position of last affected region\">\n",
+        "##ALT=<ID=DEL,Description=\"Deletion\">\n",
+        "##ALT=<ID=DUP,Description=\"Duplication\">\n",
+        paste("#CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO","FORMAT",sampleName, sep="\t", collapse=NULL),
+      collapse = NULL, sep = ""), vcf.filename)
+
+    write(
+      paste(
+        all.exons@CNV.calls$chromosome,all.exons@CNV.calls$start,".",all.exons@CNV.calls$ref.allele,gsub("duplication","<DUP>",gsub("deletion", "<DEL>", all.exons@CNV.calls$type)),".",".",
+        paste("END=",all.exons@CNV.calls$end,";","Regions=",all.exons@CNV.calls$nexons,";","FirstRegion=",all.exons@CNV.calls$start.p,";","LastRegion=", all.exons@CNV.calls$end.p, sep="", collapse=NULL), 
+        "GT:BF:RE:RO:RR",
+        paste(genotype(all.exons@CNV.calls$reads.ratio), all.exons@CNV.calls$BF, all.exons@CNV.calls$reads.expected, all.exons@CNV.calls$reads.observed, all.exons@CNV.calls$reads.ratio, collapse=NULL, sep=":"),
+      sep="\t"), vcf.filename, append=TRUE
+    )
+
 }
 
 #print session info for logging

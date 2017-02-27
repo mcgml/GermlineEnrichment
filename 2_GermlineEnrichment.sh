@@ -171,6 +171,10 @@ annotateVCF(){
 #Add VCF meta data to final VCF
 addMetaDataToVCF "$seqId"_filtered.vcf
 
+#bgzip vcf and index with tabix
+/share/apps/htslib-distros/htslib-1.3.1/bgzip -c "$seqId"_filtered_meta.vcf > "$seqId"_filtered_meta.vcf.gz
+/share/apps/htslib-distros/htslib-1.3.1/tabix -p vcf "$seqId"_filtered_meta.vcf.gz
+
 ### ROH, SV & CNV analysis ###
 
 #Structural variant calling with Manta
@@ -213,9 +217,22 @@ for i in $(ls X*bam.txt); do
     filename=$(echo "$i" | cut -c2- | sed 's/\./-/g' | sed 's/-bam-txt//g')
     sample=$(echo "$filename" | cut -d_ -f5)
     
-    #Chrom,Start,Stop,Call;DQ,BF
-    grep -v start "$i" | sed '/^$/d' | awk '{print $7"\t"$5-1"\t"$6"\t"$3";"$12"\t"$9}' > "$sample"/"$filename"_cnv.bed
-    grep -v start "$i" | sed '/^$/d' | awk '{print $7"\t"$5-1"\t"$6"\t"$3}' > "$filename"_cnv.bed
+    #Chrom,Start,Stop,Call;DQ,BF,HetCalls
+    while read call; do
+        region=$(echo "$call" | awk '{print $1":"$2-1"-"$3}')
+
+        #count het calls
+        hetNo=$(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools view \
+        "$seqId"_filtered_meta.vcf.gz \
+        -r "$region" \
+        -s "$sample" \
+        -Ha -f PASS -g ^hom ^miss | \
+        wc -l)
+
+        #print call to final bed
+        echo "$call;$hetNo" > "$sample"/"$filename"_cnv.bed
+
+    done < $(grep -v start "$i" | sed '/^$/d' | awk '{print $7"\t"$5-1"\t"$6"\t"$3";"$12"\t"$9}')
 
     #annotate bed
     perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/variant_effect_predictor.pl \
@@ -226,7 +243,7 @@ for i in $(ls X*bam.txt); do
     --no_intergenic \
     --species homo_sapiens \
     --assembly GRCh37 \
-    --input_file "$filename"_cnv.bed \
+    --input_file "$sample"/"$filename"_cnv.bed \
     --output_file "$sample"/"$filename"_cnv_annotated.txt \
     --force_overwrite \
     --no_stats \
@@ -249,8 +266,6 @@ paste HighCoverageBams.list \
 <(grep "Correlation between reference and tests count" ExomeDepth.log | cut -d' ' -f8) >> "$seqId"_exomedepth.metrics.txt
 
 #identify runs of homozygosity
-/share/apps/htslib-distros/htslib-1.3.1/bgzip -c "$seqId"_filtered_meta.vcf > "$seqId"_filtered_meta.vcf.gz
-/share/apps/htslib-distros/htslib-1.3.1/tabix -p vcf "$seqId"_filtered_meta.vcf.gz
 for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$seqId"_filtered_meta.vcf); do
     /share/apps/bcftools-distros/bcftools-dev/bcftools roh -O r -s "$sample" -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed "$seqId"_filtered_meta.vcf.gz | \
     grep -v '^#' | awk '{print $3"\t"$4-1"\t"$5"\t\t"$8}' > "$sample"/"$seqId"_"$sample"_roh.bed
