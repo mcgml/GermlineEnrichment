@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="1.2.5"
+version="1.3.0"
 
 # Directory structure required for pipeline
 #
@@ -177,6 +177,12 @@ addMetaDataToVCF "$seqId"_filtered.vcf
 
 ### ROH, SV & CNV analysis ###
 
+#identify runs of homozygosity
+for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$seqId"_filtered_meta.vcf); do
+    /share/apps/bcftools-distros/bcftools-dev/bcftools roh -O r -s "$sample" -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed "$seqId"_filtered_meta.vcf.gz | \
+    grep -v '^#' | awk '{print $3"\t"$4-1"\t"$5"\t\t"$8}' > "$sample"/"$seqId"_"$sample"_roh.bed
+done
+
 #Structural variant calling with Manta
 /share/apps/manta-distros/manta-1.0.3.centos5_x86_64/bin/configManta.py \
 $(sed 's/^/--bam /' BAMs.list | tr '\n' ' ') \
@@ -212,66 +218,45 @@ awk '{ if ($5 > 0.9 && $6 > 0.9) print $1"\ttarget_"NR }' "$panel"_ROI_b37_windo
 -r "$panel"_ROI_b37_CNV.bed \
 2>&1 | tee ExomeDepth.log
 
-#convert ExomeDepth output to BED format & move to sample folder
-for i in $(ls X*bam.txt); do
-    filename=$(echo "$i" | cut -c2- | sed 's/\./-/g' | sed 's/-bam-txt//g')
-    sample=$(echo "$filename" | cut -d_ -f5)
-    
-    #Chrom,Start,Stop,Call;DQ,BF,HetCalls
-    while read call; do
-        region=$(echo "$call" | awk '{print $1":"$2-1"-"$3}')
-
-        #count het calls
-        hetNo=$(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools view \
-        "$seqId"_filtered_meta.vcf.gz \
-        -r "$region" \
-        -s "$sample" \
-        -Ha -f PASS -g ^hom ^miss | \
-        wc -l)
-
-        #print call to final bed
-        echo "$call;$hetNo" > "$sample"/"$filename"_cnv.bed
-
-    done < $(grep -v start "$i" | sed '/^$/d' | awk '{print $7"\t"$5-1"\t"$6"\t"$3";"$12"\t"$9}')
-
-    #annotate bed
-    perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/variant_effect_predictor.pl \
-    --verbose \
-    --no_progress \
-    --numbers \
-    --symbol \
-    --no_intergenic \
-    --species homo_sapiens \
-    --assembly GRCh37 \
-    --input_file "$sample"/"$filename"_cnv.bed \
-    --output_file "$sample"/"$filename"_cnv_annotated.txt \
-    --force_overwrite \
-    --no_stats \
-    --cache \
-    --dir /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/annotations \
-    --fasta /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/annotations \
-    --offline \
-    --cache_version 86 \
-    --fields Location,Allele,SYMBOL,Feature,EXON,INTRON \
-    --refseq
-
-    rm "$i"
-    rm "$filename"_cnv.bed
-done
-
 #print ExomeDepth metrics
 echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_exomedepth.metrics.txt
 paste HighCoverageBams.list \
 <(grep "Number of counted fragments" ExomeDepth.log | cut -d' ' -f6) \
-<(grep "Correlation between reference and tests count" ExomeDepth.log | cut -d' ' -f8) >> "$seqId"_exomedepth.metrics.txt
-
-#identify runs of homozygosity
-for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$seqId"_filtered_meta.vcf); do
-    /share/apps/bcftools-distros/bcftools-dev/bcftools roh -O r -s "$sample" -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed "$seqId"_filtered_meta.vcf.gz | \
-    grep -v '^#' | awk '{print $3"\t"$4-1"\t"$5"\t\t"$8}' > "$sample"/"$seqId"_"$sample"_roh.bed
-done
+<(grep "Correlation between reference and tests count" ExomeDepth.log | cut -d' ' -f8) >> "$seqId"_ExomeDepth_Metrics.txt
 
 ### Annotation & Reporting ###
+
+#annotate CNV calls with number of het calls
+for vcf in $(ls *_cnv.vcf); do
+
+    prefix=$(echo "$vcf" | sed 's/\.vcf//g')
+    sampleId=$(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$vcf")
+
+    #add VCF headers
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar UpdateVcfSequenceDictionary \
+    I="$vcf" \
+    O="$prefix"_header.vcf \
+    SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
+
+    #add metadata, annotate & index
+    addMetaDataToVCF "$prefix"_header.vcf
+    annotateVCF "$prefix"_header_meta.vcf "$prefix"_meta_annotated.vcf
+    /share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$prefix"_meta_annotated.vcf
+
+    #write SNV & Indel dataset to table
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.2/VCFParse.jar \
+    -V "$prefix"_meta_annotated.vcf \
+    -O cnv \
+    -K
+
+    #move files to sampleId folder
+    mv "$prefix"_meta_annotated.vcf* "$sampleId"
+    mv "$seqId"_"$sampleId"_cnv_VariantReport.txt "$sampleId"
+
+    #delete unused files
+    rm "$vcf" "$prefix"_header.vcf "$prefix"_header_meta.vcf
+    
+done
 
 #annotate with VEP
 annotateVCF "$seqId"_filtered_meta.vcf "$seqId"_filtered_meta_annotated.vcf

@@ -8,12 +8,19 @@ require(optparse)
 require(Rsamtools)
 
 #parse command line args
+script.help <- "Args -b <bamlist> -r <bed> -f <fasta>"
 option_list = list(
   make_option(c("-b", "--bamlist"), action="store", default='', type='character', help="Path to list of BAMs"),
   make_option(c("-r", "--bed"), action="store", default='', type='character', help="Path to BED file"),
   make_option(c("-f", "--fasta"), action="store", default='', type='character', help="Path to FASTA")
 )
 opt = parse_args(OptionParser(option_list=option_list))
+
+#check args are provided
+if (opt$bamlist == "" || opt$bed == "" || opt$fasta == ""){
+  print(script.help)
+  stop()
+}
 
 # get bamlist
 bams = read.table(opt$bamlist,header=FALSE,stringsAsFactors=FALSE)$V1
@@ -52,19 +59,14 @@ for (i in 1:nsamples) {
   # Now call the CNVs
   all.exons <- CallCNVs(x = all.exons,transition.probability = 0.05,chromosome = ExomeCount.dafr$space,start = ExomeCount.dafr$start,end = ExomeCount.dafr$end,name = ExomeCount.dafr$names)
 
-  #genotype CNVs
-  genotype <- function(x){
-    if (x >= 0.2 && x <= 1.8){
-      "0/1"
-    } else if (x > 1.8 || x < 0.2) {
-      "1/1"
-    }
-  }
-
-  #ad reference base allele to each CNV call for VCF output later
+  #add reference base allele to each CNV call for VCF output later
   fasta.ranges <- GRanges(seqnames=all.exons@CNV.calls$chromosome, ranges=IRanges(all.exons@CNV.calls$start, all.exons@CNV.calls$start), strand="+")
   fasta.sequence <- getSeq(fasta.file, fasta.ranges)
   all.exons@CNV.calls$ref.allele <- as.character(fasta.sequence)
+
+  #genotype using reads.ratio
+  all.exons@CNV.calls$genotypes <- "0/1"
+  all.exons@CNV.calls$genotypes[which(all.exons@CNV.calls$reads.ratio < 0.25)] <- "1/1"
 
   #write results to VCF file
   vcf.filename <- paste(c(outputPrefix, "_cnv.vcf"), collapse="")
@@ -75,7 +77,7 @@ for (i in 1:nsamples) {
         "##fileformat=VCFv4.1\n",
         paste("##fileDate=", format(Sys.Date(), format="%Y%m%d"), "\n", collapse = NULL, sep = ""),
         paste("##source=ExomeDepth", packageDescription("ExomeDepth")$Version, "\n", collapse = NULL, sep = ""),
-        paste("##reference=file://", "opt$fasta", "\n", collapse = NULL, sep=""),
+        paste("##reference=file://", opt$fasta, "\n", collapse = NULL, sep=""),
         "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n",
         "##FORMAT=<ID=BF,Number=1,Type=Float,Description=\"Bayes factor\">\n",
         "##FORMAT=<ID=RE,Number=1,Type=Integer,Description=\"Reads expected\">\n",
@@ -92,17 +94,19 @@ for (i in 1:nsamples) {
 
     write(
       paste(
-        all.exons@CNV.calls$chromosome,all.exons@CNV.calls$start,".",all.exons@CNV.calls$ref.allele,gsub("duplication","<DUP>",gsub("deletion", "<DEL>", all.exons@CNV.calls$type)),".",".",
-        paste("END=",all.exons@CNV.calls$end,";","Regions=",all.exons@CNV.calls$nexons,";","FirstRegion=",all.exons@CNV.calls$start.p,";","LastRegion=", all.exons@CNV.calls$end.p, sep="", collapse=NULL), 
+        all.exons@CNV.calls$chromosome,all.exons@CNV.calls$start,".",all.exons@CNV.calls$ref.allele,gsub("duplication","<DUP>",gsub("deletion", "<DEL>", all.exons@CNV.calls$type)),".","PASS",
+        paste("END=",all.exons@CNV.calls$end,";","Regions=",all.exons@CNV.calls$nexons,";","StartPosition=",all.exons@CNV.calls$start.p,";","EndPosition=", all.exons@CNV.calls$end.p, sep="", collapse=NULL), 
         "GT:BF:RE:RO:RR",
-        paste(genotype(all.exons@CNV.calls$reads.ratio), all.exons@CNV.calls$BF, all.exons@CNV.calls$reads.expected, all.exons@CNV.calls$reads.observed, all.exons@CNV.calls$reads.ratio, collapse=NULL, sep=":"),
+        paste(all.exons@CNV.calls$genotypes, all.exons@CNV.calls$BF, all.exons@CNV.calls$reads.expected, all.exons@CNV.calls$reads.observed, all.exons@CNV.calls$reads.ratio, collapse=NULL, sep=":"),
       sep="\t"), vcf.filename, append=TRUE
     )
-
+    
 }
 
-#print session info for logging
+#print session info for logging purposes
 sessionInfo()
 
 #print warnings
-warnings()
+if (!is.null(warnings())){
+  warnings()
+}
