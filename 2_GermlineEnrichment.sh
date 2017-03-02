@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="1.3.0"
+version="1.3.1"
 
 # Directory structure required for pipeline
 #
@@ -219,7 +219,7 @@ awk '{ if ($5 > 0.9 && $6 > 0.9) print $1"\ttarget_"NR }' "$panel"_ROI_b37_windo
 2>&1 | tee ExomeDepth.log
 
 #print ExomeDepth metrics
-echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_exomedepth.metrics.txt
+echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_ExomeDepth_Metrics.txt
 paste HighCoverageBams.list \
 <(grep "Number of counted fragments" ExomeDepth.log | cut -d' ' -f6) \
 <(grep "Correlation between reference and tests count" ExomeDepth.log | cut -d' ' -f8) >> "$seqId"_ExomeDepth_Metrics.txt
@@ -311,4 +311,4 @@ rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_variants.lcr.vcf "$s
 rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_indels.vcf igv.log
 rm "$seqId"_indels.vcf.idx "$seqId"_indels_filtered.vcf "$seqId"_indels_filtered.vcf.idx "$seqId"_filtered.vcf "$seqId"_filtered.vcf.idx
 rm "$seqId"_filtered_meta.vcf.gz "$seqId"_filtered_meta.vcf.gz.tbi ExomeDepth.log GVCFs.list HighCoverageBams.list "$seqId"_sv_filtered.vcf "$panel"_ROI_b37_window_gc.bed 
-rm "$seqId"_filtered_meta.vcf "$seqId"_sv_filtered_meta.vcf BAMs.list variables */*_meta.txt
+rm "$seqId"_filtered_meta.vcf "$seqId"_sv_filtered_meta.vcf BAMs.list variables
