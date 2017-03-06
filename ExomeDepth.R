@@ -59,19 +59,8 @@ for (i in 1:nsamples) {
   # Now call the CNVs
   all.exons <- CallCNVs(x = all.exons,transition.probability = 0.05,chromosome = ExomeCount.dafr$space,start = ExomeCount.dafr$start,end = ExomeCount.dafr$end,name = ExomeCount.dafr$names)
 
-  #add reference base allele to each CNV call for VCF output later
-  fasta.ranges <- GRanges(seqnames=all.exons@CNV.calls$chromosome, ranges=IRanges(all.exons@CNV.calls$start, all.exons@CNV.calls$start))
-  fasta.sequence <- getSeq(fasta.file, fasta.ranges)
-  all.exons@CNV.calls$ref.allele <- as.character(fasta.sequence)
-
-  #genotype using reads.ratio
-  all.exons@CNV.calls$genotypes <- "0/1"
-  all.exons@CNV.calls$genotypes[which(all.exons@CNV.calls$reads.ratio < 0.25)] <- "1/1"
-
-  #write results to VCF file
-  vcf.filename <- paste(c(outputPrefix, "_cnv.vcf"), collapse="")
-
   #write header
+  vcf.filename <- paste(c(outputPrefix, "_cnv.vcf"), collapse="")
   write(
     paste(
         "##fileformat=VCFv4.1\n",
@@ -92,14 +81,30 @@ for (i in 1:nsamples) {
         paste("#CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO","FORMAT",sampleName, sep="\t", collapse=NULL),
       collapse = NULL, sep = ""), vcf.filename)
 
+  print(paste(length(all.exons@CNV.calls), "calls identified for", i, ":", sampleName, sep = " ", collapse = NULL))
+
+  #check calls are available for printing
+  if (length(all.exons@CNV.calls) > 0){
+    
+    #add reference base allele to each CNV call for VCF output later
+    fasta.ranges <- GRanges(seqnames=all.exons@CNV.calls$chromosome, ranges=IRanges(all.exons@CNV.calls$start, all.exons@CNV.calls$start))
+    fasta.sequence <- getSeq(fasta.file, fasta.ranges)
+    all.exons@CNV.calls$ref.allele <- as.character(fasta.sequence)
+
+    #genotype using reads.ratio
+    all.exons@CNV.calls$genotypes <- "0/1"
+    all.exons@CNV.calls$genotypes[which(all.exons@CNV.calls$reads.ratio < 0.25)] <- "1/1"
+
+    #write results to VCF file
     write(
       paste(
         all.exons@CNV.calls$chromosome,all.exons@CNV.calls$start,".",all.exons@CNV.calls$ref.allele,gsub("duplication","<DUP>",gsub("deletion", "<DEL>", all.exons@CNV.calls$type)),".","PASS",
         paste("END=",all.exons@CNV.calls$end,";","Regions=",all.exons@CNV.calls$nexons,";","StartPosition=",all.exons@CNV.calls$start.p,";","EndPosition=", all.exons@CNV.calls$end.p, sep="", collapse=NULL), 
         "GT:BF:RE:RO:RR",
         paste(all.exons@CNV.calls$genotypes, all.exons@CNV.calls$BF, all.exons@CNV.calls$reads.expected, all.exons@CNV.calls$reads.observed, all.exons@CNV.calls$reads.ratio, collapse=NULL, sep=":"),
-      sep="\t"), vcf.filename, append=TRUE
+        sep="\t"), vcf.filename, append=TRUE
     )
+  }
     
 }
 
