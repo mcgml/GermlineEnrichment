@@ -60,7 +60,7 @@ for (i in 1:nsamples) {
   all.exons <- CallCNVs(x = all.exons,transition.probability = 0.05,chromosome = ExomeCount.dafr$space,start = ExomeCount.dafr$start,end = ExomeCount.dafr$end,name = ExomeCount.dafr$names)
 
   #add reference base allele to each CNV call for VCF output later
-  fasta.ranges <- GRanges(seqnames=all.exons@CNV.calls$chromosome, ranges=IRanges(all.exons@CNV.calls$start, all.exons@CNV.calls$start), strand="+")
+  fasta.ranges <- GRanges(seqnames=all.exons@CNV.calls$chromosome, ranges=IRanges(all.exons@CNV.calls$start, all.exons@CNV.calls$start))
   fasta.sequence <- getSeq(fasta.file, fasta.ranges)
   all.exons@CNV.calls$ref.allele <- as.character(fasta.sequence)
 
