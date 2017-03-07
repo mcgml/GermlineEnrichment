@@ -30,7 +30,7 @@ addMetaDataToVCF(){
     output=$(echo "$1" | sed 's/\.vcf/_meta\.vcf/g')
     grep '^##' "$1" > "$output"
     for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$1"); do
-        cat "$sample"/"$seqId"_"$sample"_meta.txt >> "$output"
+        cat "$sample"/"$seqId"_"$sample"_Meta.txt >> "$output"
     done
     grep -v '^##' "$1" >> "$output"
 }
