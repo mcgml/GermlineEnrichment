@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="1.3.4"
+version="1.3.5"
 
 # Directory structure required for pipeline
 #
@@ -30,7 +30,7 @@ addMetaDataToVCF(){
     output=$(echo "$1" | sed 's/\.vcf/_meta\.vcf/g')
     grep '^##' "$1" > "$output"
     for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$1"); do
-        cat "$sample"/"$seqId"_"$sample"_Meta.txt >> "$output"
+        cat "$sample"/"$seqId"_"$sample"_meta.txt >> "$output"
     done
     grep -v '^##' "$1" >> "$output"
 }
