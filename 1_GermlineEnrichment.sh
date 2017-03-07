@@ -295,8 +295,8 @@ TARGET_INTERVALS="$panel"_ROI.interval_list
 -d"$minimumCoverage" \
 > "$seqId"_"$sampleId"_PercentageCoverage.txt
 
-#add file prefix
-mv "$sampleId"_gaps.bed "$seqId"_"$sampleId"_gaps.bed
+#sort BED and add file prefix
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -i "$sampleId"_gaps.bed > "$seqId"_"$sampleId"_gaps.bed
 
 #Extract 1kg autosomal snps for contamination analysis
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
@@ -387,7 +387,7 @@ fi
 rm "$seqId"_"$sampleId"*unaligned.bam "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam 
 rm "$seqId"_"$sampleId"_realigned.bai 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf Y.bed "$panel"_ROI.interval_list
 rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai
-rm "$seqId"_"$sampleId"_contamination.log
+rm "$seqId"_"$sampleId"_contamination.log "$sampleId"_gaps.bed
 
 #check if all VCFs are written
 if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../GVCFs.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
