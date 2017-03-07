@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.3.2"
+version="1.3.3"
 
 # Directory structure required for pipeline
 #
@@ -298,49 +298,6 @@ TARGET_INTERVALS="$panel"_ROI.interval_list
 #add file prefix
 mv "$sampleId"_gaps.bed "$seqId"_"$sampleId"_gaps.bed
 
-#Gender analysis using off-targed reads
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools slop \
--i /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--g /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
--b 300 > padded.bed
-
-grep -P "^Y\t" /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | awk '{print $1"\t"0"\t"$2}' > Y.bed
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
--a Y.bed \
--b padded.bed \
--b /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/PAR.bed > Y.off.bed
-
-grep -P "^X\t" /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | awk '{print $1"\t"0"\t"$2}' > X.bed
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
--a X.bed \
--b padded.bed \
--b /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/PAR.bed > X.off.bed
-
-chromYCount=$(/share/apps/samtools-distros/samtools-1.3.1/samtools view \
--c \
--f0x0002 \
--F0x0100 \
--F0x0400 \
--q60 \
--L Y.off.bed \
-"$seqId"_"$sampleId".bam)
-
-chromXCount=$(/share/apps/samtools-distros/samtools-1.3.1/samtools view \
--c \
--f0x0002 \
--F0x0100 \
--F0x0400 \
--q60 \
--L X.off.bed \
-"$seqId"_"$sampleId".bam)
-
-#calculate bin sizes
-xtotal=$(awk '{n+= ($3-$2)} END {print n}' X.off.bed)
-ytotal=$(awk '{n+= ($3-$2)} END {print n}' Y.off.bed)
-
-#calculate gender
-gender=$(awk -v x="$chromXCount" -v y="$chromYCount" -v xbp="$xtotal" -v ybp="$ytotal" -f /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/Gender.awk)
-
 #Extract 1kg autosomal snps for contamination analysis
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -378,6 +335,36 @@ meanOnTargetCoverage=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summ
 pctTargetBasesCt=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f7) #percentage panel covered with good enough data for variant detection
 freemix=$(tail -n1 "$seqId"_"$sampleId"_contamination.selfSM | cut -s -f7) #percentage DNA contamination. Should be <= 0.02
 
+#gender analysis using Y chrom coverage
+grep ^Y /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed > Y.bed
+
+if [ $(wc -l Y.bed |cut -d' ' -f1) > 0 ]; then
+
+    #calc Y coverage
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+    -T DepthOfCoverage \
+    -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+    -o "$seqId"_"$sampleId"_Y \
+    --omitDepthOutputAtEachBase \
+    --omitIntervalStatistics \
+    --omitLocusTable \
+    -L Y.bed \
+    -I "$seqId"_"$sampleId".bam \
+    --countType COUNT_FRAGMENTS \
+    --minMappingQuality 20 \
+    -dt NONE
+
+    #extract Y mean coverage
+    meanYCov=$(head -n2 "$seqId"_"$sampleId"_Y.sample_summary | tail -n1 | cut -s -f3)
+    gender=$(awk -v meanOnTargetCoverage="$meanOnTargetCoverage" -v meanYCov="$meanYCov" 'BEGIN {if (meanYCov > 10 && (meanYCov / meanOnTargetCoverage) > 0.1){print "MALE"} else if (meanYCov < 10 && (meanYCov / meanOnTargetCoverage) < 0.1) {print "FEMALE" } else {print "UNKNOWN"} }')
+
+    #clean up
+    rm "$seqId"_"$sampleId"_Y.*
+
+else
+    gender="UNKNOWN"
+fi
+
 #Print QC metrics
 echo -e "TotalReads\tRawSequenceQuality\tTotalTargetUsableBases\tDuplicationRate\tPctSelectedBases\tPctTargetBasesCt\tMeanOnTargetCoverage\tGender\tEstimatedContamination\tMeanInsertSize\tSDInsertSize" > "$seqId"_"$sampleId"_qc.txt
 echo -e "$totalReads\t$rawSequenceQuality\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedBases\t$pctTargetBasesCt\t$meanOnTargetCoverage\t$gender\t$freemix\t$meanInsertSize\t$sdInsertSize" >> "$seqId"_"$sampleId"_qc.txt
@@ -398,9 +385,8 @@ fi
 
 #delete unused files
 rm "$seqId"_"$sampleId"*unaligned.bam "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam 
-rm "$seqId"_"$sampleId"_realigned.bai X.off.bed X.bed Y.off.bed Y.bed 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf
-rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx padded.bed "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai
-rm "$panel"_ROI.interval_list
+rm "$seqId"_"$sampleId"_realigned.bai 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf Y.bed "$panel"_ROI.interval_list
+rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai
 
 #check if all VCFs are written
 if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../GVCFs.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
