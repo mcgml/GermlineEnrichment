@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.3.3"
+version="1.3.4"
 
 # Directory structure required for pipeline
 #
@@ -338,7 +338,7 @@ freemix=$(tail -n1 "$seqId"_"$sampleId"_contamination.selfSM | cut -s -f7) #perc
 #gender analysis using Y chrom coverage
 grep ^Y /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed > Y.bed
 
-if [ $(wc -l Y.bed |cut -d' ' -f1) > 0 ]; then
+if [ $(wc -l Y.bed |cut -d' ' -f1) -gt 0 ]; then
 
     #calc Y coverage
     /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
