@@ -40,8 +40,10 @@ nsamples <- ncol(ExomeCount.mat)
 for (i in 1:nsamples) {
 
   #extract run info from filename
-  sampleName <- gsub(".bam", "", gsub(".*_", "", colnames(ExomeCount.mat)[i]))
-  outputPrefix <- runId <- gsub("-bam", "", gsub("\\.", "-", gsub("^X", "", colnames(ExomeCount.mat)[i])))
+  originalFilename <- gsub("^X", "", gsub("-bam", "\\.bam", gsub("\\.", "-", colnames(ExomeCount.mat)[i])))
+  sampleName <- gsub("\\.bam", "", gsub(".*_", "", originalFilename))
+  outputPrefix <- gsub("\\.bam", "", originalFilename)
+  
   print(paste("Processing sample", i, ":", sampleName, sep = " ", collapse = NULL))
   
   # Create the aggregate reference set for this sample
