@@ -148,8 +148,6 @@ annotateVCF(){
 --filterName "SOR" \
 --filterExpression "ReadPosRankSum < -20.0" \
 --filterName "ReadPosRankSum" \
---filterExpression "LCRLen > 8" \
---filterName "LowComplexity" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_indels_filtered.vcf \
 -dt NONE
