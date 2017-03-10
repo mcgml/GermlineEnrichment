@@ -101,6 +101,8 @@ annotateVCF(){
 -o "$seqId"_snps.vcf \
 -dt NONE
 
+#TODO add excesshet filter
+
 #Filter SNPs
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T VariantFiltration \
