@@ -8,23 +8,9 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="1.3.6"
+version="1.4.0"
 
-# Directory structure required for pipeline
-#
-# /data
-# └── results
-#     └── seqId
-#         ├── panel1
-#         │   ├── sample1
-#         │   ├── sample2
-#         │   └── sample3
-#         └── panel2
-#             ├── sample1
-#             ├── sample2
-#             └── sample3
-#
-# Script 2 runs in panel folder, requires final Bams &gVCFs
+# Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 
 addMetaDataToVCF(){
     output=$(echo "$1" | sed 's/\.vcf/_meta\.vcf/g')
@@ -74,13 +60,13 @@ annotateVCF(){
 ### Joint variant calling and filtering ###
 
 #Joint genotyping
-#TODO add PED file for related samples
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx16g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T GenotypeGVCFs \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V GVCFs.list \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_variants.vcf \
+-ped "$seqId"_pedigree.ped \
 -dt NONE
 
 #Annotate with low complexity region length using mdust
@@ -100,9 +86,6 @@ annotateVCF(){
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_snps.vcf \
 -dt NONE
-
-#TODO add excesshet filter
-#TODO add relatedness check
 
 #Filter SNPs
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
@@ -316,6 +299,12 @@ done
 --comp:hapmap3.3 /state/partition1/db/human/gatk/2.8/b37/hapmap_3.3.b37.vcf \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -dt NONE
+
+#relatedness test First-degree relatives are ~0.25, and 2nd-degree ~0.125, and 3rd degree 0.0625. Unrelated patients can reach ~0.04.
+/share/apps/vcftools-distros/vcftools-0.1.14/build/bin/vcftools \
+--relatedness2 \
+--out "$seqId"_relatedness \
+--vcf "$seqId"_filtered_meta_annotated.vcf
 
 ### Clean up ###
 

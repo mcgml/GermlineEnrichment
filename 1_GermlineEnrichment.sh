@@ -8,22 +8,8 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.3.6"
+version="1.4.0"
 
-# Directory structure required for pipeline
-#
-# /data
-# └── results
-#     └── seqId
-#         ├── panel1
-#         │   ├── sample1
-#         │   ├── sample2
-#         │   └── sample3
-#         └── panel2
-#             ├── sample1
-#             ├── sample2
-#             └── sample3
-#
 # Script 1 runs in sample folder, requires fastq files split by lane
 
 countQCFlagFails() {
@@ -356,21 +342,32 @@ if [ $(wc -l Y.bed |cut -d' ' -f1) -gt 0 ] && [ $(awk -v meanOnTargetCoverage="$
 
     #extract Y mean coverage
     meanYCov=$(head -n2 "$seqId"_"$sampleId"_Y.sample_summary | tail -n1 | cut -s -f3)
-    gender=$(awk -v meanOnTargetCoverage="$meanOnTargetCoverage" -v meanYCov="$meanYCov" 'BEGIN {if (meanYCov > 10 && (meanYCov / meanOnTargetCoverage) > 0.1){print "MALE"} else if (meanYCov < 10 && (meanYCov / meanOnTargetCoverage) < 0.1) {print "FEMALE" } else {print "UNKNOWN"} }')
+    calcGender=$(awk -v meanOnTargetCoverage="$meanOnTargetCoverage" -v meanYCov="$meanYCov" 'BEGIN {if (meanYCov > 10 && (meanYCov / meanOnTargetCoverage) > 0.1){print "MALE"} else if (meanYCov < 10 && (meanYCov / meanOnTargetCoverage) < 0.1) {print "FEMALE" } else {print "UNKNOWN"} }')
 
     #clean up
     rm "$seqId"_"$sampleId"_Y.*
 
 else
-    gender="UNKNOWN"
+    calcGender="UNKNOWN"
 fi
 
 #Print QC metrics
 echo -e "TotalReads\tRawSequenceQuality\tTotalTargetUsableBases\tDuplicationRate\tPctSelectedBases\tPctTargetBasesCt\tMeanOnTargetCoverage\tGender\tEstimatedContamination\tMeanInsertSize\tSDInsertSize" > "$seqId"_"$sampleId"_QC.txt
-echo -e "$totalReads\t$rawSequenceQuality\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedBases\t$pctTargetBasesCt\t$meanOnTargetCoverage\t$gender\t$freemix\t$meanInsertSize\t$sdInsertSize" >> "$seqId"_"$sampleId"_QC.txt
+echo -e "$totalReads\t$rawSequenceQuality\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedBases\t$pctTargetBasesCt\t$meanOnTargetCoverage\t$calcGender\t$freemix\t$meanInsertSize\t$sdInsertSize" >> "$seqId"_"$sampleId"_QC.txt
 
 #print metaline for final VCF
-echo \#\#SAMPLE\=\<ID\="$sampleId",Tissue\=Germline,WorklistId\="$worklistId",SeqId\="$seqId",Assay\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",RawSequenceQuality\="$rawSequenceQuality",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",PctTargetBasesCt\="$pctTargetBasesCt",EstimatedContamination\="$freemix",GenotypicGender\="$gender",TotalTargetedUsableBases\="$totalTargetedUsableBases",RemoteVcfFilePath\=$(dirname $PWD)/"$seqId"_filtered_meta_annotated.vcf,RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> > "$seqId"_"$sampleId"_meta.txt
+echo \#\#SAMPLE\=\<ID\="$sampleId",Tissue\=Germline,WorklistId\="$worklistId",SeqId\="$seqId",Assay\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",RawSequenceQuality\="$rawSequenceQuality",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",PctTargetBasesCt\="$pctTargetBasesCt",EstimatedContamination\="$freemix",GenotypicGender\="$calcGender",TotalTargetedUsableBases\="$totalTargetedUsableBases",RemoteVcfFilePath\=$(dirname $PWD)/"$seqId"_filtered_meta_annotated.vcf,RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> > "$seqId"_"$sampleId"_meta.txt
+
+#Create PED file
+#TSV Format: Family_ID, Individual_ID, Paternal_ID, Maternal_ID, Sex (1=male; 2=female; 0=unknown), Phenotype (Description or 1=unaffected, 2=affected, 0=missing). Missing data is 0
+if [ ! -z ${familyId-} ]; then echo -ne "$familyId\t" > "$sampleId"_pedigree.ped; else echo -ne "0\t" > "$sampleId"_pedigree.ped; fi
+echo -ne "$sampleId\t" >> "$sampleId"_pedigree.ped
+if [ ! -z ${paternalId-} ]; then echo -ne "$paternalId\t" >> "$sampleId"_pedigree.ped; else echo -ne "0\t" >> "$sampleId"_pedigree.ped; fi
+if [ ! -z ${maternalId-} ]; then echo -ne "$maternalId\t" >> "$sampleId"_pedigree.ped; else echo -ne "0\t" >> "$sampleId"_pedigree.ped; fi
+if [ ! -z ${gender-} ]; then echo -ne "$gender\t" >> "$sampleId"_pedigree.ped; else echo -ne "0\t" >> "$sampleId"_pedigree.ped; fi
+if [ ! -z ${phenotype-} ]; then echo -e "$phenotype\t" >> "$sampleId"_pedigree.ped; else echo -e "2\t" >> "$sampleId"_pedigree.ped; fi
+
+cat "$sampleId"_pedigree.ped >> ../"$seqId"_pedigree.ped
 
 ### Clean up ###
 
@@ -391,6 +388,6 @@ rm "$seqId"_"$sampleId"_Contamination.log "$sampleId"_gaps.bed
 
 #check if all VCFs are written
 if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../GVCFs.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
-    echo -e "seqId=$seqId\npanel=$panel" > ../variables
+    echo -e "projectId=$seqId\npanel=$panel" > ../variables
     cp 2_GermlineEnrichment.sh .. && cd .. && qsub 2_GermlineEnrichment.sh
 fi
