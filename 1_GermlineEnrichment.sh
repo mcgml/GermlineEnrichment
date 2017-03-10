@@ -388,6 +388,6 @@ rm "$seqId"_"$sampleId"_Contamination.log "$sampleId"_gaps.bed
 
 #check if all VCFs are written
 if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../GVCFs.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
-    echo -e "projectId=$seqId\npanel=$panel" > ../variables
+    echo -e "seqId=$seqId\npanel=$panel" > ../variables
     cp 2_GermlineEnrichment.sh .. && cd .. && qsub 2_GermlineEnrichment.sh
 fi
