@@ -111,16 +111,14 @@ annotateVCF(){
 --filterName "QD" \
 --filterExpression "FS > 60.0" \
 --filterName "FS" \
+--filterExpression "SOR > 3.0" \
+--filterName "SOR" \
 --filterExpression "MQ < 40.0" \
 --filterName "MQ" \
 --filterExpression "MQRankSum < -12.5" \
 --filterName "MQRankSum" \
 --filterExpression "ReadPosRankSum < -8.0" \
 --filterName "ReadPosRankSum" \
---genotypeFilterExpression "DP < 10" \
---genotypeFilterName "LowDP" \
---genotypeFilterExpression "GQ < 20" \
---genotypeFilterName "LowGQ" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_snps_filtered.vcf \
 -dt NONE
@@ -146,14 +144,12 @@ annotateVCF(){
 --filterName "QD" \
 --filterExpression "FS > 200.0" \
 --filterName "FS" \
+--filterExpression "SOR > 10.0" \
+--filterName "SOR" \
 --filterExpression "ReadPosRankSum < -20.0" \
 --filterName "ReadPosRankSum" \
 --filterExpression "LCRLen > 8" \
 --filterName "LowComplexity" \
---genotypeFilterExpression "DP < 10" \
---genotypeFilterName "LowDP" \
---genotypeFilterExpression "GQ < 20" \
---genotypeFilterName "LowGQ" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_indels_filtered.vcf \
 -dt NONE
@@ -164,8 +160,21 @@ annotateVCF(){
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --variant "$seqId"_snps_filtered.vcf \
 --variant "$seqId"_indels_filtered.vcf \
--o "$seqId"_filtered.vcf \
+-o "$seqId"_combined_filtered.vcf \
 -genotypeMergeOptions UNSORTED \
+-dt NONE
+
+#filter genotypes
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+-T VariantFiltration \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-V "$seqId"_combined_filtered.vcf \
+--genotypeFilterExpression "DP < 10" \
+--genotypeFilterName "LowDP" \
+--genotypeFilterExpression "GQ < 20" \
+--genotypeFilterName "LowGQ" \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-o "$seqId"_filtered.vcf \
 -dt NONE
 
 #Add VCF meta data to final VCF
@@ -311,4 +320,4 @@ rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_variants.lcr.vcf "$s
 rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_indels.vcf igv.log
 rm "$seqId"_indels.vcf.idx "$seqId"_indels_filtered.vcf "$seqId"_indels_filtered.vcf.idx "$seqId"_filtered.vcf "$seqId"_filtered.vcf.idx
 rm "$seqId"_filtered_meta.vcf.gz "$seqId"_filtered_meta.vcf.gz.tbi ExomeDepth.log GVCFs.list HighCoverageBams.list "$seqId"_sv_filtered.vcf "$panel"_ROI_b37_window_gc.bed 
-rm "$seqId"_filtered_meta.vcf "$seqId"_sv_filtered_meta.vcf BAMs.list variables
+rm "$seqId"_filtered_meta.vcf "$seqId"_sv_filtered_meta.vcf BAMs.list variables "$seqId"_combined_filtered.vcf "$seqId"_combined_filtered.vcf.idx
