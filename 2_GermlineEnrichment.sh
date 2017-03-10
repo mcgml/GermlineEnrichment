@@ -173,6 +173,7 @@ annotateVCF(){
 --genotypeFilterName "LowDP" \
 --genotypeFilterExpression "GQ < 20" \
 --genotypeFilterName "LowGQ" \
+--setFilteredGtToNocall \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_filtered.vcf \
 -dt NONE
