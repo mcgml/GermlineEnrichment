@@ -22,6 +22,7 @@ addMetaDataToVCF(){
     grep -v '^##' "$1" >> "$output"
 }
 
+#todo upgrade vep
 annotateVCF(){
     #annotate VCF
     perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/variant_effect_predictor.pl \
@@ -52,6 +53,9 @@ annotateVCF(){
     if [ ! -e "$2" ]; then
         cp "$1" "$2"
     fi
+
+    #index annotated VCF
+    /share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$2"
 }
 
 #load run & pipeline variables
@@ -138,6 +142,8 @@ annotateVCF(){
 --filterName "ReadPosRankSum" \
 --filterExpression "InbreedingCoeff < -0.8" \
 --filterName "InbreedingCoeff" \
+--filterExpression "ExcessHet > 40.0" \
+--filterName "ExcessHet" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_non_snps_filtered.vcf \
 -dt NONE
@@ -184,6 +190,8 @@ annotateVCF(){
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_filtered.vcf \
 -A PossibleDeNovo \
+-A MVLikelihoodRatio \
+-A TransmissionDisequilibriumTest \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ped "$seqId"_pedigree.ped \
 -o "$seqId"_filtered_denovo.vcf
@@ -261,7 +269,6 @@ for vcf in $(ls *_cnv.vcf); do
     #add metadata, annotate & index
     addMetaDataToVCF "$prefix"_header.vcf
     annotateVCF "$prefix"_header_meta.vcf "$prefix"_meta_annotated.vcf
-    /share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$prefix"_meta_annotated.vcf
 
     #write SNV & Indel dataset to table
     /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.2/VCFParse.jar \
@@ -281,10 +288,6 @@ done
 #annotate with VEP
 annotateVCF "$seqId"_filtered_denovo_meta.vcf "$seqId"_filtered_meta_annotated.vcf
 annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vcf
-
-#index annotated VCFs
-/share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$seqId"_filtered_meta_annotated.vcf
-/share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$seqId"_sv_filtered_meta_annotated.vcf
 
 #write SNV & Indel dataset to table
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.2/VCFParse.jar \
@@ -327,7 +330,7 @@ done
 /share/apps/vcftools-distros/vcftools-0.1.14/build/bin/vcftools \
 --relatedness2 \
 --out "$seqId"_relatedness \
---vcf "$seqId"_filtered_meta_annotated.vcf
+--vcf "$seqId"_combined_filtered.vcf
 
 ### Clean up ###
 

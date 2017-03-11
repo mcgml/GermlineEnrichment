@@ -258,6 +258,8 @@ BAIT_INTERVALS="$panel"_ROI.interval_list \
 TARGET_INTERVALS="$panel"_ROI.interval_list
 
 #Generate per-base coverage: variant detection sensitivity
+#todo make panel gaps bed
+#todo tabix index coverage table
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T DepthOfCoverage \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -322,6 +324,7 @@ pctTargetBasesCt=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary 
 freemix=$(tail -n1 "$seqId"_"$sampleId"_Contamination.selfSM | cut -s -f7) #percentage DNA contamination. Should be <= 0.02
 
 #gender analysis using Y chrom coverage
+#todo gender analysis without y coverage
 awk '{if ($1 == "Y") print $0}' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed > Y.bed
 
 if [ $(wc -l Y.bed |cut -d' ' -f1) -gt 0 ] && [ $(awk -v meanOnTargetCoverage="$meanOnTargetCoverage" 'BEGIN{printf "%3.0f", meanOnTargetCoverage}') -gt 10 ]; then
