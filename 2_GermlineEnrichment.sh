@@ -111,21 +111,21 @@ annotateVCF(){
 -o "$seqId"_snps_filtered.vcf \
 -dt NONE
 
-#Select INDELs
+#Select non-snps (INDEL, MIXED, MNP, SYMBOLIC, NO_VARIATION)
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx16g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T SelectVariants \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_variants.lcr.vcf \
--selectType INDEL \
+--selectTypeToExclude SNP \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--o "$seqId"_indels.vcf \
+-o "$seqId"_non_snps.vcf \
 -dt NONE
 
-#Filter INDELs
+#Filter non-snps (INDEL, MIXED, MNP, SYMBOLIC, NO_VARIATION)
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T VariantFiltration \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$seqId"_indels.vcf \
+-V "$seqId"_non_snps.vcf \
 --filterExpression "QUAL < 30.0" \
 --filterName "LowQual" \
 --filterExpression "QD < 2.0" \
@@ -139,7 +139,7 @@ annotateVCF(){
 --filterExpression "InbreedingCoeff < -0.8" \
 --filterName "InbreedingCoeff" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--o "$seqId"_indels_filtered.vcf \
+-o "$seqId"_non_snps_filtered.vcf \
 -dt NONE
 
 #Combine filtered VCF files
@@ -147,7 +147,7 @@ annotateVCF(){
 -T CombineVariants \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --variant "$seqId"_snps_filtered.vcf \
---variant "$seqId"_indels_filtered.vcf \
+--variant "$seqId"_non_snps_filtered.vcf \
 -o "$seqId"_combined_filtered.vcf \
 -genotypeMergeOptions UNSORTED \
 -dt NONE
@@ -312,7 +312,7 @@ done
 #delete unused files
 rm -r manta
 rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_variants.lcr.vcf "$seqId"_variants.lcr.vcf.idx "$panel"_ROI_b37_window_gc_mappability.txt
-rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_indels.vcf igv.log
-rm "$seqId"_indels.vcf.idx "$seqId"_indels_filtered.vcf "$seqId"_indels_filtered.vcf.idx "$seqId"_filtered.vcf "$seqId"_filtered.vcf.idx
+rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_non_snps.vcf igv.log
+rm "$seqId"_non_snps.vcf.idx "$seqId"_non_snps_filtered.vcf "$seqId"_non_snps_filtered.vcf.idx "$seqId"_filtered.vcf "$seqId"_filtered.vcf.idx
 rm "$seqId"_filtered_meta.vcf.gz "$seqId"_filtered_meta.vcf.gz.tbi ExomeDepth.log GVCFs.list HighCoverageBams.list "$seqId"_sv_filtered.vcf "$panel"_ROI_b37_window_gc.bed 
 rm "$seqId"_filtered_meta.vcf "$seqId"_sv_filtered_meta.vcf BAMs.list variables "$seqId"_combined_filtered.vcf "$seqId"_combined_filtered.vcf.idx
