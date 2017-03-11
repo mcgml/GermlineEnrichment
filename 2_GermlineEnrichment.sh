@@ -148,6 +148,7 @@ annotateVCF(){
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --variant "$seqId"_snps_filtered.vcf \
 --variant "$seqId"_non_snps_filtered.vcf \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_combined_filtered.vcf \
 -genotypeMergeOptions UNSORTED \
 -dt NONE
@@ -158,6 +159,7 @@ annotateVCF(){
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --supporting /state/partition1/db/human/gatk/2.8/b37/1000G_phase3_v4_20130502.sites.vcf \
 -ped "$seqId"_pedigree.ped \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -V "$seqId"_combined_filtered.vcf \
 -o "$seqId"_combined_filtered_gcp.vcf \
 -dt NONE
@@ -182,6 +184,7 @@ annotateVCF(){
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_filtered.vcf \
 -A PossibleDeNovo \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ped "$seqId"_pedigree.ped \
 -o "$seqId"_filtered_denovo.vcf
 
