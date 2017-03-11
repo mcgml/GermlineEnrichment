@@ -11,7 +11,7 @@ cd $PBS_O_WORKDIR
 version="1.5.0"
 
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
-# Variant filtering assumes non-releated samples. If familiy structures are known they MUST be provided in the PED file
+# Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
 
 addMetaDataToVCF(){
     output=$(echo "$1" | sed 's/\.vcf/_meta\.vcf/g')
