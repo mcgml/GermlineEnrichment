@@ -152,6 +152,8 @@ annotateVCF(){
 -genotypeMergeOptions UNSORTED \
 -dt NONE
 
+#TODO genotype refinement
+
 #filter genotypes
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T VariantFiltration \
