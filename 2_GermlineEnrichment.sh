@@ -22,7 +22,6 @@ addMetaDataToVCF(){
     grep -v '^##' "$1" >> "$output"
 }
 
-#todo upgrade vep
 annotateVCF(){
     #annotate VCF
     perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/variant_effect_predictor.pl \
@@ -142,8 +141,6 @@ annotateVCF(){
 --filterName "ReadPosRankSum" \
 --filterExpression "InbreedingCoeff < -0.8" \
 --filterName "InbreedingCoeff" \
---filterExpression "ExcessHet > 40.0" \
---filterName "ExcessHet" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_non_snps_filtered.vcf \
 -dt NONE

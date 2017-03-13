@@ -258,8 +258,6 @@ BAIT_INTERVALS="$panel"_ROI.interval_list \
 TARGET_INTERVALS="$panel"_ROI.interval_list
 
 #Generate per-base coverage: variant detection sensitivity
-#todo make panel gaps bed
-#todo tabix index coverage table
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T DepthOfCoverage \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -270,9 +268,15 @@ TARGET_INTERVALS="$panel"_ROI.interval_list
 --minMappingQuality 20 \
 --minBaseQuality 10 \
 --omitIntervalStatistics \
+--omitLocusTable \
 -ct "$minimumCoverage" \
 -nt 12 \
 -dt NONE
+
+#tabix index the per-base coverage file
+awk -F'[\t|:]' '{if(NR>1) print $1"\t"$2"\t"$3}' "$seqId"_"$sampleId"_DepthOfCoverage | \
+/share/apps/htslib-distros/htslib-1.3.1/bgzip > "$seqId"_"$sampleId"_DepthOfCoverage.gz
+/share/apps/htslib-distros/htslib-1.3.1/tabix -b2 "$seqId"_"$sampleId"_DepthOfCoverage.gz
 
 #Calculate gene percentage coverage
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /data/diagnostics/apps/CoverageCalculator-2.0.2/CoverageCalculator-2.0.2.jar \
@@ -387,7 +391,8 @@ fi
 rm "$seqId"_"$sampleId"*unaligned.bam "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam 
 rm "$seqId"_"$sampleId"_realigned.bai 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf Y.bed "$panel"_ROI.interval_list
 rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai
-rm "$seqId"_"$sampleId"_Contamination.log "$sampleId"_gaps.bed
+rm "$seqId"_"$sampleId"_Contamination.log "$sampleId"_gaps.bed "$seqId"_"$sampleId"_DepthOfCoverage "$seqId"_"$sampleId"_DepthOfCoverage.sample_cumulative_coverage_counts
+rm "$seqId"_"$sampleId"_DepthOfCoverage.sample_cumulative_coverage_proportions rm "$seqId"_"$sampleId"_DepthOfCoverage.sample_statistics
 
 #check if all VCFs are written
 if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../GVCFs.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
