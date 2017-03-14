@@ -69,6 +69,7 @@ annotateVCF(){
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V GVCFs.list \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-ip 1 \
 -o "$seqId"_variants.vcf \
 -ped "$seqId"_pedigree.ped \
 -dt NONE
@@ -121,6 +122,7 @@ annotateVCF(){
 -V "$seqId"_variants.lcr.vcf \
 --selectTypeToExclude SNP \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-ip 1 \
 -o "$seqId"_non_snps.vcf \
 -dt NONE
 
@@ -142,6 +144,7 @@ annotateVCF(){
 --filterExpression "InbreedingCoeff < -0.8" \
 --filterName "InbreedingCoeff" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-ip 1 \
 -o "$seqId"_non_snps_filtered.vcf \
 -dt NONE
 
@@ -151,7 +154,6 @@ annotateVCF(){
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --variant "$seqId"_snps_filtered.vcf \
 --variant "$seqId"_non_snps_filtered.vcf \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_combined_filtered.vcf \
 -genotypeMergeOptions UNSORTED \
 -dt NONE
@@ -162,7 +164,6 @@ annotateVCF(){
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --supporting /state/partition1/db/human/gatk/2.8/b37/1000G_phase3_v4_20130502.sites.vcf \
 -ped "$seqId"_pedigree.ped \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -V "$seqId"_combined_filtered.vcf \
 -o "$seqId"_combined_filtered_gcp.vcf \
 -dt NONE
@@ -177,7 +178,6 @@ annotateVCF(){
 --genotypeFilterExpression "GQ < 20" \
 --genotypeFilterName "LowGQ" \
 --setFilteredGtToNocall \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_filtered.vcf \
 -dt NONE
 
@@ -189,7 +189,6 @@ annotateVCF(){
 -A PossibleDeNovo \
 -A MVLikelihoodRatio \
 -A TransmissionDisequilibriumTest \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ped "$seqId"_pedigree.ped \
 -o "$seqId"_filtered_denovo.vcf
 
