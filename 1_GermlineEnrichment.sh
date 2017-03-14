@@ -48,6 +48,8 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     "$read1Fastq" \
     "$read2Fastq"
 
+    #TODO FASTQ screen
+
     #convert fastq to ubam
     /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar FastqToSam \
     F1="$seqId"_"$sampleId"_"$laneId"_R1.fastq \
@@ -244,6 +246,9 @@ I=/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"
 O="$panel"_ROI.interval_list \
 SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict 
 
+#TODO mapping rate
+
+
 #Calculate insert size: fragmentation performance
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar CollectInsertSizeMetrics \
 I="$seqId"_"$sampleId".bam \
@@ -317,7 +322,7 @@ awk -F'[\t|:]' '{if(NR>1) print $1"\t"$2"\t"$3}' "$seqId"_"$sampleId"_DepthOfCov
 --maxDepth 1000 \
 --precise
 
-#Gather QC metrics
+#Gather QC metrics TODO at/gc dropout
 meanInsertSize=$(head -n8 "$seqId"_"$sampleId"_InsertMetrics.txt | tail -n1 | cut -s -f5) #mean insert size
 sdInsertSize=$(head -n8 "$seqId"_"$sampleId"_InsertMetrics.txt | tail -n1 | cut -s -f6) #insert size standard deviation
 duplicationRate=$(head -n8 "$seqId"_"$sampleId"_MarkDuplicatesMetrics.txt | tail -n1 | cut -s -f9) #The percentage of mapped sequence that is marked as duplicate.

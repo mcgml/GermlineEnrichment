@@ -311,7 +311,12 @@ done
 
 ### QC ###
 
+#TODO HET/HOM ratio
+#TODO TS/TV
+#TODO SNP to Indel ratio
+
 #Variant Evaluation
+#TODO switch to rtg
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T VariantEval \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
