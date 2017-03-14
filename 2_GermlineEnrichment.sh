@@ -313,7 +313,10 @@ done
 
 #TODO HET/HOM ratio
 #TODO TS/TV
+#TODO Ti/Tv
 #TODO SNP to Indel ratio
+#TODO total number of variants
+#TODO ?BamQC
 
 #Variant Evaluation
 #TODO switch to rtg
