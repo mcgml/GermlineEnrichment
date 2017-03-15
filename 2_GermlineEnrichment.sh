@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="1.6.0"
+version="1.7.0"
 
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 # Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
@@ -311,15 +311,7 @@ done
 
 ### QC ###
 
-#TODO HET/HOM ratio
-#TODO TS/TV
-#TODO Ti/Tv
-#TODO SNP to Indel ratio
-#TODO total number of variants
-#TODO ?BamQC
-
 #Variant Evaluation
-#TODO switch to rtg
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T VariantEval \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \

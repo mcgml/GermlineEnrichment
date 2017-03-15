@@ -8,10 +8,9 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="1.6.0"
+version="1.7.0"
 
 # Script 1 runs in sample folder, requires fastq files split by lane
-#TODO ?exlude NTC from script 2
 
 countQCFlagFails() {
     #count how many core FASTQC tests failed
@@ -49,7 +48,12 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     "$read1Fastq" \
     "$read2Fastq"
 
-    #TODO FASTQ screen
+    #FASTQ screen for inter-species contamination
+    /share/apps/fastqscreen-distros/fastq_screen_v0.10.0/fastq_screen \
+    --aligner bwa \
+    --threads 12 \
+    "$seqId"_"$sampleId"_"$laneId"_R1.fastq \
+    "$seqId"_"$sampleId"_"$laneId"_R2.fastq
 
     #convert fastq to ubam
     /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar FastqToSam \
@@ -247,14 +251,21 @@ I=/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"
 O="$panel"_ROI.interval_list \
 SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict 
 
-#TODO mapping rate
-
+#Alignment metrics
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar CollectAlignmentSummaryMetrics \
+R=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+I="$seqId"_"$sampleId".bam \
+O="$seqId"_"$sampleId"_AlignmentSummaryMetrics.txt \
+MAX_RECORDS_IN_RAM=2000000 \
+TMP_DIR=/state/partition1/tmpdir
 
 #Calculate insert size: fragmentation performance
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar CollectInsertSizeMetrics \
 I="$seqId"_"$sampleId".bam \
 O="$seqId"_"$sampleId"_InsertMetrics.txt \
-H="$seqId"_"$sampleId"_InsertMetrics.pdf
+H="$seqId"_"$sampleId"_InsertMetrics.pdf \
+MAX_RECORDS_IN_RAM=2000000 \
+TMP_DIR=/state/partition1/tmpdir
 
 #HsMetrics: capture & pooling performance
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar CollectHsMetrics \
@@ -262,7 +273,9 @@ I="$seqId"_"$sampleId".bam \
 O="$seqId"_"$sampleId"_HsMetrics.txt \
 R=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 BAIT_INTERVALS="$panel"_ROI.interval_list \
-TARGET_INTERVALS="$panel"_ROI.interval_list
+TARGET_INTERVALS="$panel"_ROI.interval_list \
+MAX_RECORDS_IN_RAM=2000000 \
+TMP_DIR=/state/partition1/tmpdir
 
 #Generate per-base coverage: variant detection sensitivity
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx12g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
@@ -323,7 +336,7 @@ awk -F'[\t|:]' '{if(NR>1) print $1"\t"$2"\t"$3}' "$seqId"_"$sampleId"_DepthOfCov
 --maxDepth 1000 \
 --precise
 
-#Gather QC metrics TODO at/gc dropout
+#Gather QC metrics
 meanInsertSize=$(head -n8 "$seqId"_"$sampleId"_InsertMetrics.txt | tail -n1 | cut -s -f5) #mean insert size
 sdInsertSize=$(head -n8 "$seqId"_"$sampleId"_InsertMetrics.txt | tail -n1 | cut -s -f6) #insert size standard deviation
 duplicationRate=$(head -n8 "$seqId"_"$sampleId"_MarkDuplicatesMetrics.txt | tail -n1 | cut -s -f9) #The percentage of mapped sequence that is marked as duplicate.
@@ -333,9 +346,11 @@ totalTargetedUsableBases=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_
 meanOnTargetCoverage=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f3) #avg usable coverage
 pctTargetBasesCt=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f7) #percentage panel covered with good enough data for variant detection
 freemix=$(tail -n1 "$seqId"_"$sampleId"_Contamination.selfSM | cut -s -f7) #percentage DNA contamination. Should be <= 0.02
+pctPfReadsAligned=$(grep ^PAIR "$seqId"_"$sampleId"_AlignmentSummaryMetrics.txt | awk '{print $7*100}') #Percentage mapped reads
+atDropout=$(head -n8 "$seqId"_"$sampleId"_HsMetrics.txt | tail -n1 | cut -s -f50) #A measure of how undercovered <= 50% GC regions are relative to the mean
+gcDropout=$(head -n8 "$seqId"_"$sampleId"_HsMetrics.txt | tail -n1 | cut -s -f51) #A measure of how undercovered >= 50% GC regions are relative to the mean
 
 #gender analysis using Y chrom coverage
-#todo gender analysis without y coverage
 awk '{if ($1 == "Y") print $0}' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed > Y.bed
 
 if [ $(wc -l Y.bed |cut -d' ' -f1) -gt 0 ] && [ $(awk -v meanOnTargetCoverage="$meanOnTargetCoverage" 'BEGIN{printf "%3.0f", meanOnTargetCoverage}') -gt 10 ]; then
@@ -366,11 +381,11 @@ else
 fi
 
 #Print QC metrics
-echo -e "TotalReads\tRawSequenceQuality\tTotalTargetUsableBases\tDuplicationRate\tPctSelectedBases\tPctTargetBasesCt\tMeanOnTargetCoverage\tGender\tEstimatedContamination\tMeanInsertSize\tSDInsertSize" > "$seqId"_"$sampleId"_QC.txt
-echo -e "$totalReads\t$rawSequenceQuality\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedBases\t$pctTargetBasesCt\t$meanOnTargetCoverage\t$calcGender\t$freemix\t$meanInsertSize\t$sdInsertSize" >> "$seqId"_"$sampleId"_QC.txt
+echo -e "TotalReads\tRawSequenceQuality\tTotalTargetUsableBases\tDuplicationRate\tPctSelectedBases\tPctTargetBasesCt\tMeanOnTargetCoverage\tGender\tEstimatedContamination\tMeanInsertSize\tSDInsertSize\tPercentMapped\tAtDropout\tGcDropout" > "$seqId"_"$sampleId"_QC.txt
+echo -e "$totalReads\t$rawSequenceQuality\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedBases\t$pctTargetBasesCt\t$meanOnTargetCoverage\t$calcGender\t$freemix\t$meanInsertSize\t$sdInsertSize\t$pctPfReadsAligned\t$atDropout\t$gcDropout" >> "$seqId"_"$sampleId"_QC.txt
 
 #print metaline for final VCF
-echo \#\#SAMPLE\=\<ID\="$sampleId",Tissue\=Germline,WorklistId\="$worklistId",SeqId\="$seqId",Assay\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",RawSequenceQuality\="$rawSequenceQuality",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",PctTargetBasesCt\="$pctTargetBasesCt",EstimatedContamination\="$freemix",GenotypicGender\="$calcGender",TotalTargetedUsableBases\="$totalTargetedUsableBases",RemoteVcfFilePath\=$(dirname $PWD)/"$seqId"_filtered_meta_annotated.vcf,RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> > "$seqId"_"$sampleId"_meta.txt
+echo \#\#SAMPLE\=\<ID\="$sampleId",Tissue\=Germline,WorklistId\="$worklistId",SeqId\="$seqId",Assay\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",RawSequenceQuality\="$rawSequenceQuality",PercentMapped\="$pctPfReadsAligned",ATDropout\="$atDropout",GCDropout\="$gcDropout",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",PctTargetBasesCt\="$pctTargetBasesCt",EstimatedContamination\="$freemix",GenotypicGender\="$calcGender",TotalTargetedUsableBases\="$totalTargetedUsableBases",RemoteVcfFilePath\=$(dirname $PWD)/"$seqId"_filtered_meta_annotated.vcf,RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> > "$seqId"_"$sampleId"_meta.txt
 
 #Create PED file
 #TSV Format: Family_ID, Individual_ID, Paternal_ID, Maternal_ID, Sex (1=male; 2=female; 0=unknown), Phenotype (Description or 1=unaffected, 2=affected, 0=missing). Missing data is 0
