@@ -141,7 +141,7 @@ annotateVCF(){
 --filterName "SOR" \
 --filterExpression "ReadPosRankSum < -20.0" \
 --filterName "ReadPosRankSum" \
---filterExpression "InbreedingCoeff < -0.8" \
+--filterExpression "InbreedingCoeff != 'nan' && InbreedingCoeff < -0.8" \
 --filterName "InbreedingCoeff" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 1 \
