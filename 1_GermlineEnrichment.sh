@@ -11,6 +11,7 @@ cd $PBS_O_WORKDIR
 version="1.6.0"
 
 # Script 1 runs in sample folder, requires fastq files split by lane
+#TODO exlude NTC
 
 countQCFlagFails() {
     #count how many core FASTQC tests failed
