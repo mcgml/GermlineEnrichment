@@ -378,7 +378,7 @@ echo -ne "$sampleId\t" >> "$sampleId"_pedigree.ped
 if [ ! -z ${paternalId-} ]; then echo -ne "$paternalId\t" >> "$sampleId"_pedigree.ped; else echo -ne "0\t" >> "$sampleId"_pedigree.ped; fi
 if [ ! -z ${maternalId-} ]; then echo -ne "$maternalId\t" >> "$sampleId"_pedigree.ped; else echo -ne "0\t" >> "$sampleId"_pedigree.ped; fi
 if [ ! -z ${gender-} ]; then echo -ne "$gender\t" >> "$sampleId"_pedigree.ped; else echo -ne "0\t" >> "$sampleId"_pedigree.ped; fi
-if [ ! -z ${phenotype-} ]; then echo -e "$phenotype\t" >> "$sampleId"_pedigree.ped; else echo -e "2\t" >> "$sampleId"_pedigree.ped; fi
+if [ ! -z ${phenotype-} ]; then echo -e "$phenotype" >> "$sampleId"_pedigree.ped; else echo -e "2" >> "$sampleId"_pedigree.ped; fi
 
 cat "$sampleId"_pedigree.ped >> ../"$seqId"_pedigree.ped
 
