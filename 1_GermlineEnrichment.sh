@@ -288,15 +288,27 @@ TMP_DIR=/state/partition1/tmpdir
 --minMappingQuality 20 \
 --minBaseQuality 10 \
 -ct "$minimumCoverage" \
--geneList /data/db/human/refseq/geneTrack.refSeq.b37.sorted.txt.gz \
+--omitIntervalStatistics \
+--omitLocusTable \
+-nt 12 \
 -dt NONE
 
 #tabix index the per-base coverage file
 awk -F'[\t|:]' '{if(NR>1) print $1"\t"$2"\t"$3}' "$seqId"_"$sampleId"_DepthOfCoverage | \
 /share/apps/htslib-distros/htslib-1.4/bgzip > "$seqId"_"$sampleId"_DepthOfCoverage.gz
-/share/apps/htslib-distros/htslib-1.4/tabix -b2 "$seqId"_"$sampleId"_DepthOfCoverage.gz
+/share/apps/htslib-distros/htslib-1.4/tabix -b2 -e2 -s1 "$seqId"_"$sampleId"_DepthOfCoverage.gz
 
-#TODO identify gaps
+#Calculate gene percentage coverage
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx16g -jar /data/diagnostics/apps/CoverageCalculator-2.0.2/CoverageCalculator-2.0.2.jar \
+"$seqId"_"$sampleId"_DepthOfCoverage \
+/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_genes.txt \
+/state/partition1/db/human/refseq/ref_GRCh37.p13_top_level.gff3 \
+-p5 \
+-d"$minimumCoverage" \
+> "$seqId"_"$sampleId"_PercentageCoverage.txt
+
+#sort BED and add file prefix
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -i "$sampleId"_gaps.bed > "$seqId"_"$sampleId"_Coverage_Gaps.bed
 
 #Extract 1kg autosomal snps for contamination analysis
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
