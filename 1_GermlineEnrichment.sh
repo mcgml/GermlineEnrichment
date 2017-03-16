@@ -293,8 +293,8 @@ TMP_DIR=/state/partition1/tmpdir
 
 #tabix index the per-base coverage file
 awk -F'[\t|:]' '{if(NR>1) print $1"\t"$2"\t"$3}' "$seqId"_"$sampleId"_DepthOfCoverage | \
-/share/apps/htslib-distros/htslib-1.3.1/bgzip > "$seqId"_"$sampleId"_DepthOfCoverage.gz
-/share/apps/htslib-distros/htslib-1.3.1/tabix -b2 "$seqId"_"$sampleId"_DepthOfCoverage.gz
+/share/apps/htslib-distros/htslib-1.4/bgzip > "$seqId"_"$sampleId"_DepthOfCoverage.gz
+/share/apps/htslib-distros/htslib-1.4/tabix -b2 "$seqId"_"$sampleId"_DepthOfCoverage.gz
 
 #TODO identify gaps
 

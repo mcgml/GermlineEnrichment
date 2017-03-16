@@ -16,7 +16,7 @@ version="1.7.0"
 addMetaDataToVCF(){
     output=$(echo "$1" | sed 's/\.vcf/_meta\.vcf/g')
     grep '^##' "$1" > "$output"
-    for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$1"); do
+    for sample in $(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$1"); do
         cat "$sample"/"$seqId"_"$sample"_meta.txt >> "$output"
     done
     grep -v '^##' "$1" >> "$output"
@@ -75,7 +75,7 @@ annotateVCF(){
 -dt NONE
 
 #Annotate with low complexity region length using mdust
-/share/apps/bcftools-distros/bcftools-1.3.1/bcftools annotate \
+/share/apps/bcftools-distros/bcftools-1.4/bcftools annotate \
 -a /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.mdust.v34.lpad1.bed.gz \
 -c CHROM,FROM,TO,LCRLen \
 -h <(echo '##INFO=<ID=LCRLen,Number=1,Type=Integer,Description="Overlapping mdust low complexity region length (mask cutoff: 34)">') \
@@ -196,14 +196,14 @@ annotateVCF(){
 addMetaDataToVCF "$seqId"_filtered_denovo.vcf
 
 #bgzip vcf and index with tabix
-/share/apps/htslib-distros/htslib-1.3.1/bgzip -c "$seqId"_filtered_denovo_meta.vcf > "$seqId"_filtered_denovo_meta.vcf.gz
-/share/apps/htslib-distros/htslib-1.3.1/tabix -p vcf "$seqId"_filtered_denovo_meta.vcf.gz
+/share/apps/htslib-distros/htslib-1.4/bgzip -c "$seqId"_filtered_denovo_meta.vcf > "$seqId"_filtered_denovo_meta.vcf.gz
+/share/apps/htslib-distros/htslib-1.4/tabix -p vcf "$seqId"_filtered_denovo_meta.vcf.gz
 
 ### ROH, SV & CNV analysis ###
 
 #identify runs of homozygosity
-for sample in $(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$seqId"_filtered_denovo_meta.vcf); do
-    /share/apps/bcftools-distros/bcftools-dev/bcftools roh -O r -s "$sample" -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed "$seqId"_filtered_denovo_meta.vcf.gz | \
+for sample in $(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$seqId"_filtered_denovo_meta.vcf); do
+    /share/apps/bcftools-distros/bcftools-1.4/bcftools roh -O r -s "$sample" -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed "$seqId"_filtered_denovo_meta.vcf.gz | \
     grep -v '^#' | awk '{print $3"\t"$4-1"\t"$5"\t\t"$8}' > "$sample"/"$seqId"_"$sample"_roh.bed
 done
 
@@ -254,7 +254,7 @@ paste HighCoverageBams.list \
 for vcf in $(ls *_cnv.vcf); do
 
     prefix=$(echo "$vcf" | sed 's/\.vcf//g')
-    sampleId=$(/share/apps/bcftools-distros/bcftools-1.3.1/bcftools query -l "$vcf")
+    sampleId=$(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$vcf")
 
     #add VCF headers
     /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar UpdateVcfSequenceDictionary \
