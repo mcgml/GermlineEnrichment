@@ -307,8 +307,10 @@ awk -F'[\t|:]' '{if(NR>1) print $1"\t"$2"\t"$3}' "$seqId"_"$sampleId"_DepthOfCov
 -d"$minimumCoverage" \
 > "$seqId"_"$sampleId"_PercentageCoverage.txt
 
-#sort BED and add file prefix
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -i "$sampleId"_gaps.bed > "$seqId"_"$sampleId"_Coverage_Gaps.bed
+#sort BED karyotypically and add file prefix
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort \
+-faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
+-i "$sampleId"_gaps.bed > "$seqId"_"$sampleId"_Coverage_Gaps.bed
 
 #Extract 1kg autosomal snps for contamination analysis
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
