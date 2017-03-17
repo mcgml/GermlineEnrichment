@@ -11,6 +11,7 @@ cd $PBS_O_WORKDIR
 version="1.7.0"
 
 #TODO fix metadata issues for VCFParse
+#TODO test ExcessHet & InbreedingCoeff
 
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 # Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
@@ -76,19 +77,11 @@ annotateVCF(){
 -ped "$seqId"_pedigree.ped \
 -dt NONE
 
-#Annotate with low complexity region length using mdust
-/share/apps/bcftools-distros/bcftools-1.4/bcftools annotate \
--a /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.mdust.v34.lpad1.bed.gz \
--c CHROM,FROM,TO,LCRLen \
--h <(echo '##INFO=<ID=LCRLen,Number=1,Type=Integer,Description="Overlapping mdust low complexity region length (mask cutoff: 34)">') \
--o "$seqId"_variants.lcr.vcf \
-"$seqId"_variants.vcf
-
 #Select SNPs
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T SelectVariants \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$seqId"_variants.lcr.vcf \
+-V "$seqId"_variants.vcf \
 -selectType SNP \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_snps.vcf \
@@ -105,7 +98,7 @@ annotateVCF(){
 --filterName "QD" \
 --filterExpression "FS > 60.0" \
 --filterName "FS" \
---filterExpression "SOR > 3.0" \
+--filterExpression "SOR > 5.0" \
 --filterName "SOR" \
 --filterExpression "MQ < 40.0" \
 --filterName "MQ" \
@@ -113,6 +106,11 @@ annotateVCF(){
 --filterName "MQRankSum" \
 --filterExpression "ReadPosRankSum < -8.0" \
 --filterName "ReadPosRankSum" \
+--genotypeFilterExpression "DP < 10" \
+--genotypeFilterName "LowDP" \
+--genotypeFilterExpression "GQ < 20" \
+--genotypeFilterName "LowGQ" \
+--setFilteredGtToNocall \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -o "$seqId"_snps_filtered.vcf \
 -dt NONE
@@ -121,7 +119,7 @@ annotateVCF(){
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx16g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T SelectVariants \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$seqId"_variants.lcr.vcf \
+-V "$seqId"_variants.vcf \
 --selectTypeToExclude SNP \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
@@ -145,6 +143,11 @@ annotateVCF(){
 --filterName "ReadPosRankSum" \
 --filterExpression "InbreedingCoeff != 'nan' && InbreedingCoeff < -0.8" \
 --filterName "InbreedingCoeff" \
+--genotypeFilterExpression "DP < 10" \
+--genotypeFilterName "LowDP" \
+--genotypeFilterExpression "GQ < 20" \
+--genotypeFilterName "LowGQ" \
+--setFilteredGtToNocall \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
 -o "$seqId"_non_snps_filtered.vcf \
@@ -160,52 +163,18 @@ annotateVCF(){
 -genotypeMergeOptions UNSORTED \
 -dt NONE
 
-#Derive posterior probabilities of genotypes
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
--T CalculateGenotypePosteriors \
--R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
---supporting /state/partition1/db/human/gatk/2.8/b37/1000G_phase3_v4_20130502.sites.vcf \
--ped "$seqId"_pedigree.ped \
--V "$seqId"_combined_filtered.vcf \
--o "$seqId"_combined_filtered_gcp.vcf \
--dt NONE
-
-#filter genotypes
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
--T VariantFiltration \
--R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$seqId"_combined_filtered_gcp.vcf \
---genotypeFilterExpression "DP < 10" \
---genotypeFilterName "LowDP" \
---genotypeFilterExpression "GQ < 20" \
---genotypeFilterName "LowGQ" \
---setFilteredGtToNocall \
--o "$seqId"_filtered.vcf \
--dt NONE
-
-#Annotate possible de novo mutations
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
--T VariantAnnotator \
--R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$seqId"_filtered.vcf \
--A PossibleDeNovo \
--A MVLikelihoodRatio \
--A TransmissionDisequilibriumTest \
--ped "$seqId"_pedigree.ped \
--o "$seqId"_filtered_denovo.vcf
-
 #Add VCF meta data to final VCF
-addMetaDataToVCF "$seqId"_filtered_denovo.vcf
+addMetaDataToVCF "$seqId"_combined_filtered.vcf
 
 #bgzip vcf and index with tabix
-/share/apps/htslib-distros/htslib-1.4/bgzip -c "$seqId"_filtered_denovo_meta.vcf > "$seqId"_filtered_denovo_meta.vcf.gz
-/share/apps/htslib-distros/htslib-1.4/tabix -p vcf "$seqId"_filtered_denovo_meta.vcf.gz
+/share/apps/htslib-distros/htslib-1.4/bgzip -c "$seqId"_combined_filtered_meta.vcf > "$seqId"_combined_filtered_meta.vcf.gz
+/share/apps/htslib-distros/htslib-1.4/tabix -p vcf "$seqId"_combined_filtered_meta.vcf.gz
 
 ### ROH, SV & CNV analysis ###
 
 #identify runs of homozygosity
-for sample in $(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$seqId"_filtered_denovo_meta.vcf); do
-    /share/apps/bcftools-distros/bcftools-1.4/bcftools roh -O r -s "$sample" -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed "$seqId"_filtered_denovo_meta.vcf.gz | \
+for sample in $(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$seqId"_combined_filtered_meta.vcf); do
+    /share/apps/bcftools-distros/bcftools-1.4/bcftools roh -O r -s "$sample" -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed "$seqId"_combined_filtered_meta.vcf.gz | \
     grep -v '^#' | awk '{print $3"\t"$4-1"\t"$5"\t\t"$8}' > "$sample"/"$seqId"_"$sample"_roh.bed
 done
 
@@ -284,7 +253,7 @@ for vcf in $(ls *_cnv.vcf); do
 done
 
 #annotate with VEP
-annotateVCF "$seqId"_filtered_denovo_meta.vcf "$seqId"_filtered_meta_annotated.vcf
+annotateVCF "$seqId"_combined_filtered_meta.vcf "$seqId"_filtered_meta_annotated.vcf
 annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vcf
 
 #write SNV & Indel dataset to table
@@ -328,16 +297,14 @@ done
 /share/apps/vcftools-distros/vcftools-0.1.14/build/bin/vcftools \
 --relatedness2 \
 --out "$seqId"_relatedness \
---vcf "$seqId"_combined_filtered.vcf
+--vcf "$seqId"_filtered_meta_annotated.vcf
 
 ### Clean up ###
 
 #delete unused files
 rm -r manta
-rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_variants.lcr.vcf "$seqId"_variants.lcr.vcf.idx "$panel"_ROI_b37_window_gc_mappability.txt
+rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$panel"_ROI_b37_window_gc_mappability.txt
 rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_non_snps.vcf igv.log
 rm "$seqId"_non_snps.vcf.idx "$seqId"_non_snps_filtered.vcf "$seqId"_non_snps_filtered.vcf.idx "$seqId"_filtered.vcf "$seqId"_filtered.vcf.idx
-rm "$seqId"_filtered_denovo_meta.vcf.gz "$seqId"_filtered_denovo_meta.vcf.gz.tbi ExomeDepth.log GVCFs.list HighCoverageBams.list "$seqId"_sv_filtered.vcf
-rm "$seqId"_filtered_denovo_meta.vcf "$seqId"_sv_filtered_meta.vcf BAMs.list variables "$seqId"_combined_filtered.vcf "$seqId"_combined_filtered.vcf.idx
-rm "$seqId"_combined_filtered_gcp.vcf "$seqId"_combined_filtered_gcp.vcf.idx "$seqId"_filtered_denovo.vcf "$seqId"_filtered_denovo.vcf.idx
-rm "$panel"_ROI_b37_window_gc.bed 
+rm ExomeDepth.log GVCFs.list HighCoverageBams.list "$seqId"_sv_filtered.vcf
+rm "$seqId"_sv_filtered_meta.vcf BAMs.list variables "$seqId"_combined_filtered.vcf "$seqId"_combined_filtered.vcf.idx "$panel"_ROI_b37_window_gc.bed

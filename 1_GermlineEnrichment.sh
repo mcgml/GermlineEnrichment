@@ -10,8 +10,9 @@ cd $PBS_O_WORKDIR
 #Mode: BY_SAMPLE
 version="1.7.0"
 
-# Script 1 runs in sample folder, requires fastq files split by lane
 #TODO fix CoverageCalculator bug
+
+# Script 1 runs in sample folder, requires fastq files split by lane
 
 countQCFlagFails() {
     #count how many core FASTQC tests failed
