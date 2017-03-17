@@ -238,7 +238,7 @@ fi
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -I "$seqId"_"$sampleId".bam \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 50 \
+-ip 100 \
 -o "$seqId"_"$sampleId".g.vcf \
 --genotyping_mode DISCOVERY \
 --emitRefConfidence GVCF \

@@ -71,7 +71,7 @@ annotateVCF(){
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V GVCFs.list \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 50 \
+-ip 100 \
 -o "$seqId"_variants.vcf \
 -ped "$seqId"_pedigree.ped \
 -dt NONE
@@ -124,7 +124,7 @@ annotateVCF(){
 -V "$seqId"_variants.lcr.vcf \
 --selectTypeToExclude SNP \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 50 \
+-ip 100 \
 -o "$seqId"_non_snps.vcf \
 -dt NONE
 
@@ -146,7 +146,7 @@ annotateVCF(){
 --filterExpression "InbreedingCoeff != 'nan' && InbreedingCoeff < -0.8" \
 --filterName "InbreedingCoeff" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 50 \
+-ip 100 \
 -o "$seqId"_non_snps_filtered.vcf \
 -dt NONE
 
