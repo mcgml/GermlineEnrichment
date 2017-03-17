@@ -10,6 +10,8 @@ cd $PBS_O_WORKDIR
 #Mode: BY_COHORT
 version="1.7.0"
 
+#TODO fix metadata issues for VCFParse
+
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 # Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
 
@@ -69,7 +71,7 @@ annotateVCF(){
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V GVCFs.list \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 1 \
+-ip 50 \
 -o "$seqId"_variants.vcf \
 -ped "$seqId"_pedigree.ped \
 -dt NONE
@@ -122,7 +124,7 @@ annotateVCF(){
 -V "$seqId"_variants.lcr.vcf \
 --selectTypeToExclude SNP \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 1 \
+-ip 50 \
 -o "$seqId"_non_snps.vcf \
 -dt NONE
 
@@ -144,7 +146,7 @@ annotateVCF(){
 --filterExpression "InbreedingCoeff != 'nan' && InbreedingCoeff < -0.8" \
 --filterName "InbreedingCoeff" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 1 \
+-ip 50 \
 -o "$seqId"_non_snps_filtered.vcf \
 -dt NONE
 

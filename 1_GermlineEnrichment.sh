@@ -11,6 +11,7 @@ cd $PBS_O_WORKDIR
 version="1.7.0"
 
 # Script 1 runs in sample folder, requires fastq files split by lane
+#TODO fix CoverageCalculator bug
 
 countQCFlagFails() {
     #count how many core FASTQC tests failed
@@ -237,7 +238,7 @@ fi
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -I "$seqId"_"$sampleId".bam \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 1 \
+-ip 50 \
 -o "$seqId"_"$sampleId".g.vcf \
 --genotyping_mode DISCOVERY \
 --emitRefConfidence GVCF \
