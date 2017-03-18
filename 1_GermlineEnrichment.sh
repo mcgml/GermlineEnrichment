@@ -156,7 +156,7 @@ TMP_DIR=/state/partition1/tmpdir
 -I "$seqId"_"$sampleId"_rmdup.bam \
 -o "$seqId"_"$sampleId"_realign.intervals \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip "$padding" \
+-ip 150 \
 -dt NONE
 
 #Realign around indels
@@ -184,7 +184,7 @@ if [ "$includeBQSR" = true ] ; then
     -I "$seqId"_"$sampleId"_realigned.bam \
     -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
     -o "$seqId"_"$sampleId"_recal_data.table \
-    -ip "$padding" \
+    -ip 150 \
     -nct 12 \
     -dt NONE
 
@@ -200,7 +200,7 @@ if [ "$includeBQSR" = true ] ; then
     -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
     -o "$seqId"_"$sampleId"_post_recal_data.table \
     -nct 12 \
-    -ip "$padding" \
+    -ip 150 \
     -dt NONE
 
     #Generate BQSR plots
