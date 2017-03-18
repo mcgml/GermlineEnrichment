@@ -1,26 +1,20 @@
-# GermlineEnrichment
-
-Diagnostic NGS pipeline for SNPs/Indels/CNVs/SVs/LOH from germline panel/exome data (Illumina paired-end)
-
-Requires variables files.
-
-Launch with qsub 1_GermlineEnrichment.sh in the sample directory.
-
-Ouputs:
-
--BAM
--VCF
--QC.txt
--Coverage
--Releatedness
--Variant metrics
-
-Caveats:
-
--BQSR requires at least 100M bases (after filtering) to create a model. Roughly, it shouldnt be used for designs less than 0.5Mb.
--Script 2 requires PED file. By default one is created assuming all unrelated samples.
--Relatedness metrics:  First-degree relatives are ~0.25, and 2nd-degree ~0.125, and 3rd degree 0.0625. Unrelated patients can reach ~0.04.
-
+<h1>GermlineEnrichment</h1>
+<h2>Description<h2>
+<p>Diagnostic NGS pipeline for SNPs/Indels/CNVs/SVs/LOH from germline panel/exome data (Illumina paired-end)</p>
+<p>Requires variables files. See https://github.com/mcgml/MakeVariableFiles</p>
+<p>Launch with qsub 1_GermlineEnrichment.sh in the sample directory. Assumes Torque/PBS is installed</p>
+<h2>Caveats</h2>
+<ul>
+  <li>BQSR requires at least 100M bases post filtering to create an accurate model. Roughly, it shouldnt be used for designs less than 0.5Mb.</li>
+  <li>Script 2 requires PED file. By default one is created assuming all unrelated samples. Downstream filtering assumes samples are unrelated unless specified in the PED</li>
+</ul>
+<h2>Ouputs<h2>
+<ul>
+  <li>BAM alignement</li>
+  <li>VCF files</li>
+  <li>QC metrics</li>
+  <li>Tabix indexed coverage per base</li>
+</ul>
 <h2>Relatedness</h2>
 <table>
     <tr>
@@ -38,10 +32,8 @@ Caveats:
         <td>0-0.04</td>
     </tr>
 </table>
-
 <h2>Expected variant metrics</h2>
-<h3>Source: http://gatkforums.broadinstitute.org/gatk/discussion/6308/evaluating-the-quality-of-a-variant-callset</h3>
-<h4>Variants</h4>s
+<h4>Variants</h4>
 <table>
     <tr>
         <td>Type</td>
@@ -59,8 +51,7 @@ Caveats:
         <td>3.0-3.3</td>
     </tr>
 </table>
-<h5>If your TiTv Ratio is too low, your callset likely has more false positives.</h5>
-
+<p>If your TiTv Ratio is too low, your callset likely has more false positives.</p>
 <table>
     <tr>
         <td>Indel frequency</td>
@@ -75,4 +66,5 @@ Caveats:
         <td>0.2-0.5</td>
     </tr>
 </table>
-<h5>A significant deviation from the expected ratios listed in the table above could indicate a bias resulting from artifactual variants.</h5>
+<p>A significant deviation from the expected ratios listed in the table above could indicate a bias resulting from artifactual variants.</p>
+<h5>Source: http://gatkforums.broadinstitute.org/gatk/discussion/6308/evaluating-the-quality-of-a-variant-callset</h5>
