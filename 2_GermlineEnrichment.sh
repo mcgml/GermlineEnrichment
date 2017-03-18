@@ -18,6 +18,10 @@ version="1.7.0"
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 # Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
 
+#load run & pipeline variables
+. variables
+. /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
+
 addMetaDataToVCF(){
     output=$(echo "$1" | sed 's/\.vcf/_meta\.vcf/g')
     grep '^##' "$1" > "$output"
@@ -74,10 +78,6 @@ makeCNVBed(){
     /share/apps/bigWigAverageOverBed-distros/bigWigAverageOverBed /data/db/human/wgEncodeMapability/wgEncodeCrgMapabilityAlign100mer.bigWig "$panel"_ROI_b37_window_gc.bed "$panel"_ROI_b37_window_gc_mappability.txt
     awk '{ if ($5 > 0.9 && $6 > 0.9) print $1"\ttarget_"NR }' "$panel"_ROI_b37_window_gc_mappability.txt | tr '-' '\t' > "$panel"_ROI_b37_CNV.bed
 }
-
-#load run & pipeline variables
-. variables
-. /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
 
 ### Joint variant calling and filtering ###
 

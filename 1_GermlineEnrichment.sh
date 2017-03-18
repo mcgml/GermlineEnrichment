@@ -14,6 +14,10 @@ version="1.7.0"
 
 # Script 1 runs in sample folder, requires fastq files split by lane
 
+#load sample & pipeline variables
+. *.variables
+. /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
+
 countQCFlagFails() {
     #count how many core FASTQC tests failed
     grep -E "Basic Statistics|Per base sequence quality|Per tile sequence quality|Per sequence quality scores|Per base N content" "$1" | \
@@ -22,10 +26,6 @@ countQCFlagFails() {
     wc -l | \
     sed 's/^[[:space:]]*//g'
 }
-
-#load sample & pipeline variables
-. *.variables
-. /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
 
 ### Preprocessing ###
 
