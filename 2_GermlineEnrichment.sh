@@ -12,6 +12,7 @@ version="1.7.0"
 
 #TODO fix metadata issues for VCFParse
 #TODO test ExcessHet & InbreedingCoeff
+#TODO look at AS_InbreedingCoeff
 
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 # Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
