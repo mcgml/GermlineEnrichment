@@ -21,7 +21,7 @@ Caveats:
 -Script 2 requires PED file. By default one is created assuming all unrelated samples.
 -Relatedness metrics:  First-degree relatives are ~0.25, and 2nd-degree ~0.125, and 3rd degree 0.0625. Unrelated patients can reach ~0.04.
 
-<h1>Relatedness</h1>
+<h2>Relatedness</h2>
 <table>
     <tr>
         <td>Same sample</td>
@@ -39,9 +39,9 @@ Caveats:
     </tr>
 </table>
 
-<h1>Expected variant metrics</h1>
-<h2>Source: http://gatkforums.broadinstitute.org/gatk/discussion/6308/evaluating-the-quality-of-a-variant-callset</h2>
-<h3>Variants</h3>
+<h2>Expected variant metrics</h2>
+<h3>Source: http://gatkforums.broadinstitute.org/gatk/discussion/6308/evaluating-the-quality-of-a-variant-callset</h3>
+<h4>Variants</h4>s
 <table>
     <tr>
         <td>Type</td>
@@ -59,7 +59,7 @@ Caveats:
         <td>3.0-3.3</td>
     </tr>
 </table>
-<h4>If your TiTv Ratio is too low, your callset likely has more false positives.</h4>
+<h5>If your TiTv Ratio is too low, your callset likely has more false positives.</h5>
 
 <table>
     <tr>
@@ -75,3 +75,4 @@ Caveats:
         <td>0.2-0.5</td>
     </tr>
 </table>
+<h5>A significant deviation from the expected ratios listed in the table above could indicate a bias resulting from artifactual variants.</h5>
