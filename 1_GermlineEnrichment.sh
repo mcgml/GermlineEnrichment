@@ -253,7 +253,7 @@ I=/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"
 O="$panel"_ROI.interval_list \
 SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict 
 
-#Alignment metrics
+#Alignment metrics: library sequence similarity
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar CollectAlignmentSummaryMetrics \
 R=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 I="$seqId"_"$sampleId".bam \
@@ -292,6 +292,7 @@ TMP_DIR=/state/partition1/tmpdir
 -ct "$minimumCoverage" \
 --omitIntervalStatistics \
 --omitLocusTable \
+-rf MappingQualityUnavailable \
 -nt 12 \
 -dt NONE
 
@@ -368,9 +369,12 @@ if [ $(wc -l Y.bed |cut -d' ' -f1) -gt 0 ] && [ $(awk -v meanOnTargetCoverage="$
     --omitIntervalStatistics \
     --omitLocusTable \
     -L Y.bed \
+    -XL Y:10000-2649520 \
+    -XL Y:59034049-59363566 \
     -I "$seqId"_"$sampleId".bam \
     --countType COUNT_FRAGMENTS \
     --minMappingQuality 20 \
+    -rf MappingQualityUnavailable \
     -dt NONE
 
     #extract Y mean coverage
