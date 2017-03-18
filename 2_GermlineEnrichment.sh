@@ -283,6 +283,12 @@ done
 
 ### QC ###
 
+#relatedness test
+/share/apps/vcftools-distros/vcftools-0.1.14/build/bin/vcftools \
+--relatedness2 \
+--out "$seqId"_relatedness \
+--vcf "$seqId"_filtered_meta_annotated.vcf
+
 #Variant Evaluation
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T VariantEval \
@@ -292,12 +298,6 @@ done
 --comp:dbsnp138 /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -dt NONE
-
-#relatedness test First-degree relatives are ~0.25, and 2nd-degree ~0.125, and 3rd degree 0.0625. Unrelated patients can reach ~0.04.
-/share/apps/vcftools-distros/vcftools-0.1.14/build/bin/vcftools \
---relatedness2 \
---out "$seqId"_relatedness \
---vcf "$seqId"_filtered_meta_annotated.vcf
 
 ### Clean up ###
 
