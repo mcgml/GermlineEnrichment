@@ -29,15 +29,15 @@ Source: http://gatkforums.broadinstitute.org/gatk/discussion/6308/evaluating-the
 
 
 <table>
-    <th>
+    <tr>
         <td>Indel frequency</td>
         <td>Insertion to deletion ratio</td>
-    </th>
+    </tr>
     <tr>
         <td>Common</td>
         <td>~1</td>
     </tr>
-        <tr>
+    <tr>
         <td>Rare</td>
         <td>0.2-0.5</td>
     </tr>
