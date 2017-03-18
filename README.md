@@ -1,21 +1,21 @@
-<h1>GermlineEnrichment</h1>
-<h2>Description<h2>
+<h2>GermlineEnrichment</h2>
+<h3>Description</h3>
 <p>Diagnostic NGS pipeline for SNPs/Indels/CNVs/SVs/LOH from germline panel/exome data (Illumina paired-end)</p>
 <p>Requires variables files. See https://github.com/mcgml/MakeVariableFiles</p>
 <p>Launch with qsub 1_GermlineEnrichment.sh in the sample directory. Assumes Torque/PBS is installed</p>
-<h2>Caveats</h2>
+<h3>Caveats</h3>
 <ul>
   <li>BQSR requires at least 100M bases post filtering to create an accurate model. Roughly, it shouldnt be used for designs less than 0.5Mb.</li>
   <li>Script 2 requires PED file. By default one is created assuming all unrelated samples. Downstream filtering assumes samples are unrelated unless specified in the PED</li>
 </ul>
-<h2>Ouputs<h2>
+<h3>Ouputs<h3>
 <ul>
   <li>BAM alignement</li>
   <li>VCF files</li>
   <li>QC metrics</li>
   <li>Tabix indexed coverage per base</li>
 </ul>
-<h2>Relatedness</h2>
+<h3>Relatedness</h3>
 <table>
     <tr>
         <td>Same sample</td>
@@ -32,8 +32,8 @@
         <td>0-0.04</td>
     </tr>
 </table>
-<h2>Expected variant metrics</h2>
-<h4>Variants</h4>
+<h3>Expected variant metrics</h3>
+<h4>SNVs</h4>
 <table>
     <tr>
         <td>Type</td>
@@ -52,6 +52,7 @@
     </tr>
 </table>
 <p>If your TiTv Ratio is too low, your callset likely has more false positives.</p>
+<h4>INDELs</h4>
 <table>
     <tr>
         <td>Indel frequency</td>
