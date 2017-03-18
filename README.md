@@ -5,12 +5,12 @@
 <p>Launch with qsub 1_GermlineEnrichment.sh in the sample directory. Assumes Torque/PBS is installed</p>
 <h3>Caveats</h3>
 <ul>
-  <li>BQSR requires at least 100M bases post filtering to create an accurate model. Roughly, it shouldnt be used for designs less than 0.5Mb.</li>
-  <li>Script 2 requires PED file. By default one is created assuming all unrelated samples. Downstream filtering assumes samples are unrelated unless specified in the PED</li>
+  <li>BQSR requires at least 100M bases post filtering to create an accurate model. Roughly, it shouldn't be used for designs less than 0.5Mb.</li>
+  <li>Script 2 requires PED file. By default, one is created assuming all unrelated samples. Downstream filtering assumes samples are unrelated unless specified in the PED</li>
 </ul>
-<h3>Ouputs<h3>
+<h3>Outputs</h3>
 <ul>
-  <li>BAM alignement</li>
+  <li>BAM alignment</li>
   <li>VCF files</li>
   <li>QC metrics</li>
   <li>Tabix indexed coverage per base</li>

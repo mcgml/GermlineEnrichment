@@ -290,14 +290,11 @@ done
 --vcf "$seqId"_filtered_meta_annotated.vcf
 
 #Variant Evaluation
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
--T VariantEval \
--R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--o "$seqId"_variant_evaluation.txt \
---eval:"$seqId" "$seqId"_filtered_meta_annotated.vcf \
---comp:dbsnp138 /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--dt NONE
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx8g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar CollectVariantCallingMetrics \
+INPUT="$seqId"_filtered_meta_annotated.vcf \
+OUTPUT="$seqId"_CollectVariantCallingMetrics.txt \
+DBSNP=/state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.excluding_sites_after_129.vcf \
+THREAD_COUNT=4
 
 ### Clean up ###
 
