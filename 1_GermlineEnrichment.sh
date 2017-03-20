@@ -301,19 +301,36 @@ awk -F'[\t|:]' '{if(NR>1) print $1"\t"$2"\t"$3}' "$seqId"_"$sampleId"_DepthOfCov
 /share/apps/htslib-distros/htslib-1.4/bgzip > "$seqId"_"$sampleId"_DepthOfCoverage.gz
 /share/apps/htslib-distros/htslib-1.4/tabix -b2 -e2 -s1 "$seqId"_"$sampleId"_DepthOfCoverage.gz
 
-#Calculate gene percentage coverage
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx16g -jar /data/diagnostics/apps/CoverageCalculator-2.0.2/CoverageCalculator-2.0.2.jar \
-"$seqId"_"$sampleId"_DepthOfCoverage \
-/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_genes.txt \
-/state/partition1/db/human/refseq/ref_GRCh37.p13_top_level.gff3 \
--p5 \
--d"$minimumCoverage" \
-> "$seqId"_"$sampleId"_PercentageCoverage.txt
+#Make BED file of all genes overlapping ROI
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect -wa \
+-a /state/partition1/db/human/gatk/2.8/b37/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
+-b /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed | \
+awk '$2 ~ /RefSeq/ && $3 == "gene" { print $1"\t"$4-1"\t"$5 }' | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$panel"_genes.bed
 
-#sort BED karyotypically and add file prefix
+#Intersect CDS for all genes and pad by p=n
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect \
+-a /state/partition1/db/human/gatk/2.8/b37/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
+-b "$panel"_genes.bed | \
+awk -F'[\t|;|=]' -v p=5 '$2 ~ /RefSeq/ && $3 == "CDS" { gene=""; for (i=9;i<NF;i++) if ($i=="gene"){gene=$(i+1); break}; print $1"\t"($4-p)-1"\t"$5+p"\t"gene }' | \
+sort -k1,1 -k2,2n -k3,3n | uniq > "$panel"_ClinicalCoverageTargets.bed
+
+#Make PASS BED
+/share/apps/htslib-distros/htslib-1.4/tabix -R "$panel"_ClinicalCoverageTargets.bed \
+"$seqId"_"$sampleId"_DepthOfCoverage.gz | \
+awk -v minimumCoverage="$minimumCoverage" '$3 >= minimumCoverage { print $1"\t"$2-1"\t"$2 }' | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$seqId"_"$sampleId"_PASS.bed
+
+#Make GAP BED
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
+-a "$panel"_ClinicalCoverageTargets.bed \
+-b "$seqId"_"$sampleId"_PASS.bed | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort \
--faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
--i "$sampleId"_gaps.bed > "$seqId"_"$sampleId"_Coverage_Gaps.bed
+-faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge \
+-o distinct -c 4 > "$seqId"_"$sampleId"_Gaps.bed
 
 #Extract 1kg autosomal snps for contamination analysis
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
