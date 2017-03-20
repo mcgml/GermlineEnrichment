@@ -10,8 +10,6 @@ cd $PBS_O_WORKDIR
 #Mode: BY_SAMPLE
 version="1.7.0"
 
-#TODO fix CoverageCalculator bug
-
 # Script 1 runs in sample folder, requires fastq files split by lane
 
 #load sample & pipeline variables
