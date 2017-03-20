@@ -323,6 +323,9 @@ awk -v minimumCoverage="$minimumCoverage" '$3 >= minimumCoverage { print $1"\t"$
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$seqId"_"$sampleId"_PASS.bed
 
+#Calculate % coverage by gene
+
+
 #Make GAP BED
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
 -a "$panel"_ClinicalCoverageTargets.bed \
