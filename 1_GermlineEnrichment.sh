@@ -311,7 +311,7 @@ awk '$2 ~ /RefSeq/ && $3 == "gene" { print $1"\t"$4-1"\t"$5 }' | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect \
 -a /state/partition1/db/human/gatk/2.8/b37/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
 -b "$panel"_TargetGenes.bed | \
-awk -F'[\t|;|=]' -v p=5 '$2 ~ /RefSeq/ && $3 == "CDS" { gene=""; for (i=9;i<NF;i++) if ($i=="gene"){gene=$(i+1); break}; print $1"\t"($4-p)-1"\t"$5+p"\t"gene }' | \
+awk -F'[\t|;|=]' -v p=5 '$2 ~ /RefSeq/ && $3 == "CDS" { gene=""; for (i=9;i<NF;i++) if ($i=="gene"){gene=$(i+1); break}; print $1"\t"($4-1)-p"\t"$5+p"\t"gene }' | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge -o collapse -c 4 > "$panel"_ClinicalCoverageTargets.bed
 
@@ -328,7 +328,7 @@ awk -v minimumCoverage="$minimumCoverage" '$3 >= minimumCoverage { print $1"\t"$
 -b "$seqId"_"$sampleId"_PASS.bed | \
 tee "$panel"_ClinicalCoverageMetrics.bed | \
 awk '{pass[$4]+=$6; len[$4]+=$7} END { for(i in pass) print i"\t"pass[i]"\t"len[i]"\t"(pass[i]/len[i])*100"%" }' | \
-sort -k1,1 > "$panel"_ClinicalCoverageMetrics.txt
+sort -k1,1 > "$panel"_PercentageCoverage.txt
 
 #Make GAP BED
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
