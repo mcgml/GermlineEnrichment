@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="1.8.0"
+version="1.8.1"
 
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 # Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
@@ -247,11 +247,9 @@ for vcf in $(ls *_cnv.vcf); do
 
     #move files to sampleId folder
     mv "$prefix"_meta_annotated.vcf* "$sampleId"
-    mv "$seqId"_"$sampleId"_cnv_VariantReport.txt "$sampleId"
 
     #delete unused files
-    rm "$vcf" "$prefix"_header.vcf "$prefix"_header_meta.vcf
-    
+    rm "$vcf" "$prefix"_header.vcf "$prefix"_header_meta.vcf    
 done
 
 #annotate with VEP
@@ -264,23 +262,11 @@ annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vc
 -O "$seqId"_snv_indel \
 -K
 
-#move reports to sample folder
-for i in $(ls *snv_indel_VariantReport.txt); do
-    s=$(echo "$i" | sed 's/_snv_indel_VariantReport\.txt//g' | tr '_' '\n' | tail -n1)
-    mv "$i" "$s"
-done
-
 #write SV dataset to table
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.4/VCFParse.jar \
 -V "$seqId"_sv_filtered_meta_annotated.vcf \
 -O "$seqId"_sv \
 -K
-
-#move reports to sample folder
-for i in $(ls *sv_VariantReport.txt); do
-    s=$(echo "$i" | sed 's/_sv_VariantReport\.txt//g' | tr '_' '\n' | tail -n1)
-    mv "$i" "$s"
-done
 
 ### QC ###
 
@@ -305,4 +291,4 @@ rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$panel"_ROI_b37_window_gc_ma
 rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_non_snps.vcf igv.log
 rm "$seqId"_non_snps.vcf.idx "$seqId"_non_snps_filtered.vcf "$seqId"_non_snps_filtered.vcf.idx "$seqId"_filtered.vcf "$seqId"_filtered.vcf.idx
 rm ExomeDepth.log GVCFs.list HighCoverageBams.list "$seqId"_sv_filtered.vcf "$seqId"_combined_filtered.vcf.idx "$panel"_ROI_b37_window_gc.bed
-rm "$seqId"_sv_filtered_meta.vcf BAMs.list variables "$seqId"_combined_filtered.vcf 
+rm "$seqId"_sv_filtered_meta.vcf BAMs.list variables "$seqId"_combined_filtered.vcf
