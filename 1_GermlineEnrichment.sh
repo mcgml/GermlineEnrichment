@@ -301,7 +301,7 @@ awk -F'[\t|:]' '{if(NR>1) print $1"\t"$2"\t"$3}' "$seqId"_"$sampleId"_DepthOfCov
 
 #Make BED file of all genes overlapping ROI
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect -wa \
--a /state/partition1/db/human/gatk/2.8/b37/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
+-a /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
 -b /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed | \
 awk '$2 ~ /RefSeq/ && $3 == "gene" { print $1"\t"$4-1"\t"$5 }' | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
@@ -309,14 +309,16 @@ awk '$2 ~ /RefSeq/ && $3 == "gene" { print $1"\t"$4-1"\t"$5 }' | \
 
 #Intersect CDS for all genes and pad by p=n
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect \
--a /state/partition1/db/human/gatk/2.8/b37/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
+-a /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
 -b "$panel"_TargetGenes.bed | \
 awk -F'[\t|;|=]' -v p=5 '$2 ~ /RefSeq/ && $3 == "CDS" { gene=""; for (i=9;i<NF;i++) if ($i=="gene"){gene=$(i+1); break}; print $1"\t"($4-1)-p"\t"$5+p"\t"gene }' | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge -o collapse -c 4 > "$panel"_ClinicalCoverageTargets.bed
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai > "$panel"_ClinicalCoverageTargets.bed
 
 #Make PASS BED
-/share/apps/htslib-distros/htslib-1.4/tabix -R "$panel"_ClinicalCoverageTargets.bed \
+sort -k1,1V -k2,2n -k3,3n "$panel"_ClinicalCoverageTargets.bed | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$panel"_ClinicalCoverageTargets_Merged.bed
+
+/share/apps/htslib-distros/htslib-1.4/tabix -R "$panel"_ClinicalCoverageTargets_Merged.bed \
 "$seqId"_"$sampleId"_DepthOfCoverage.gz | \
 awk -v minimumCoverage="$minimumCoverage" '$3 >= minimumCoverage { print $1"\t"$2-1"\t"$2 }' | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
@@ -326,18 +328,16 @@ awk -v minimumCoverage="$minimumCoverage" '$3 >= minimumCoverage { print $1"\t"$
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools coverage \
 -a "$panel"_ClinicalCoverageTargets.bed \
 -b "$seqId"_"$sampleId"_PASS.bed | \
-tee "$panel"_ClinicalCoverageMetrics.bed | \
-awk '{pass[$4]+=$6; len[$4]+=$7} END { for(i in pass) print i"\t"pass[i]"\t"len[i]"\t"(pass[i]/len[i])*100"%" }' | \
-sort -k1,1 > "$panel"_PercentageCoverage.txt
+tee "$panel"_ClinicalCoverageTargetMetrics.txt | \
+awk '{pass[$4]+=$6; len[$4]+=$7} END { for(i in pass) printf "%s\t %.2f%\n", i, (pass[i]/len[i]) * 100 }' | \
+sort -k1,1 > "$panel"_ClinicalCoverageGeneCoverage.txt
 
 #Make GAP BED
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
 -a "$panel"_ClinicalCoverageTargets.bed \
 -b "$seqId"_"$sampleId"_PASS.bed | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort \
--faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge \
--o collapse -c 4 > "$seqId"_"$sampleId"_Gaps.bed
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge -o collapse -c 4 > "$seqId"_"$sampleId"_Gaps.bed
 
 #Extract 1kg autosomal snps for contamination analysis
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
@@ -446,6 +446,7 @@ rm "$seqId"_"$sampleId"*unaligned.bam "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$
 rm "$seqId"_"$sampleId"_realigned.bai 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf Y.bed "$panel"_ROI.interval_list
 rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai
 rm "$seqId"_"$sampleId"_Contamination.log "$sampleId"_gaps.bed "$seqId"_"$sampleId"_DepthOfCoverage "$seqId"_"$sampleId"_DepthOfCoverage.sample_statistics
+rm "$seqId"_"$sampleId"_PASS.bed "$panel"_ClinicalCoverageTargets.bed "$panel"_ClinicalCoverageTargets_Merged.bed "$panel"_TargetGenes.bed
 
 #check if all VCFs are written
 if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../GVCFs.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
