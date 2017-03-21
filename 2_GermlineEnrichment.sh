@@ -11,10 +11,6 @@ cd $PBS_O_WORKDIR
 version="1.7.0"
 
 #TODO fix metadata issues for VCFParse
-#TODO test ExcessHet & InbreedingCoeff
-#TODO look at AS_InbreedingCoeff
-#TODO collect all QC metrics and append to flat file database (per panel) for trend monitoring - calculate ZScores
-#TODO upgrade bcftools
 
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 # Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
