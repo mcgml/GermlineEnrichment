@@ -421,14 +421,14 @@ echo \#\#SAMPLE\=\<ID\="$sampleId",Tissue\=Germline,WorklistId\="$worklistId",Se
 
 #Create PED file
 #TSV Format: Family_ID, Individual_ID, Paternal_ID, Maternal_ID, Sex (1=male; 2=female; 0=unknown), Phenotype (Description or 1=unaffected, 2=affected, 0=missing). Missing data is 0
-if [ ! -z ${familyId-} ]; then echo -ne "$familyId\t" > "$sampleId"_pedigree.ped; else echo -ne "0\t" > "$sampleId"_pedigree.ped; fi
-echo -ne "$sampleId\t" >> "$sampleId"_pedigree.ped
-if [ ! -z ${paternalId-} ]; then echo -ne "$paternalId\t" >> "$sampleId"_pedigree.ped; else echo -ne "0\t" >> "$sampleId"_pedigree.ped; fi
-if [ ! -z ${maternalId-} ]; then echo -ne "$maternalId\t" >> "$sampleId"_pedigree.ped; else echo -ne "0\t" >> "$sampleId"_pedigree.ped; fi
-if [ ! -z ${gender-} ]; then echo -ne "$gender\t" >> "$sampleId"_pedigree.ped; else echo -ne "0\t" >> "$sampleId"_pedigree.ped; fi
-if [ ! -z ${phenotype-} ]; then echo -e "$phenotype" >> "$sampleId"_pedigree.ped; else echo -e "2" >> "$sampleId"_pedigree.ped; fi
+if [ ! -z ${familyId-} ]; then echo -ne "$familyId\t" > "$sampleId"_pedigree.ped; else echo -ne "0\t" > "$seqId"_"$sampleId"_pedigree.ped; fi
+echo -ne "$sampleId\t" >> "$seqId"_"$sampleId"_pedigree.ped
+if [ ! -z ${paternalId-} ]; then echo -ne "$paternalId\t" >> "$sampleId"_pedigree.ped; else echo -ne "0\t" >> "$seqId"_"$sampleId"_pedigree.ped; fi
+if [ ! -z ${maternalId-} ]; then echo -ne "$maternalId\t" >> "$sampleId"_pedigree.ped; else echo -ne "0\t" >> "$seqId"_"$sampleId"_pedigree.ped; fi
+if [ ! -z ${gender-} ]; then echo -ne "$gender\t" >> "$sampleId"_pedigree.ped; else echo -ne "0\t" >> "$seqId"_"$sampleId"_pedigree.ped; fi
+if [ ! -z ${phenotype-} ]; then echo -e "$phenotype" >> "$sampleId"_pedigree.ped; else echo -e "2" >> "$seqId"_"$sampleId"_pedigree.ped; fi
 
-cat "$sampleId"_pedigree.ped >> ../"$seqId"_pedigree.ped
+cat "$seqId"_"$sampleId"_pedigree.ped >> ../"$seqId"_pedigree.ped
 
 ### Clean up ###
 
