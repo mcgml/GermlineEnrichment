@@ -432,6 +432,13 @@ cat "$sampleId"_pedigree.ped >> ../"$seqId"_pedigree.ped
 
 ### Clean up ###
 
+#delete unused files
+rm "$seqId"_"$sampleId"*unaligned.bam "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam 
+rm "$seqId"_"$sampleId"_realigned.bai 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf Y.bed "$panel"_ROI.interval_list
+rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai
+rm "$seqId"_"$sampleId"_Contamination.log "$seqId"_"$sampleId"_DepthOfCoverage.sample_statistics "$seqId"_"$sampleId"_PASS.bed
+rm "$panel"_ClinicalCoverageTargets.bed "$panel"_ClinicalCoverageTargets_Merged.bed "$panel"_TargetGenes.bed
+
 #create final file lists
 find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
 find $PWD -name "$seqId"_"$sampleId".bam >> ../BAMs.list
@@ -440,13 +447,6 @@ find $PWD -name "$seqId"_"$sampleId".bam >> ../BAMs.list
 if [ $(echo "$meanOnTargetCoverage" | awk '{if ($1 > 50) print "true"; else print "false"}') = true ]; then
     find $PWD -name "$seqId"_"$sampleId".bam >> ../HighCoverageBams.list
 fi
-
-#delete unused files
-rm "$seqId"_"$sampleId"*unaligned.bam "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam 
-rm "$seqId"_"$sampleId"_realigned.bai 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf Y.bed "$panel"_ROI.interval_list
-rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai
-rm "$seqId"_"$sampleId"_Contamination.log "$sampleId"_gaps.bed "$seqId"_"$sampleId"_DepthOfCoverage "$seqId"_"$sampleId"_DepthOfCoverage.sample_statistics
-rm "$seqId"_"$sampleId"_PASS.bed "$panel"_ClinicalCoverageTargets.bed "$panel"_ClinicalCoverageTargets_Merged.bed "$panel"_TargetGenes.bed
 
 #check if all VCFs are written
 if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../GVCFs.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
