@@ -8,9 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="1.7.0"
-
-#TODO fix metadata issues for VCFParse
+version="1.8.0"
 
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 # Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
@@ -242,7 +240,7 @@ for vcf in $(ls *_cnv.vcf); do
     annotateVCF "$prefix"_header_meta.vcf "$prefix"_meta_annotated.vcf
 
     #write SNV & Indel dataset to table
-    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.2/VCFParse.jar \
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.3/VCFParse.jar \
     -V "$prefix"_meta_annotated.vcf \
     -O cnv \
     -K
@@ -261,7 +259,7 @@ annotateVCF "$seqId"_combined_filtered_meta.vcf "$seqId"_filtered_meta_annotated
 annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vcf
 
 #write SNV & Indel dataset to table
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.2/VCFParse.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.3/VCFParse.jar \
 -V "$seqId"_filtered_meta_annotated.vcf \
 -O snv_indel \
 -K
@@ -273,7 +271,7 @@ for i in $(ls *snv_indel_VariantReport.txt); do
 done
 
 #write SV dataset to table
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.2/VCFParse.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.3/VCFParse.jar \
 -V "$seqId"_sv_filtered_meta_annotated.vcf \
 -O sv \
 -K
