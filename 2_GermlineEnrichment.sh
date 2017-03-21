@@ -259,7 +259,7 @@ annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vc
 #write SNV & Indel dataset to table
 /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.4/VCFParse.jar \
 -V "$seqId"_filtered_meta_annotated.vcf \
--O "$seqId"_snv_indel \
+-O "$seqId"_snv-indel \
 -K
 
 #write SV dataset to table
@@ -267,6 +267,11 @@ annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vc
 -V "$seqId"_sv_filtered_meta_annotated.vcf \
 -O "$seqId"_sv \
 -K
+
+#move variant reports to sampleId folder
+for i in $(ls *_VariantReport.txt);do
+    mv "$i" $(echo "$i" | sed 's/_VariantReport.txt//g' | sed 's/.*_//g')
+done
 
 ### QC ###
 
