@@ -240,9 +240,9 @@ for vcf in $(ls *_cnv.vcf); do
     annotateVCF "$prefix"_header_meta.vcf "$prefix"_meta_annotated.vcf
 
     #write SNV & Indel dataset to table
-    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.3/VCFParse.jar \
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.4/VCFParse.jar \
     -V "$prefix"_meta_annotated.vcf \
-    -O cnv \
+    -O "$seqId"_cnv \
     -K
 
     #move files to sampleId folder
@@ -259,9 +259,9 @@ annotateVCF "$seqId"_combined_filtered_meta.vcf "$seqId"_filtered_meta_annotated
 annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vcf
 
 #write SNV & Indel dataset to table
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.3/VCFParse.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.4/VCFParse.jar \
 -V "$seqId"_filtered_meta_annotated.vcf \
--O snv_indel \
+-O "$seqId"_snv_indel \
 -K
 
 #move reports to sample folder
@@ -271,9 +271,9 @@ for i in $(ls *snv_indel_VariantReport.txt); do
 done
 
 #write SV dataset to table
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.3/VCFParse.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.4/VCFParse.jar \
 -V "$seqId"_sv_filtered_meta_annotated.vcf \
--O sv \
+-O "$seqId"_sv \
 -K
 
 #move reports to sample folder
