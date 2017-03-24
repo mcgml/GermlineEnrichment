@@ -328,9 +328,9 @@ awk -v minimumCoverage="$minimumCoverage" '$3 >= minimumCoverage { print $1"\t"$
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools coverage \
 -a "$panel"_ClinicalCoverageTargets.bed \
 -b "$seqId"_"$sampleId"_PASS.bed | \
-tee "$panel"_ClinicalCoverageTargetMetrics.txt | \
+tee "$seqId"_"$sampleId"_ClinicalCoverageTargetMetrics.txt | \
 awk '{pass[$4]+=$6; len[$4]+=$7} END { for(i in pass) printf "%s\t %.2f%\n", i, (pass[i]/len[i]) * 100 }' | \
-sort -k1,1 > "$panel"_ClinicalCoverageGeneCoverage.txt
+sort -k1,1 > "$seqId"_"$sampleId"_ClinicalCoverageGeneCoverage.txt
 
 #Make GAP BED
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
