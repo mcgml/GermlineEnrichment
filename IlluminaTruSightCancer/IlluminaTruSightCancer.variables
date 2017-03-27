@@ -1,5 +1,5 @@
 read1Adapter=CTGTCTCTTATACACATCT #read 1 adapter to trim
 read2Adapter=CTGTCTCTTATACACATCT #read 2 adapter to trim
-minimumCoverage=20 # for passing regions. Need to determine during clinical validation
+minimumCoverage=25 # for passing regions. Need to determine during clinical validation
 includeBQSR=false #recalibrate base quality scores. Requires >100M bases ontarget
 expectedInsertSize=300 #insert size
