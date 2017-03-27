@@ -316,7 +316,7 @@ while read line; do
     echo "$line" | \
     tr ';' '\n' | \
     /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge -c 4 -o distinct;
-done | /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai > "$panel"_ClinicalCoverageTargets.bed
+done | sort -k1,1V -k2,2n -k3,3n > "$panel"_ClinicalCoverageTargets.bed
 
 #Make PASS BED
 /share/apps/htslib-distros/htslib-1.4/tabix -R "$panel"_ClinicalCoverageTargets.bed \
