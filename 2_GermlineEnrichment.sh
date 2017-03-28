@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="1.8.2"
+version="1.8.3"
 
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 # Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
@@ -240,7 +240,7 @@ for vcf in $(ls *_cnv.vcf); do
     annotateVCF "$prefix"_header_meta.vcf "$prefix"_meta_annotated.vcf
 
     #write SNV & Indel dataset to table
-    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.4/VCFParse.jar \
+    /share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.5/VCFParse.jar \
     -V "$prefix"_meta_annotated.vcf \
     -O "$seqId"_cnv \
     -K
@@ -257,13 +257,13 @@ annotateVCF "$seqId"_combined_filtered_meta.vcf "$seqId"_filtered_meta_annotated
 annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vcf
 
 #write SNV & Indel dataset to table
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.4/VCFParse.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.5/VCFParse.jar \
 -V "$seqId"_filtered_meta_annotated.vcf \
 -O "$seqId"_snv-indel \
 -K
 
 #write SV dataset to table
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.4/VCFParse.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.5/VCFParse.jar \
 -V "$seqId"_sv_filtered_meta_annotated.vcf \
 -O "$seqId"_sv \
 -K
