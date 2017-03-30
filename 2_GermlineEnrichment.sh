@@ -108,8 +108,6 @@ makeCNVBed(){
 --filterName "QD" \
 --filterExpression "FS > 60.0" \
 --filterName "FS" \
---filterExpression "SOR > 5.0" \
---filterName "SOR" \
 --filterExpression "MQ < 40.0" \
 --filterName "MQ" \
 --filterExpression "MQRankSum < -12.5" \
