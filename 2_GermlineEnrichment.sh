@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="1.8.6"
+version="1.8.7"
 
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 # Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
@@ -187,7 +187,7 @@ for sample in $(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$se
 done
 
 #Structural variant calling with Manta
-/share/apps/manta-distros/manta-1.0.3.centos5_x86_64/bin/configManta.py \
+/share/apps/manta-distros/manta-1.1.0.centos5_x86_64/bin/configManta.py \
 $(sed 's/^/--bam /' HighCoverageBams.list | tr '\n' ' ') \
 --referenceFasta /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --exome \
