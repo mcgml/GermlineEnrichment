@@ -188,7 +188,7 @@ done
 
 #Structural variant calling with Manta
 /share/apps/manta-distros/manta-1.0.3.centos5_x86_64/bin/configManta.py \
-$(sed 's/^/--bam /' BAMs.list | tr '\n' ' ') \
+$(sed 's/^/--bam /' HighCoverageBams.list | tr '\n' ' ') \
 --referenceFasta /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --exome \
 --runDir manta
