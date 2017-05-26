@@ -307,11 +307,18 @@ awk -F "\t" '$3 == "gene" { print $1"\t"$4-1"\t"$5 }' | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$panel"_TargetGenes.bed
 
-#Intersect CDS for all genes, pad by p=n and merge coordinates by gene
+#make NM bed
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect \
 -a /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
 -b "$panel"_TargetGenes.bed | \
-awk -F'[\t|;|=]' -v p=5 '$2 ~ /RefSeq/ && $3 == "CDS" { gene="null"; for (i=9;i<NF;i++) if ($i=="gene"){gene=$(i+1); break}; genes[gene] = genes[gene]$1"\t"($4-1)-p"\t"$5+p"\t"gene";" } END { for (gene in genes) print genes[gene] }' | \
+grep "NM_[0-9]*" | \
+awk -F "\t" '$3 == "exon" { print $1"\t"$4-1"\t"$5 }' > "$panel"_TargetNMExons.bed
+
+#Intersect CDS for all genes, pad by p=n and merge coordinates by gene
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect \
+-a /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
+-b "$panel"_TargetNMExons.bed | \
+awk -F'[\t|;|=]' -v p=5 '$3 == "CDS" { gene="null"; for (i=9;i<NF;i++) if ($i=="gene"){gene=$(i+1); break}; genes[gene] = genes[gene]$1"\t"($4-1)-p"\t"$5+p"\t"gene";" } END { for (gene in genes) print genes[gene] }' | \
 while read line; do
     echo "$line" | \
     tr ';' '\n' | \
@@ -438,7 +445,7 @@ rm "$seqId"_"$sampleId"*unaligned.bam "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$
 rm "$seqId"_"$sampleId"_realigned.bai 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf Y.bed "$panel"_ROI.interval_list
 rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai
 rm "$seqId"_"$sampleId"_Contamination.log "$seqId"_"$sampleId"_DepthOfCoverage.sample_statistics "$seqId"_"$sampleId"_PASS.bed
-rm "$panel"_ClinicalCoverageTargets.bed "$panel"_TargetGenes.bed
+rm "$panel"_ClinicalCoverageTargets.bed "$panel"_TargetGenes.bed "$panel"_TargetNMExons.bed
 
 #create final file lists
 find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
