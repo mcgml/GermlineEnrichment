@@ -303,7 +303,7 @@ awk -F'[\t|:]' '{if(NR>1) print $1"\t"$2"\t"$3}' "$seqId"_"$sampleId"_DepthOfCov
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect -wa \
 -a /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
 -b /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed | \
-awk '$2 ~ /RefSeq/ && $3 == "gene" { print $1"\t"$4-1"\t"$5 }' | \
+awk -F "\t" '$3 == "gene" { print $1"\t"$4-1"\t"$5 }' | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$panel"_TargetGenes.bed
 
