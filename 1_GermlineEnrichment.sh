@@ -304,36 +304,37 @@ awk -F'[\t|:]' '{if(NR>1) print $1"\t"$2"\t"$3}' "$seqId"_"$sampleId"_DepthOfCov
 -a /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
 -b /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed | \
 awk -F "\t" '$3 == "gene" { print $1"\t"$4-1"\t"$5 }' | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
+sort -k1,1V -k2,2n -k3,3n | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$panel"_TargetGenes.bed
 
 #make NM bed
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect \
 -a /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
 -b "$panel"_TargetGenes.bed | \
-grep "NM_[0-9]*" | \
+grep "NM_[0-9]*\.[0-9]*" | \
 awk -F "\t" '$3 == "exon" { print $1"\t"$4-1"\t"$5 }' | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
+sort -k1,1V -k2,2n -k3,3n | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$panel"_TargetNMExons.bed
 
 #Intersect CDS for all genes, pad by p=n and merge coordinates by gene
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect \
 -a /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
 -b "$panel"_TargetNMExons.bed | \
+grep "NP_[0-9]*\.[0-9]*" | \
 awk -F'[\t|;|=]' -v p=5 '$3 == "CDS" { gene="null"; for (i=9;i<NF;i++) if ($i=="gene"){gene=$(i+1); break}; genes[gene] = genes[gene]$1"\t"($4-1)-p"\t"$5+p"\t"gene";" } END { for (gene in genes) print genes[gene] }' | \
 while read line; do
     echo "$line" | \
     tr ';' '\n'| \
-    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
+    sort -k1,1V -k2,2n -k3,3n | \
     /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge -c 4 -o distinct;
 done | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai > "$panel"_ClinicalCoverageTargets.bed
+sort -k1,1V -k2,2n -k3,3n > "$panel"_ClinicalCoverageTargets.bed
 
 #Make PASS BED
 /share/apps/htslib-distros/htslib-1.4/tabix -R "$panel"_ClinicalCoverageTargets.bed \
 "$seqId"_"$sampleId"_DepthOfCoverage.gz | \
 awk -v minimumCoverage="$minimumCoverage" '$3 >= minimumCoverage { print $1"\t"$2-1"\t"$2 }' | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
+sort -k1,1V -k2,2n -k3,3n | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$seqId"_"$sampleId"_PASS.bed
 
 #Calculate overlap between PASS BED and ClinicalCoverageTargets
@@ -348,7 +349,7 @@ sort -k1,1 > "$seqId"_"$sampleId"_ClinicalCoverageGeneCoverage.txt
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
 -a "$panel"_ClinicalCoverageTargets.bed \
 -b "$seqId"_"$sampleId"_PASS.bed | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
+sort -k1,1V -k2,2n -k3,3n \
 > "$seqId"_"$sampleId"_Gaps.bed
 
 #Extract 1kg autosomal snps for contamination analysis
