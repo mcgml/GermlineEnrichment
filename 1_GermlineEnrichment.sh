@@ -312,7 +312,9 @@ awk -F "\t" '$3 == "gene" { print $1"\t"$4-1"\t"$5 }' | \
 -a /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
 -b "$panel"_TargetGenes.bed | \
 grep "NM_[0-9]*" | \
-awk -F "\t" '$3 == "exon" { print $1"\t"$4-1"\t"$5 }' > "$panel"_TargetNMExons.bed
+awk -F "\t" '$3 == "exon" { print $1"\t"$4-1"\t"$5 }' | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$panel"_TargetNMExons.bed
 
 #Intersect CDS for all genes, pad by p=n and merge coordinates by gene
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect \
@@ -321,9 +323,11 @@ awk -F "\t" '$3 == "exon" { print $1"\t"$4-1"\t"$5 }' > "$panel"_TargetNMExons.b
 awk -F'[\t|;|=]' -v p=5 '$3 == "CDS" { gene="null"; for (i=9;i<NF;i++) if ($i=="gene"){gene=$(i+1); break}; genes[gene] = genes[gene]$1"\t"($4-1)-p"\t"$5+p"\t"gene";" } END { for (gene in genes) print genes[gene] }' | \
 while read line; do
     echo "$line" | \
-    tr ';' '\n' | \
+    tr ';' '\n'| \
+    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
     /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge -c 4 -o distinct;
-done | sort -k1,1V -k2,2n -k3,3n > "$panel"_ClinicalCoverageTargets.bed
+done | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai > "$panel"_ClinicalCoverageTargets.bed
 
 #Make PASS BED
 /share/apps/htslib-distros/htslib-1.4/tabix -R "$panel"_ClinicalCoverageTargets.bed \
