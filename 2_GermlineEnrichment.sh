@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="1.8.8"
+version="1.8.9"
 
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 # Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
@@ -94,6 +94,7 @@ makeCNVBed(){
 -V "$seqId"_variants.vcf \
 -selectType SNP \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-ip 100 \
 -o "$seqId"_snps.vcf \
 -dt NONE
 
@@ -120,6 +121,7 @@ makeCNVBed(){
 --genotypeFilterName "LowGQ" \
 --setFilteredGtToNocall \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-ip 100 \
 -o "$seqId"_snps_filtered.vcf \
 -dt NONE
 
@@ -169,6 +171,8 @@ makeCNVBed(){
 --variant "$seqId"_non_snps_filtered.vcf \
 -o "$seqId"_combined_filtered.vcf \
 -genotypeMergeOptions UNSORTED \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-ip 100 \
 -dt NONE
 
 #Add VCF meta data to final VCF
