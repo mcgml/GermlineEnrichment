@@ -169,11 +169,18 @@ makeCNVBed(){
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --variant "$seqId"_snps_filtered.vcf \
 --variant "$seqId"_non_snps_filtered.vcf \
--o "$seqId"_combined_filtered.vcf \
+-o "$seqId"_combined_filtered_100pad.vcf \
 -genotypeMergeOptions UNSORTED \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
 -dt NONE
+
+#restrict to ROI but retain overlapping indels
+/share/apps/htslib-distros/htslib-1.4/bgzip "$seqId"_combined_filtered_100pad.vcf
+/share/apps/htslib-distros/htslib-1.4/tabix -p vcf "$seqId"_combined_filtered_100pad.vcf.gz
+/share/apps/bcftools-distros/bcftools-1.4/bcftools view \
+-R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+"$seqId"_combined_filtered_100pad.vcf.gz > "$seqId"_combined_filtered.vcf
 
 #Add VCF meta data to final VCF
 addMetaDataToVCF "$seqId"_combined_filtered.vcf
@@ -298,4 +305,5 @@ rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$panel"_ROI_b37_window_gc_ma
 rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_non_snps.vcf igv.log
 rm "$seqId"_non_snps.vcf.idx "$seqId"_non_snps_filtered.vcf "$seqId"_non_snps_filtered.vcf.idx "$seqId"_combined_filtered_meta.vcf.gz
 rm ExomeDepth.log GVCFs.list HighCoverageBams.list "$seqId"_sv_filtered.vcf "$seqId"_combined_filtered.vcf.idx "$panel"_ROI_b37_window_gc.bed
-rm "$seqId"_sv_filtered_meta.vcf BAMs.list variables "$seqId"_combined_filtered.vcf "$seqId"_combined_filtered_meta.vcf.gz.tbi
+rm "$seqId"_sv_filtered_meta.vcf BAMs.list variables "$seqId"_combined_filtered.vcf "$seqId"_combined_filtered_meta.vcf.gz.tbi 
+rm "$seqId"_combined_filtered_100pad.vcf.gz "$seqId"_combined_filtered_100pad.vcf.gz.tbi "$seqId"_combined_filtered_100pad.vcf.idx
