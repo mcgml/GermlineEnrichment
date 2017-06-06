@@ -20,7 +20,7 @@ version="1.8.9"
 ### Joint variant calling and filtering ###
 
 #Joint genotyping
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx16g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx16g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T GenotypeGVCFs \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V GVCFs.list \
@@ -31,7 +31,7 @@ version="1.8.9"
 -dt NONE
 
 #Build the SNP recalibration model
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T VariantRecalibrator \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -input "$seqId"_variants.vcf \
@@ -56,7 +56,7 @@ version="1.8.9"
 -dt NONE
 
 #Apply the desired level of recalibration to the SNPs in the call set
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T ApplyRecalibration \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -input "$seqId"_variants.vcf \
@@ -70,7 +70,7 @@ version="1.8.9"
 -dt NONE
 
 #Build the Indel recalibration model
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T VariantRecalibrator \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -input "$seqId"_recalibrated_snps_raw_indels.vcf \
@@ -93,7 +93,7 @@ version="1.8.9"
 -dt NONE
 
 #Apply the desired level of recalibration to the Indels in the call set
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T ApplyRecalibration \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -input "$seqId"_recalibrated_snps_raw_indels.vcf \
@@ -107,7 +107,7 @@ version="1.8.9"
 -dt NONE
 
 #Filter genotypes
-/share/apps/jre-distros/jre1.8.0_101/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+/share/apps/jre-distros/jre1.8.0_101/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
 -T VariantFiltration \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_recalibrated_variants.vcf \
