@@ -183,7 +183,6 @@ if [ "$includeBQSR" = true ] ; then
     -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
     -o "$seqId"_"$sampleId"_recal_data.table \
     -ip 150 \
-    -nct 12 \
     -dt NONE
 
     #Do a second pass to analyze covariation remaining after recalibration
@@ -197,7 +196,6 @@ if [ "$includeBQSR" = true ] ; then
     -I "$seqId"_"$sampleId"_realigned.bam \
     -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
     -o "$seqId"_"$sampleId"_post_recal_data.table \
-    -nct 12 \
     -ip 150 \
     -dt NONE
 
@@ -291,7 +289,6 @@ TMP_DIR=/state/partition1/tmpdir
 --omitIntervalStatistics \
 --omitLocusTable \
 -rf MappingQualityUnavailable \
--nt 12 \
 -dt NONE
 
 #tabix index the per-base coverage file
