@@ -118,5 +118,12 @@ version="1.8.9"
 --setFilteredGtToNocall \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
--o "$seqId"_combined_filtered.vcf \
+-o "$seqId"_combined_filtered_100pad.vcf \
 -dt NONE
+
+#restrict to ROI but retain overlapping indels
+/share/apps/htslib-distros/htslib-1.4/bgzip "$seqId"_combined_filtered_100pad.vcf
+/share/apps/htslib-distros/htslib-1.4/tabix -p vcf "$seqId"_combined_filtered_100pad.vcf.gz
+/share/apps/bcftools-distros/bcftools-1.4/bcftools view \
+-R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+"$seqId"_combined_filtered_100pad.vcf.gz > "$seqId"_combined_filtered.vcf
