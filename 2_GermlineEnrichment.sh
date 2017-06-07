@@ -1,317 +1,349 @@
 #!/bin/bash
-#PBS -l walltime=12:00:00
-#PBS -l ncpus=12
+#PBS -l walltime=40:00:00
+#PBS -l ncpus=6
 set -euo pipefail
 PBS_O_WORKDIR=(`echo $PBS_O_WORKDIR | sed "s/^\/state\/partition1//" `)
 cd $PBS_O_WORKDIR
 
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
-#Mode: BY_COHORT
-version="1.8.9"
+#Mode: BY_SAMPLE
+version="2.0.0"
 
-# Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
-# Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
+# Script 2 runs in sample folder, requires clean mapped BAM
 
-#load run & pipeline variables
-. variables
+#load sample & pipeline variables
+. *.variables
 . /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
+. FASTQC_STATUS
 
-addMetaDataToVCF(){
-    output=$(echo "$1" | sed 's/\.vcf/_meta\.vcf/g')
-    grep '^##' "$1" > "$output"
-    for sample in $(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$1"); do
-        cat "$sample"/"$seqId"_"$sample"_meta.txt >> "$output"
-    done
-    grep -v '^##' "$1" >> "$output"
-}
+### Preprocessing ###
 
-annotateVCF(){
-    #annotate VCF
-    perl /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/variant_effect_predictor.pl \
-    --verbose \
-    --no_progress \
-    --everything \
-    --fork 12 \
-    --species homo_sapiens \
-    --assembly GRCh37 \
-    --input_file "$1" \
-    --format vcf \
-    --output_file "$2" \
-    --force_overwrite \
-    --no_stats \
-    --cache \
-    --dir /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/annotations \
-    --fasta /share/apps/vep-distros/ensembl-tools-release-86/scripts/variant_effect_predictor/annotations \
-    --no_intergenic \
-    --offline \
-    --cache_version 86 \
-    --allele_number \
-    --no_escape \
-    --shift_hgvs 1 \
-    --vcf \
-    --refseq
+#Mark duplicate reads
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar MarkDuplicates \
+INPUT="$seqId"_"$sampleId"_aligned.bam \
+OUTPUT="$seqId"_"$sampleId"_rmdup.bam \
+METRICS_FILE="$seqId"_"$sampleId"_MarkDuplicatesMetrics.txt \
+CREATE_INDEX=true \
+MAX_RECORDS_IN_RAM=2000000 \
+VALIDATION_STRINGENCY=SILENT \
+TMP_DIR=/state/partition1/tmpdir
+
+#Identify regions requiring realignment
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+-T RealignerTargetCreator \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-known /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
+-known /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
+-I "$seqId"_"$sampleId"_rmdup.bam \
+-o "$seqId"_"$sampleId"_realign.intervals \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-ip 150 \
+-dt NONE
+
+#Realign around indels
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+-T IndelRealigner \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-known /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
+-known /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
+-targetIntervals "$seqId"_"$sampleId"_realign.intervals \
+-I "$seqId"_"$sampleId"_rmdup.bam \
+-o "$seqId"_"$sampleId"_realigned.bam \
+-dt NONE
+
+if [ "$includeBQSR" = true ] ; then
+
+    echo "Performing BQSR ..."
+
+    #Analyse patterns of covariation in the sequence dataset
+    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+    -T BaseRecalibrator \
+    -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+    -knownSites /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
+    -knownSites /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
+    -knownSites /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
+    -I "$seqId"_"$sampleId"_realigned.bam \
+    -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+    -o "$seqId"_"$sampleId"_recal_data.table \
+    -ip 150 \
+    -dt NONE
+
+    #Do a second pass to analyze covariation remaining after recalibration
+    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+    -T BaseRecalibrator \
+    -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+    -knownSites /state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.vcf \
+    -knownSites /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.indels.b37.vcf \
+    -knownSites /state/partition1/db/human/gatk/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf \
+    -BQSR "$seqId"_"$sampleId"_recal_data.table \
+    -I "$seqId"_"$sampleId"_realigned.bam \
+    -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+    -o "$seqId"_"$sampleId"_post_recal_data.table \
+    -ip 150 \
+    -dt NONE
+
+    #Generate BQSR plots
+    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+    -T AnalyzeCovariates \
+    -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+    -before "$seqId"_"$sampleId"_recal_data.table \
+    -after "$seqId"_"$sampleId"_post_recal_data.table \
+    -plots "$seqId"_"$sampleId"_recalibration_plots.pdf \
+    -csv "$seqId"_"$sampleId"_recalibration.csv \
+    -dt NONE
+
+    #Apply the recalibration to your sequence data
+    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+    -T PrintReads \
+    -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+    -I "$seqId"_"$sampleId"_realigned.bam \
+    -BQSR "$seqId"_"$sampleId"_recal_data.table \
+    -o "$seqId"_"$sampleId".bam \
+    -dt NONE
+
+else
     
-    #check VEP has produced annotated VCF
-    if [ ! -e "$2" ]; then
-        cp "$1" "$2"
-    fi
+    echo "Skipping BQSR ..."
 
-    #index annotated VCF
-    /share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$2"
-}
+    cp "$seqId"_"$sampleId"_realigned.bam "$seqId"_"$sampleId".bam
+    cp "$seqId"_"$sampleId"_realigned.bai "$seqId"_"$sampleId".bai
 
-makeCNVBed(){
-    #make CNV target BED file - sort, merge, increase bins to min 160bp, remove extreme GC & poor mappability bins
-    awk '{ if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3 }' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed | \
-    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
-    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge | \
-    awk '{ len=$3-($2+1); if (len < 160) { slop=(160-len)/2; adjStart=$2-slop; adjEnd=$3+slop; printf "%s\t%.0f\t%.0f\n", $1,adjStart,adjEnd; } else {print $1"\t"$2"\t"$3} }' | \
-    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge | \
-    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools nuc -fi /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta -bed - | \
-    awk '{ if ($5 >= 0.1 && $5 <= 0.9) print "chr"$1,$2,$3,$1"-"$2"-"$3 }' | tr ' ' '\t' > "$panel"_ROI_b37_window_gc.bed
-    /share/apps/bigWigAverageOverBed-distros/bigWigAverageOverBed /data/db/human/wgEncodeMapability/wgEncodeCrgMapabilityAlign100mer.bigWig "$panel"_ROI_b37_window_gc.bed "$panel"_ROI_b37_window_gc_mappability.txt
-    awk '{ if ($5 > 0.9 && $6 > 0.9) print $1"\ttarget_"NR }' "$panel"_ROI_b37_window_gc_mappability.txt | tr '-' '\t' > "$panel"_ROI_b37_CNV.bed
-}
+fi
 
-### Joint variant calling and filtering ###
+### Variant calling ###
 
-#Joint genotyping
+#SNPs and Indels GVCF with Haplotypecaller
 /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx16g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
--T GenotypeGVCFs \
+-T HaplotypeCaller \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V GVCFs.list \
+-I "$seqId"_"$sampleId".bam \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
--o "$seqId"_variants.vcf \
--ped "$seqId"_pedigree.ped \
+-o "$seqId"_"$sampleId".g.vcf \
+--genotyping_mode DISCOVERY \
+--emitRefConfidence GVCF \
 -dt NONE
-
-#Select SNPs
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
--T SelectVariants \
--R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$seqId"_variants.vcf \
--selectType SNP \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 100 \
--o "$seqId"_snps.vcf \
--dt NONE
-
-#Filter SNPs
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
--T VariantFiltration \
--R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$seqId"_snps.vcf \
---filterExpression "QUAL < 30.0" \
---filterName "LowQual" \
---filterExpression "QD < 2.0" \
---filterName "QD" \
---filterExpression "FS > 60.0" \
---filterName "FS" \
---filterExpression "MQ < 40.0" \
---filterName "MQ" \
---filterExpression "MQRankSum < -12.5" \
---filterName "MQRankSum" \
---filterExpression "ReadPosRankSum < -8.0" \
---filterName "ReadPosRankSum" \
---genotypeFilterExpression "DP < 10" \
---genotypeFilterName "LowDP" \
---genotypeFilterExpression "GQ < 20" \
---genotypeFilterName "LowGQ" \
---setFilteredGtToNocall \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 100 \
--o "$seqId"_snps_filtered.vcf \
--dt NONE
-
-#Select non-snps (INDEL, MIXED, MNP, SYMBOLIC, NO_VARIATION)
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
--T SelectVariants \
--R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$seqId"_variants.vcf \
---selectTypeToExclude SNP \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 100 \
--o "$seqId"_non_snps.vcf \
--dt NONE
-
-#Filter non-snps (INDEL, MIXED, MNP, SYMBOLIC, NO_VARIATION)
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
--T VariantFiltration \
--R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$seqId"_non_snps.vcf \
---filterExpression "QUAL < 30.0" \
---filterName "LowQual" \
---filterExpression "QD < 2.0" \
---filterName "QD" \
---filterExpression "FS > 200.0" \
---filterName "FS" \
---filterExpression "SOR > 10.0" \
---filterName "SOR" \
---filterExpression "ReadPosRankSum < -20.0" \
---filterName "ReadPosRankSum" \
---filterExpression "InbreedingCoeff != 'NaN' && InbreedingCoeff < -0.8" \
---filterName "InbreedingCoeff" \
---genotypeFilterExpression "DP < 10" \
---genotypeFilterName "LowDP" \
---genotypeFilterExpression "GQ < 20" \
---genotypeFilterName "LowGQ" \
---setFilteredGtToNocall \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 100 \
--o "$seqId"_non_snps_filtered.vcf \
--dt NONE
-
-#Combine filtered VCF files
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
--T CombineVariants \
--R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
---variant "$seqId"_snps_filtered.vcf \
---variant "$seqId"_non_snps_filtered.vcf \
--o "$seqId"_combined_filtered_100pad.vcf \
--genotypeMergeOptions UNSORTED \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 100 \
--dt NONE
-
-#restrict to ROI but retain overlapping indels
-/share/apps/htslib-distros/htslib-1.4/bgzip "$seqId"_combined_filtered_100pad.vcf
-/share/apps/htslib-distros/htslib-1.4/tabix -p vcf "$seqId"_combined_filtered_100pad.vcf.gz
-/share/apps/bcftools-distros/bcftools-1.4/bcftools view \
--R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
-"$seqId"_combined_filtered_100pad.vcf.gz > "$seqId"_combined_filtered.vcf
-
-#Add VCF meta data to final VCF
-addMetaDataToVCF "$seqId"_combined_filtered.vcf
-
-#bgzip vcf and index with tabix
-/share/apps/htslib-distros/htslib-1.4/bgzip -c "$seqId"_combined_filtered_meta.vcf > "$seqId"_combined_filtered_meta.vcf.gz
-/share/apps/htslib-distros/htslib-1.4/tabix -p vcf "$seqId"_combined_filtered_meta.vcf.gz
-
-### ROH, SV & CNV analysis ###
-
-#identify runs of homozygosity
-for sample in $(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$seqId"_combined_filtered_meta.vcf); do
-
-    #make >min coverage BED
-    zcat "$sample"/"$seqId"_"$sampleId"_DepthOfCoverage.gz | \
-    awk -vminimumCoverage="$minimumCoverage" '$3 >= minimumCoverage {print $1"\t"$2-1"\t"$2}' | \
-    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$sample"/"$seqId"_"$sampleId"_gt_eq_"$minimumCoverage".bed
-    
-    #calculate LOH
-    /share/apps/bcftools-distros/bcftools-1.4/bcftools roh -O r -s "$sample" -R "$sample"/"$seqId"_"$sampleId"_gt_eq_"$minimumCoverage".bed "$seqId"_combined_filtered_meta.vcf.gz | \
-    grep -v '^#' | awk '{print $3"\t"$4-1"\t"$5"\t\t"$8}' > "$sample"/"$seqId"_"$sample"_roh.bed
-
-done
-
-#Structural variant calling with Manta
-/share/apps/manta-distros/manta-1.1.0.centos5_x86_64/bin/configManta.py \
-$(sed 's/^/--bam /' HighCoverageBams.list | tr '\n' ' ') \
---referenceFasta /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
---exome \
---runDir manta
-manta/runWorkflow.py \
---quiet \
--m local \
--j 12
-
-#unzip VCF
-gzip -dc manta/results/variants/diploidSV.vcf.gz > "$seqId"_sv_filtered.vcf
-
-#Add VCF meta data to SV VCF
-addMetaDataToVCF "$seqId"_sv_filtered.vcf
-
-#make CNV target BED file
-makeCNVBed
-
-#call CNVs using read depth
-/share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
--b HighCoverageBams.list \
--f /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--r "$panel"_ROI_b37_CNV.bed \
-2>&1 | tee ExomeDepth.log
-
-#print ExomeDepth metrics
-echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_ExomeDepth_Metrics.txt
-paste HighCoverageBams.list \
-<(grep "Number of counted fragments" ExomeDepth.log | cut -d' ' -f6) \
-<(grep "Correlation between reference and tests count" ExomeDepth.log | cut -d' ' -f8) >> "$seqId"_ExomeDepth_Metrics.txt
-
-### Annotation & Reporting ###
-
-#annotate CNV calls with number of het calls
-for vcf in $(ls *_cnv.vcf); do
-
-    prefix=$(echo "$vcf" | sed 's/\.vcf//g')
-    sampleId=$(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$vcf")
-
-    #add VCF headers
-    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar UpdateVcfSequenceDictionary \
-    I="$vcf" \
-    O="$prefix"_header.vcf \
-    SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
-
-    #add metadata, annotate & index
-    addMetaDataToVCF "$prefix"_header.vcf
-    annotateVCF "$prefix"_header_meta.vcf "$prefix"_meta_annotated.vcf
-
-    #write SNV & Indel dataset to table
-    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.5/VCFParse.jar \
-    -V "$prefix"_meta_annotated.vcf \
-    -O "$seqId"_cnv \
-    -K
-
-    #move files to sampleId folder
-    mv "$prefix"_meta_annotated.vcf* "$sampleId"
-
-    #delete unused files
-    rm "$vcf" "$prefix"_header.vcf "$prefix"_header_meta.vcf    
-done
-
-#annotate with VEP
-annotateVCF "$seqId"_combined_filtered_meta.vcf "$seqId"_filtered_meta_annotated.vcf
-annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vcf
-
-#write SNV & Indel dataset to table
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.5/VCFParse.jar \
--V "$seqId"_filtered_meta_annotated.vcf \
--O "$seqId"_snv-indel \
--K
-
-#write SV dataset to table
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.5/VCFParse.jar \
--V "$seqId"_sv_filtered_meta_annotated.vcf \
--O "$seqId"_sv \
--K
-
-#move variant reports to sampleId folder
-for i in $(ls *_VariantReport.txt);do
-    mv "$i" $(echo "$i" | sed 's/_VariantReport.txt//g' | sed 's/.*_//g')
-done
 
 ### QC ###
 
-#relatedness test
-/share/apps/vcftools-distros/vcftools-0.1.14/build/bin/vcftools \
---relatedness2 \
---out "$seqId"_relatedness \
---vcf "$seqId"_filtered_meta_annotated.vcf
+#Convert BED to interval_list for later
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar BedToIntervalList \
+I=/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+O="$panel"_ROI.interval_list \
+SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict 
 
-#Variant Evaluation
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar CollectVariantCallingMetrics \
-INPUT="$seqId"_filtered_meta_annotated.vcf \
-OUTPUT="$seqId"_CollectVariantCallingMetrics.txt \
-DBSNP=/state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.excluding_sites_after_129.vcf \
-THREAD_COUNT=4
+#Alignment metrics: library sequence similarity
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar CollectAlignmentSummaryMetrics \
+R=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+I="$seqId"_"$sampleId".bam \
+O="$seqId"_"$sampleId"_AlignmentSummaryMetrics.txt \
+MAX_RECORDS_IN_RAM=2000000 \
+TMP_DIR=/state/partition1/tmpdir
+
+#Calculate insert size: fragmentation performance
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar CollectInsertSizeMetrics \
+I="$seqId"_"$sampleId".bam \
+O="$seqId"_"$sampleId"_InsertMetrics.txt \
+H="$seqId"_"$sampleId"_InsertMetrics.pdf \
+MAX_RECORDS_IN_RAM=2000000 \
+TMP_DIR=/state/partition1/tmpdir
+
+#HsMetrics: capture & pooling performance
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar CollectHsMetrics \
+I="$seqId"_"$sampleId".bam \
+O="$seqId"_"$sampleId"_HsMetrics.txt \
+R=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+BAIT_INTERVALS="$panel"_ROI.interval_list \
+TARGET_INTERVALS="$panel"_ROI.interval_list \
+MAX_RECORDS_IN_RAM=2000000 \
+TMP_DIR=/state/partition1/tmpdir
+
+#Generate per-base coverage: variant detection sensitivity
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+-T DepthOfCoverage \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-o "$seqId"_"$sampleId"_DepthOfCoverage \
+-I "$seqId"_"$sampleId".bam \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+--countType COUNT_FRAGMENTS \
+--minMappingQuality 20 \
+--minBaseQuality 10 \
+-ct "$minimumCoverage" \
+--omitIntervalStatistics \
+--omitLocusTable \
+-rf MappingQualityUnavailable \
+-dt NONE
+
+#tabix index the per-base coverage file
+awk -F'[\t|:]' '{if(NR>1) print $1"\t"$2"\t"$3}' "$seqId"_"$sampleId"_DepthOfCoverage | \
+/share/apps/htslib-distros/htslib-1.4/bgzip > "$seqId"_"$sampleId"_DepthOfCoverage.gz
+/share/apps/htslib-distros/htslib-1.4/tabix -b2 -e2 -s1 "$seqId"_"$sampleId"_DepthOfCoverage.gz
+
+#Make BED file of all genes overlapping ROI
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect -wa \
+-a /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
+-b /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed | \
+awk -F "\t" '$3 == "gene" { print $1"\t"$4-1"\t"$5 }' | \
+sort -k1,1V -k2,2n -k3,3n | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$panel"_TargetGenes.bed
+
+#make NM bed
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect \
+-a /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
+-b "$panel"_TargetGenes.bed | \
+grep "NM_[0-9]*\.[0-9]*" | \
+awk -F "\t" '$3 == "exon" { print $1"\t"$4-1"\t"$5 }' | \
+sort -k1,1V -k2,2n -k3,3n | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$panel"_TargetNMExons.bed
+
+#Intersect CDS for all genes, pad by p=n and merge coordinates by gene
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect \
+-a /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
+-b "$panel"_TargetNMExons.bed | \
+grep "NP_[0-9]*\.[0-9]*" | \
+awk -F'[\t|;|=]' -v p=5 '$3 == "CDS" { gene="null"; for (i=9;i<NF;i++) if ($i=="gene"){gene=$(i+1); break}; genes[gene] = genes[gene]$1"\t"($4-1)-p"\t"$5+p"\t"gene";" } END { for (gene in genes) print genes[gene] }' | \
+while read line; do
+    echo "$line" | \
+    tr ';' '\n'| \
+    sort -k1,1V -k2,2n -k3,3n | \
+    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge -c 4 -o distinct;
+done | \
+sort -k1,1V -k2,2n -k3,3n > "$panel"_ClinicalCoverageTargets.bed
+
+#Make PASS BED
+/share/apps/htslib-distros/htslib-1.4/tabix -R "$panel"_ClinicalCoverageTargets.bed \
+"$seqId"_"$sampleId"_DepthOfCoverage.gz | \
+awk -v minimumCoverage="$minimumCoverage" '$3 >= minimumCoverage { print $1"\t"$2-1"\t"$2 }' | \
+sort -k1,1V -k2,2n -k3,3n | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$seqId"_"$sampleId"_PASS.bed
+
+#Calculate overlap between PASS BED and ClinicalCoverageTargets
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools coverage \
+-a "$panel"_ClinicalCoverageTargets.bed \
+-b "$seqId"_"$sampleId"_PASS.bed | \
+tee "$seqId"_"$sampleId"_ClinicalCoverageTargetMetrics.txt | \
+awk '{pass[$4]+=$6; len[$4]+=$7} END { for(i in pass) printf "%s\t %.2f%\n", i, (pass[i]/len[i]) * 100 }' | \
+sort -k1,1 > "$seqId"_"$sampleId"_ClinicalCoverageGeneCoverage.txt
+
+#Make GAP BED
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
+-a "$panel"_ClinicalCoverageTargets.bed \
+-b "$seqId"_"$sampleId"_PASS.bed | \
+sort -k1,1V -k2,2n -k3,3n \
+> "$seqId"_"$sampleId"_Gaps.bed
+
+#Extract 1kg autosomal snps for contamination analysis
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-T SelectVariants \
+--variant /state/partition1/db/human/gatk/2.8/b37/1000G_phase1.snps.high_confidence.b37.vcf \
+-o 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf \
+-selectType SNP \
+-restrictAllelesTo BIALLELIC \
+-env \
+-ef \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-XL X -XL Y -XL MT \
+-dt NONE
+
+#Calculate dna contamination: sample-to-sample contamination
+/share/apps/verifyBamID-distros/verifyBamID_1.1.3/verifyBamID/bin/verifyBamID \
+--vcf 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf \
+--bam "$seqId"_"$sampleId".bam \
+--out "$seqId"_"$sampleId"_Contamination \
+--verbose \
+--ignoreRG \
+--chip-none \
+--minMapQ 20 \
+--maxDepth 1000 \
+--precise
+
+#Gather QC metrics
+meanInsertSize=$(head -n8 "$seqId"_"$sampleId"_InsertMetrics.txt | tail -n1 | cut -s -f5) #mean insert size
+sdInsertSize=$(head -n8 "$seqId"_"$sampleId"_InsertMetrics.txt | tail -n1 | cut -s -f6) #insert size standard deviation
+duplicationRate=$(head -n8 "$seqId"_"$sampleId"_MarkDuplicatesMetrics.txt | tail -n1 | cut -s -f9) #The percentage of mapped sequence that is marked as duplicate.
+totalReads=$(head -n8 "$seqId"_"$sampleId"_HsMetrics.txt | tail -n1 | cut -s -f6) #The total number of reads in the SAM or BAM file examine.
+pctSelectedBases=$(head -n8 "$seqId"_"$sampleId"_HsMetrics.txt | tail -n1 | cut -s -f19) #On+Near Bait Bases / PF Bases Aligned.
+totalTargetedUsableBases=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f2) #total number of usable bases. NB BQSR requires >= 100M, ideally >= 1B
+meanOnTargetCoverage=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f3) #avg usable coverage
+pctTargetBasesCt=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f7) #percentage panel covered with good enough data for variant detection
+freemix=$(tail -n1 "$seqId"_"$sampleId"_Contamination.selfSM | cut -s -f7) #percentage DNA contamination. Should be <= 0.02
+pctPfReadsAligned=$(grep ^PAIR "$seqId"_"$sampleId"_AlignmentSummaryMetrics.txt | awk '{print $7*100}') #Percentage mapped reads
+atDropout=$(head -n8 "$seqId"_"$sampleId"_HsMetrics.txt | tail -n1 | cut -s -f50) #A measure of how undercovered <= 50% GC regions are relative to the mean
+gcDropout=$(head -n8 "$seqId"_"$sampleId"_HsMetrics.txt | tail -n1 | cut -s -f51) #A measure of how undercovered >= 50% GC regions are relative to the mean
+
+#gender analysis using Y chrom coverage
+awk '{if ($1 == "Y") print $0}' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed > Y.bed
+
+if [ $(wc -l Y.bed |cut -d' ' -f1) -gt 0 ] && [ $(awk -v meanOnTargetCoverage="$meanOnTargetCoverage" 'BEGIN{printf "%3.0f", meanOnTargetCoverage}') -gt 10 ]; then
+
+    #calc Y coverage
+    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+    -T DepthOfCoverage \
+    -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+    -o "$seqId"_"$sampleId"_Y \
+    --omitDepthOutputAtEachBase \
+    --omitIntervalStatistics \
+    --omitLocusTable \
+    -L Y.bed \
+    -XL Y:10000-2649520 \
+    -XL Y:59034049-59363566 \
+    -I "$seqId"_"$sampleId".bam \
+    --countType COUNT_FRAGMENTS \
+    --minMappingQuality 20 \
+    -rf MappingQualityUnavailable \
+    -dt NONE
+
+    #extract Y mean coverage
+    meanYCov=$(head -n2 "$seqId"_"$sampleId"_Y.sample_summary | tail -n1 | cut -s -f3)
+    calcGender=$(awk -v meanOnTargetCoverage="$meanOnTargetCoverage" -v meanYCov="$meanYCov" 'BEGIN {if (meanYCov > 10 && (meanYCov / meanOnTargetCoverage) > 0.1){print "MALE"} else if (meanYCov < 10 && (meanYCov / meanOnTargetCoverage) < 0.1) {print "FEMALE" } else {print "UNKNOWN"} }')
+
+    #clean up
+    rm "$seqId"_"$sampleId"_Y.*
+
+else
+    calcGender="UNKNOWN"
+fi
+
+#Print QC metrics
+echo -e "TotalReads\tRawSequenceQuality\tTotalTargetUsableBases\tDuplicationRate\tPctSelectedBases\tPctTargetBasesCt\tMeanOnTargetCoverage\tGender\tEstimatedContamination\tMeanInsertSize\tSDInsertSize\tPercentMapped\tAtDropout\tGcDropout" > "$seqId"_"$sampleId"_QC.txt
+echo -e "$totalReads\t$rawSequenceQuality\t$totalTargetedUsableBases\t$duplicationRate\t$pctSelectedBases\t$pctTargetBasesCt\t$meanOnTargetCoverage\t$calcGender\t$freemix\t$meanInsertSize\t$sdInsertSize\t$pctPfReadsAligned\t$atDropout\t$gcDropout" >> "$seqId"_"$sampleId"_QC.txt
+
+#print metaline for final VCF
+echo \#\#SAMPLE\=\<ID\="$sampleId",Tissue\=Germline,WorklistId\="$worklistId",SeqId\="$seqId",Assay\="$panel",PipelineName\=GermlineEnrichment,PipelineVersion\="$version",RawSequenceQuality\="$rawSequenceQuality",PercentMapped\="$pctPfReadsAligned",ATDropout\="$atDropout",GCDropout\="$gcDropout",MeanInsertSize\="$meanInsertSize",SDInsertSize\="$sdInsertSize",DuplicationRate\="$duplicationRate",TotalReads\="$totalReads",PctSelectedBases\="$pctSelectedBases",MeanOnTargetCoverage\="$meanOnTargetCoverage",PctTargetBasesCt\="$pctTargetBasesCt",EstimatedContamination\="$freemix",GenotypicGender\="$calcGender",TotalTargetedUsableBases\="$totalTargetedUsableBases",RemoteVcfFilePath\=$(dirname $PWD)/"$seqId"_filtered_meta_annotated.vcf,RemoteBamFilePath\=$(find $PWD -type f -name "$seqId"_"$sampleId".bam)\> > "$seqId"_"$sampleId"_meta.txt
+
+#Create PED file
+#TSV Format: Family_ID, Individual_ID, Paternal_ID, Maternal_ID, Sex (1=male; 2=female; 0=unknown), Phenotype (Description or 1=unaffected, 2=affected, 0=missing). Missing data is 0
+if [ ! -z ${familyId-} ]; then echo -ne "$familyId\t" > "$sampleId"_pedigree.ped; else echo -ne "0\t" > "$seqId"_"$sampleId"_pedigree.ped; fi
+echo -ne "$sampleId\t" >> "$seqId"_"$sampleId"_pedigree.ped
+if [ ! -z ${paternalId-} ]; then echo -ne "$paternalId\t" >> "$sampleId"_pedigree.ped; else echo -ne "0\t" >> "$seqId"_"$sampleId"_pedigree.ped; fi
+if [ ! -z ${maternalId-} ]; then echo -ne "$maternalId\t" >> "$sampleId"_pedigree.ped; else echo -ne "0\t" >> "$seqId"_"$sampleId"_pedigree.ped; fi
+if [ ! -z ${gender-} ]; then echo -ne "$gender\t" >> "$sampleId"_pedigree.ped; else echo -ne "0\t" >> "$seqId"_"$sampleId"_pedigree.ped; fi
+if [ ! -z ${phenotype-} ]; then echo -e "$phenotype" >> "$sampleId"_pedigree.ped; else echo -e "2" >> "$seqId"_"$sampleId"_pedigree.ped; fi
+
+cat "$seqId"_"$sampleId"_pedigree.ped >> ../"$seqId"_pedigree.ped
 
 ### Clean up ###
 
 #delete unused files
-rm -r manta
-rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$panel"_ROI_b37_window_gc_mappability.txt  "$seqId"_combined_filtered_meta.vcf
-rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_non_snps.vcf igv.log
-rm "$seqId"_non_snps.vcf.idx "$seqId"_non_snps_filtered.vcf "$seqId"_non_snps_filtered.vcf.idx "$seqId"_combined_filtered_meta.vcf.gz
-rm ExomeDepth.log GVCFs.list HighCoverageBams.list "$seqId"_sv_filtered.vcf "$panel"_ROI_b37_window_gc.bed
-rm "$seqId"_sv_filtered_meta.vcf BAMs.list variables "$seqId"_combined_filtered.vcf "$seqId"_combined_filtered_meta.vcf.gz.tbi 
-rm "$seqId"_combined_filtered_100pad.vcf.gz "$seqId"_combined_filtered_100pad.vcf.gz.tbi "$seqId"_combined_filtered_100pad.vcf.idx
+rm "$seqId"_"$sampleId"*unaligned.bam "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam 
+rm "$seqId"_"$sampleId"_realigned.bai 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf Y.bed "$panel"_ROI.interval_list
+rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai
+rm "$seqId"_"$sampleId"_Contamination.log "$seqId"_"$sampleId"_DepthOfCoverage.sample_statistics "$seqId"_"$sampleId"_PASS.bed
+rm "$panel"_ClinicalCoverageTargets.bed "$panel"_TargetGenes.bed "$panel"_TargetNMExons.bed FASTQC_STATUS
+
+#create final file lists
+find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
+find $PWD -name "$seqId"_"$sampleId".bam >> ../BAMs.list
+
+#filter low coverage samples 
+if [ $(echo "$meanOnTargetCoverage" | awk '{if ($1 > 50) print "true"; else print "false"}') = true ]; then
+    find $PWD -name "$seqId"_"$sampleId".bam >> ../HighCoverageBams.list
+fi
+
+#check if all VCFs are written
+if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../GVCFs.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
+    echo -e "seqId=$seqId\npanel=$panel" > ../variables
+    cp 3_GermlineEnrichment.sh .. && cd .. && qsub 3_GermlineEnrichment.sh
+fi
