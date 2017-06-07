@@ -48,6 +48,7 @@ version="1.8.9"
 -an InbreedingCoeff \
 -mode SNP \
 -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 \
+--maxGaussians 4 \
 -recalFile "$seqId"_SNP.recal \
 -tranchesFile "$seqId"_SNP.tranches \
 -rscriptFile "$seqId"_SNP_plots.R \
