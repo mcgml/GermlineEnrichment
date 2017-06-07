@@ -193,8 +193,16 @@ addMetaDataToVCF "$seqId"_combined_filtered.vcf
 
 #identify runs of homozygosity
 for sample in $(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$seqId"_combined_filtered_meta.vcf); do
-    /share/apps/bcftools-distros/bcftools-1.4/bcftools roh -O r -s "$sample" -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed "$seqId"_combined_filtered_meta.vcf.gz | \
+
+    #make >min coverage BED
+    zcat "$sample"/"$seqId"_"$sampleId"_DepthOfCoverage.gz | \
+    awk -vminimumCoverage="$minimumCoverage" '$3 >= minimumCoverage {print $1"\t"$2-1"\t"$2}' | \
+    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$sample"/"$seqId"_"$sampleId"_gt_eq_"$minimumCoverage".bed
+    
+    #calculate LOH
+    /share/apps/bcftools-distros/bcftools-1.4/bcftools roh -O r -s "$sample" -R "$sample"/"$seqId"_"$sampleId"_gt_eq_"$minimumCoverage".bed "$seqId"_combined_filtered_meta.vcf.gz | \
     grep -v '^#' | awk '{print $3"\t"$4-1"\t"$5"\t\t"$8}' > "$sample"/"$seqId"_"$sample"_roh.bed
+
 done
 
 #Structural variant calling with Manta
