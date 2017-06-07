@@ -257,7 +257,7 @@ for vcf in $(ls *_cnv.vcf); do
     annotateVCF "$prefix"_header_meta.vcf "$prefix"_meta_annotated.vcf
 
     #write SNV & Indel dataset to table
-    /share/apps/jre-distros/jre1.8.0_131/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.5/VCFParse.jar \
+    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.5/VCFParse.jar \
     -V "$prefix"_meta_annotated.vcf \
     -O "$seqId"_cnv \
     -K
@@ -274,13 +274,13 @@ annotateVCF "$seqId"_combined_filtered_meta.vcf "$seqId"_filtered_meta_annotated
 annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vcf
 
 #write SNV & Indel dataset to table
-/share/apps/jre-distros/jre1.8.0_131/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.5/VCFParse.jar \
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.5/VCFParse.jar \
 -V "$seqId"_filtered_meta_annotated.vcf \
 -O "$seqId"_snv-indel \
 -K
 
 #write SV dataset to table
-/share/apps/jre-distros/jre1.8.0_131/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.5/VCFParse.jar \
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.5/VCFParse.jar \
 -V "$seqId"_sv_filtered_meta_annotated.vcf \
 -O "$seqId"_sv \
 -K
