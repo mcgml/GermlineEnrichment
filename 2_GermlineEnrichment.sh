@@ -331,7 +331,7 @@ rm "$seqId"_"$sampleId"*unaligned.bam "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$
 rm "$seqId"_"$sampleId"_realigned.bai 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf Y.bed "$panel"_ROI.interval_list
 rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai
 rm "$seqId"_"$sampleId"_Contamination.log "$seqId"_"$sampleId"_DepthOfCoverage.sample_statistics "$seqId"_"$sampleId"_PASS.bed
-rm "$panel"_ClinicalCoverageTargets.bed "$panel"_TargetGenes.bed "$panel"_TargetNMExons.bed FASTQC_STATUS
+rm "$panel"_ClinicalCoverageTargets.bed "$panel"_TargetGenes.bed "$panel"_TargetNMExons.bed FASTQC_STATUS "$seqId"_"$sampleId"_DepthOfCoverage
 
 #create final file lists
 find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
