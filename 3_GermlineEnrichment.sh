@@ -331,7 +331,7 @@ done
 /share/apps/vcftools-distros/vcftools-0.1.14/build/bin/vcftools \
 --relatedness2 \
 --out "$seqId"_relatedness \
---vcf "$seqId"_filtered_meta_annotated.vcf
+--vcf "$seqId"_combined_filtered_100pad.vcf
 
 #Variant Evaluation
 /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar CollectVariantCallingMetrics \
