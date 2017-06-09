@@ -349,6 +349,6 @@ rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_s
 rm "$seqId"_non_snps.vcf.idx "$seqId"_non_snps_filtered.vcf "$seqId"_non_snps_filtered.vcf.idx "$seqId"_combined_filtered_meta.vcf.gz
 rm ExomeDepth.log GVCFs.list HighCoverageBams.list "$seqId"_sv_filtered.vcf "$panel"_ROI_b37_window_gc.bed
 rm "$seqId"_sv_filtered_meta.vcf BAMs.list variables "$seqId"_combined_filtered.vcf "$seqId"_combined_filtered_meta.vcf.gz.tbi 
-rm "$seqId"_combined_filtered_100pad.vcf.gz "$seqId"_combined_filtered_100pad.vcf.gz.tbi "$seqId"_combined_filtered_100pad.vcf.idx
-rm "$seqId"_combined_filtered_100pad_GCP.vcf "$seqId"_combined_filtered_100pad_GCP.vcf.idx "$seqId"_combined_filtered_100pad_GCP_filtered.vcf
+rm "$seqId"_combined_filtered_100pad.vcf "$seqId"_combined_filtered_100pad.vcf.idx "$seqId"_combined_filtered_100pad_GCP.vcf
+rm "$seqId"_combined_filtered_100pad_GCP.vcf.idx "$seqId"_combined_filtered_100pad_GCP_filtered.vcf
 rm "$seqId"_combined_filtered_100pad_GCP_filtered.vcf.idx
