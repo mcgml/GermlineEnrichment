@@ -96,6 +96,7 @@ makeCNVBed(){
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
 -o "$seqId"_snps.vcf \
+-ped "$seqId"_pedigree.ped \
 -dt NONE
 
 #Filter SNPs
@@ -118,6 +119,7 @@ makeCNVBed(){
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
 -o "$seqId"_snps_filtered.vcf \
+-ped "$seqId"_pedigree.ped \
 -dt NONE
 
 #Select non-snps (INDEL, MIXED, MNP, SYMBOLIC, NO_VARIATION)
@@ -129,6 +131,7 @@ makeCNVBed(){
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
 -o "$seqId"_non_snps.vcf \
+-ped "$seqId"_pedigree.ped \
 -dt NONE
 
 #Filter non-snps (INDEL, MIXED, MNP, SYMBOLIC, NO_VARIATION)
@@ -151,6 +154,7 @@ makeCNVBed(){
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
 -o "$seqId"_non_snps_filtered.vcf \
+-ped "$seqId"_pedigree.ped \
 -dt NONE
 
 #Combine filtered VCF files
@@ -163,6 +167,7 @@ makeCNVBed(){
 -genotypeMergeOptions UNSORTED \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
+-ped "$seqId"_pedigree.ped \
 -dt NONE
 
 #Apply only family priors to a callset
