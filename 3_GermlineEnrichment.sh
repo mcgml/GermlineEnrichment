@@ -192,10 +192,10 @@ addMetaDataToVCF "$seqId"_combined_filtered.vcf
 ### ROH, SV & CNV analysis ###
 
 #identify runs of homozygosity
-for sample in $(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$seqId"_combined_filtered_meta.vcf); do
+for sampleId in $(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$seqId"_combined_filtered_meta.vcf); do
 
     #make >min coverage BED
-    zcat "$sample"/"$seqId"_"$sampleId"_DepthOfCoverage.gz | \
+    zcat "$sampleId"/"$seqId"_"$sampleId"_DepthOfCoverage.gz | \
     awk -vminimumCoverage="$minimumCoverage" '$3 >= minimumCoverage {print $1"\t"$2-1"\t"$2}' | \
     /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$sample"/"$seqId"_"$sampleId"_gt_eq_"$minimumCoverage".bed
     
