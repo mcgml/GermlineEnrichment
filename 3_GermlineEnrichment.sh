@@ -115,11 +115,6 @@ makeCNVBed(){
 --filterName "MQRankSum" \
 --filterExpression "ReadPosRankSum < -8.0" \
 --filterName "ReadPosRankSum" \
---genotypeFilterExpression "DP < 10" \
---genotypeFilterName "LowDP" \
---genotypeFilterExpression "GQ < 20" \
---genotypeFilterName "LowGQ" \
---setFilteredGtToNocall \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
 -o "$seqId"_snps_filtered.vcf \
@@ -153,11 +148,6 @@ makeCNVBed(){
 --filterName "ReadPosRankSum" \
 --filterExpression "InbreedingCoeff != 'NaN' && InbreedingCoeff < -0.8" \
 --filterName "InbreedingCoeff" \
---genotypeFilterExpression "DP < 10" \
---genotypeFilterName "LowDP" \
---genotypeFilterExpression "GQ < 20" \
---genotypeFilterName "LowGQ" \
---setFilteredGtToNocall \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
 -o "$seqId"_non_snps_filtered.vcf \
@@ -175,12 +165,52 @@ makeCNVBed(){
 -ip 100 \
 -dt NONE
 
+#Apply only family priors to a callset
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+-T CalculateGenotypePosteriors \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-V "$seqId"_combined_filtered_100pad.vcf \
+--skipPopulationPriors \
+-ped "$seqId"_pedigree.ped \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-ip 100 \
+-o "$seqId"_combined_filtered_100pad_GCP.vcf \
+-dt NONE
+
+#phase genotypes
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+-T PhaseByTransmission \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-V "$seqId"_combined_filtered_100pad_GCP.vcf \
+-ped "$seqId"_pedigree.ped \
+-o "$seqId"_combined_filtered_100pad_GCP_phased.vcf \
+--DeNovoPrior 0.000001 \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-ip 100 \
+-dt NONE
+
+#filter genotypes
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+-T VariantFiltration \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-V "$seqId"_combined_filtered_100pad_GCP_phased.vcf \
+-ped "$seqId"_pedigree.ped \
+--genotypeFilterExpression "DP < 10" \
+--genotypeFilterName "LowDP" \
+--genotypeFilterExpression "GQ < 20" \
+--genotypeFilterName "LowGQ" \
+--setFilteredGtToNocall \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-ip 100 \
+-o "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf \
+-dt NONE
+
 #restrict to ROI but retain overlapping indels
-/share/apps/htslib-distros/htslib-1.4/bgzip "$seqId"_combined_filtered_100pad.vcf
-/share/apps/htslib-distros/htslib-1.4/tabix -p vcf "$seqId"_combined_filtered_100pad.vcf.gz
+/share/apps/htslib-distros/htslib-1.4/bgzip "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf
+/share/apps/htslib-distros/htslib-1.4/tabix -p vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz
 /share/apps/bcftools-distros/bcftools-1.4/bcftools view \
 -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
-"$seqId"_combined_filtered_100pad.vcf.gz > "$seqId"_combined_filtered.vcf
+"$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz > "$seqId"_combined_filtered.vcf
 
 #Add VCF meta data to final VCF
 addMetaDataToVCF "$seqId"_combined_filtered.vcf
@@ -315,3 +345,5 @@ rm "$seqId"_non_snps.vcf.idx "$seqId"_non_snps_filtered.vcf "$seqId"_non_snps_fi
 rm ExomeDepth.log GVCFs.list HighCoverageBams.list "$seqId"_sv_filtered.vcf "$panel"_ROI_b37_window_gc.bed
 rm "$seqId"_sv_filtered_meta.vcf BAMs.list variables "$seqId"_combined_filtered.vcf "$seqId"_combined_filtered_meta.vcf.gz.tbi 
 rm "$seqId"_combined_filtered_100pad.vcf.gz "$seqId"_combined_filtered_100pad.vcf.gz.tbi "$seqId"_combined_filtered_100pad.vcf.idx
+rm "$seqId"_combined_filtered_100pad_GCP.vcf "$seqId"_combined_filtered_100pad_GCP.vcf.idx "$seqId"_combined_filtered_100pad_GCP_filtered.vcf
+rm "$seqId"_combined_filtered_100pad_GCP_filtered.vcf.idx
