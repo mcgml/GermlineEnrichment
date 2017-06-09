@@ -51,6 +51,7 @@ version="2.0.0"
 -V "$seqId"_combined_filtered_100pad_GCP_filtered.vcf \
 -ped "$seqId"_pedigree.ped \
 -o "$seqId"_combined_filtered_100pad_GCP_filtered_phased.vcf \
+--DeNovoPrior 0.000001 \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
 -dt NONE
