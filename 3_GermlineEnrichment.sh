@@ -219,30 +219,14 @@ fi
 -o "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf \
 -dt NONE
 
-#restrict to ROI but retain overlapping indels
-/share/apps/htslib-distros/htslib-1.4.1/bgzip "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf
-/share/apps/htslib-distros/htslib-1.4.1/tabix -p vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz
-/share/apps/bcftools-distros/bcftools-1.4.1/bcftools view \
--R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
-"$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz > "$seqId"_combined_filtered.vcf
-
-#sort VCF
-/share/apps/igvtools-distros/igvtools_2.3.68/igvtools \
-sort \
-"$seqId"_combined_filtered.vcf \
-"$seqId"_combined_filtered_sorted.vcf
-
-#Add VCF meta data to final VCF
-addMetaDataToVCF "$seqId"_combined_filtered_sorted.vcf
-
 #bgzip vcf and index with tabix
-/share/apps/htslib-distros/htslib-1.4.1/bgzip -c "$seqId"_combined_filtered_sorted_meta.vcf > "$seqId"_combined_filtered_sorted_meta.vcf.gz
-/share/apps/htslib-distros/htslib-1.4.1/tabix -p vcf "$seqId"_combined_filtered_sorted_meta.vcf.gz
+/share/apps/htslib-distros/htslib-1.4.1/bgzip -c "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf > "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz
+/share/apps/htslib-distros/htslib-1.4.1/tabix -p vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz
 
 ### ROH, SV & CNV analysis ###
 
 #identify runs of homozygosity
-for sample in $(/share/apps/bcftools-distros/bcftools-1.4.1/bcftools query -l "$seqId"_combined_filtered_sorted_meta.vcf); do
+for sample in $(/share/apps/bcftools-distros/bcftools-1.4.1/bcftools query -l "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz); do
 
     #make >min coverage BED
     zcat "$sample"/"$seqId"_"$sample"_DepthOfCoverage.gz | \
@@ -250,7 +234,7 @@ for sample in $(/share/apps/bcftools-distros/bcftools-1.4.1/bcftools query -l "$
     /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$sample"/"$seqId"_"$sample"_gt_eq_"$minimumCoverage".bed
     
     #calculate LOH
-    /share/apps/bcftools-distros/bcftools-1.4.1/bcftools roh -O r -s "$sample" -R "$sample"/"$seqId"_"$sample"_gt_eq_"$minimumCoverage".bed "$seqId"_combined_filtered_sorted_meta.vcf.gz | \
+    /share/apps/bcftools-distros/bcftools-1.4.1/bcftools roh -O r -s "$sample" -R "$sample"/"$seqId"_"$sample"_gt_eq_"$minimumCoverage".bed "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz | \
     grep -v '^#' | awk '{print $3"\t"$4-1"\t"$5"\t\t"$8}' > "$sample"/"$seqId"_"$sample"_roh.bed
 
 done
@@ -265,12 +249,7 @@ manta/runWorkflow.py \
 --quiet \
 -m local \
 -j 12
-
-#unzip VCF
 gzip -dc manta/results/variants/diploidSV.vcf.gz > "$seqId"_sv_filtered.vcf
-
-#Add VCF meta data to SV VCF
-addMetaDataToVCF "$seqId"_sv_filtered.vcf
 
 #make CNV target BED file
 makeCNVBed
@@ -290,7 +269,20 @@ paste HighCoverageBams.list \
 
 ### Annotation & Reporting ###
 
-#annotate CNV calls with number of het calls
+#restrict variants to ROI but retain overlapping indels
+/share/apps/bcftools-distros/bcftools-1.4.1/bcftools view \
+-R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+"$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz > "$seqId"_combined_filtered.vcf
+
+#Add VCF meta data to final VCFs
+addMetaDataToVCF "$seqId"_combined_filtered.vcf
+addMetaDataToVCF "$seqId"_sv_filtered.vcf
+
+#annotate with VEP
+annotateVCF "$seqId"_combined_filtered_meta.vcf "$seqId"_filtered_meta_annotated.vcf
+annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vcf
+
+#add CNV vcf headers, metadata and annotate
 for vcf in $(ls *_cnv.vcf); do
 
     prefix=$(echo "$vcf" | sed 's/\.vcf//g')
@@ -306,38 +298,11 @@ for vcf in $(ls *_cnv.vcf); do
     addMetaDataToVCF "$prefix"_header.vcf
     annotateVCF "$prefix"_header_meta.vcf "$prefix"_meta_annotated.vcf
 
-    #write SNV & Indel dataset to table
-    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.5/VCFParse.jar \
-    -V "$prefix"_meta_annotated.vcf \
-    -O "$seqId"_cnv \
-    -K
-
     #move files to sampleId folder
     mv "$prefix"_meta_annotated.vcf* "$sampleId"
 
     #delete unused files
     rm "$vcf" "$prefix"_header.vcf "$prefix"_header_meta.vcf    
-done
-
-#annotate with VEP
-annotateVCF "$seqId"_combined_filtered_meta.vcf "$seqId"_filtered_meta_annotated.vcf
-annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vcf
-
-#write SNV & Indel dataset to table
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.5/VCFParse.jar \
--V "$seqId"_filtered_meta_annotated.vcf \
--O "$seqId"_snv-indel \
--K
-
-#write SV dataset to table
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /data/diagnostics/apps/VCFParse/VCFParse-1.2.5/VCFParse.jar \
--V "$seqId"_sv_filtered_meta_annotated.vcf \
--O "$seqId"_sv \
--K
-
-#move variant reports to sampleId folder
-for i in $(ls *_VariantReport.txt);do
-    mv "$i" $(echo "$i" | sed 's/_VariantReport.txt//g' | sed 's/.*_//g')
 done
 
 ### QC ###
