@@ -62,19 +62,6 @@ annotateVCF(){
     /share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$2"
 }
 
-makeCNVBed(){
-    #make CNV target BED file - sort, merge, increase bins to min 160bp, remove extreme GC & poor mappability bins
-    awk '{ if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3 }' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed | \
-    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
-    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge | \
-    awk '{ len=$3-($2+1); if (len < 160) { slop=(160-len)/2; adjStart=$2-slop; adjEnd=$3+slop; printf "%s\t%.0f\t%.0f\n", $1,adjStart,adjEnd; } else {print $1"\t"$2"\t"$3} }' | \
-    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge | \
-    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools nuc -fi /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta -bed - | \
-    awk '{ if ($5 >= 0.1 && $5 <= 0.9) print "chr"$1,$2,$3,$1"-"$2"-"$3 }' | tr ' ' '\t' > "$panel"_ROI_b37_window_gc.bed
-    /share/apps/bigWigAverageOverBed-distros/bigWigAverageOverBed /data/db/human/wgEncodeMapability/wgEncodeCrgMapabilityAlign100mer.bigWig "$panel"_ROI_b37_window_gc.bed "$panel"_ROI_b37_window_gc_mappability.txt
-    awk '{ if ($5 > 0.9 && $6 > 0.9) print $1"\ttarget_"NR }' "$panel"_ROI_b37_window_gc_mappability.txt | tr '-' '\t' > "$panel"_ROI_b37_CNV.bed
-}
-
 ### Joint variant calling and filtering ###
 
 #Joint genotyping
@@ -185,7 +172,6 @@ makeCNVBed(){
 
 #phase genotypes for trios
 if [ $(awk '$3 != 0 && $4 != 0' "$seqId"_pedigree.ped | wc -l | sed 's/^[[:space:]]*//g') -gt 0 ]; then
-    #phase
     /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
     -T PhaseByTransmission \
     -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -219,26 +205,18 @@ fi
 -o "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf \
 -dt NONE
 
+### ROH, SV & CNV analysis ###
+
+#identify runs of homozygosity
+
 #bgzip vcf and index with tabix
 /share/apps/htslib-distros/htslib-1.4.1/bgzip -c "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf > "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz
 /share/apps/htslib-distros/htslib-1.4.1/tabix -p vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz
 
-### ROH, SV & CNV analysis ###
-
-#identify runs of homozygosity
-for sample in $(/share/apps/bcftools-distros/bcftools-1.4.1/bcftools query -l "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz); do
-
-    #make >min coverage BED
-    zcat "$sample"/"$seqId"_"$sample"_DepthOfCoverage.gz | \
-    awk -vminimumCoverage="$minimumCoverage" '$3 >= minimumCoverage {print $1"\t"$2-1"\t"$2}' | \
-    sort -k1,1V -k2,2n -k3,3n | \
-    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$sample"/"$seqId"_"$sample"_gt_eq_"$minimumCoverage".bed
-    
-    #calculate LOH
-    /share/apps/bcftools-distros/bcftools-1.4.1/bcftools roh -O r -s "$sample" -R "$sample"/"$seqId"_"$sample"_gt_eq_"$minimumCoverage".bed "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz | \
-    grep -v '^#' | awk '{print $3"\t"$4-1"\t"$5"\t\t"$8}' > "$sample"/"$seqId"_"$sample"_roh.bed
-
-done
+#Annotate VCF with the AFs and run ROH
+#TODO *************************************************
+/share/apps/bcftools-distros/bcftools-1.4.1/bcftools annotate -c CHROM,POS,REF,ALT,AF1KG -h AFs.tab.gz.hdr -a AFs.tab.gz "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz | \
+/share/apps/bcftools-distros/bcftools-1.4.1/bcftools roh --AF-tag AF1KG -M 100 -m genetic-map/genetic_map_chr{CHROM}_combined_b37.txt -o roh.txt
 
 #Structural variant calling with Manta
 /share/apps/manta-distros/manta-1.1.0.centos5_x86_64/bin/configManta.py \
@@ -252,8 +230,16 @@ manta/runWorkflow.py \
 -j 12
 gzip -dc manta/results/variants/diploidSV.vcf.gz > "$seqId"_sv_filtered.vcf
 
-#make CNV target BED file
-makeCNVBed
+#make CNV target BED file - sort, merge, increase bins to min 160bp, remove extreme GC & poor mappability bins
+awk '{ if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3 }' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge | \
+awk '{ len=$3-($2+1); if (len < 160) { slop=(160-len)/2; adjStart=$2-slop; adjEnd=$3+slop; printf "%s\t%.0f\t%.0f\n", $1,adjStart,adjEnd; } else {print $1"\t"$2"\t"$3} }' | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools nuc -fi /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta -bed - | \
+awk '{ if ($5 >= 0.1 && $5 <= 0.9) print "chr"$1,$2,$3,$1"-"$2"-"$3 }' | tr ' ' '\t' > "$panel"_ROI_b37_window_gc.bed
+/share/apps/bigWigAverageOverBed-distros/bigWigAverageOverBed /data/db/human/wgEncodeMapability/wgEncodeCrgMapabilityAlign100mer.bigWig "$panel"_ROI_b37_window_gc.bed "$panel"_ROI_b37_window_gc_mappability.txt
+awk '{ if ($5 > 0.9 && $6 > 0.9) print $1"\ttarget_"NR }' "$panel"_ROI_b37_window_gc_mappability.txt | tr '-' '\t' > "$panel"_ROI_b37_CNV.bed
 
 #call CNVs using read depth
 /share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
@@ -282,6 +268,65 @@ addMetaDataToVCF "$seqId"_sv_filtered.vcf
 #annotate with VEP
 annotateVCF "$seqId"_combined_filtered_meta.vcf "$seqId"_filtered_meta_annotated.vcf
 annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vcf
+
+#add gnomad allele frequencies
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
+-T VariantAnnotator \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-V "$seqId"_filtered_meta_annotated.vcf \
+--resource:GNOMAD_2.0.1_Genome_chr10 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.10.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr11 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.11.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr12 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.12.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr13 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.13.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr14 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.14.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr15 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.15.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr16 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.16.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr17 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.17.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr18 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.18.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr19 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.19.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr1 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.1.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr20 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.20.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr21 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.21.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr22 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.22.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr2 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.2.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr3 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.3.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr4 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.4.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr5 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.5.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr6 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.6.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr7 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.7.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr8 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.8.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chr9 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.9.vcf.gz \
+--resource:GNOMAD_2.0.1_Genome_chrX /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.X.vcf.gz \
+--resource:GNOMAD_2.0.1_Exome /data/db/human/gnomad/gnomad.exomes.r2.0.1.sites.vcf.gz \
+-E GNOMAD_2.0.1_Genome_chr1.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr2.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr3.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr4.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr5.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr6.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr7.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr8.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr9.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr10.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr11.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr12.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr13.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr14.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr15.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr16.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr17.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr18.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr19.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr20.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr21.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chr22.AF_POPMAX \
+-E GNOMAD_2.0.1_Genome_chrX.AF_POPMAX \
+-E GNOMAD_2.0.1_Exome.AF_POPMAX \
+--resourceAlleleConcordance \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-ip 100 \
+-o "$seqId"_filtered_meta_annotated_gnomad.vcf \
+-dt NONE
 
 #add CNV vcf headers, metadata and annotate
 for vcf in $(ls *_cnv.vcf); do
