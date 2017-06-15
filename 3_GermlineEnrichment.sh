@@ -193,6 +193,7 @@ makeCNVBed(){
 --DeNovoPrior 0.000001 \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
+-mvf "$seqId"_MendelianViolations.txt \
 -dt NONE
 
 #filter genotypes
