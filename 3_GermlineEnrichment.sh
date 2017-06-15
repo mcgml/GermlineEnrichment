@@ -230,7 +230,7 @@ for sample in $(/share/apps/bcftools-distros/bcftools-1.4.1/bcftools query -l "$
 
     #make >min coverage BED
     zcat "$sample"/"$seqId"_"$sample"_DepthOfCoverage.gz | \
-    awk -vminimumCoverage="$minimumCoverage" '$1 > 0 && $1 < 23 && $3 >= minimumCoverage {print $1"\t"$2-1"\t"$2}' | \
+    awk -vminimumCoverage="$minimumCoverage" '$3 >= minimumCoverage {print $1"\t"$2-1"\t"$2}' | \
     sort -k1,1V -k2,2n -k3,3n | \
     /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$sample"/"$seqId"_"$sample"_gt_eq_"$minimumCoverage".bed
     
