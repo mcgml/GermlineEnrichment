@@ -184,7 +184,7 @@ makeCNVBed(){
 -dt NONE
 
 #phase genotypes for trios
-if [ $(awk '$3 != 0 && $4 != 0 {n++} END {print n}' "$seqId"_pedigree.ped) -gt 0 ]; then
+if [ $(awk '$3 != 0 && $4 != 0' "$seqId"_pedigree.ped | wc -l | sed 's/^[[:space:]]*//g') -gt 0 ]; then
     #phase
     /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.7.0/GenomeAnalysisTK.jar \
     -T PhaseByTransmission \
