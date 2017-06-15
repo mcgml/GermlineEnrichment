@@ -177,8 +177,8 @@ TMP_DIR=/state/partition1/tmpdir
 
 #tabix index the per-base coverage file
 awk -F'[\t|:]' '{if(NR>1) print $1"\t"$2"\t"$3}' "$seqId"_"$sampleId"_DepthOfCoverage | \
-/share/apps/htslib-distros/htslib-1.4/bgzip > "$seqId"_"$sampleId"_DepthOfCoverage.gz
-/share/apps/htslib-distros/htslib-1.4/tabix -b2 -e2 -s1 "$seqId"_"$sampleId"_DepthOfCoverage.gz
+/share/apps/htslib-distros/htslib-1.4.1/bgzip > "$seqId"_"$sampleId"_DepthOfCoverage.gz
+/share/apps/htslib-distros/htslib-1.4.1/tabix -b2 -e2 -s1 "$seqId"_"$sampleId"_DepthOfCoverage.gz
 
 #Make BED file of all genes overlapping ROI
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect -wa \
@@ -212,7 +212,7 @@ done | \
 sort -k1,1V -k2,2n -k3,3n > "$panel"_ClinicalCoverageTargets.bed
 
 #Make PASS BED
-/share/apps/htslib-distros/htslib-1.4/tabix -R "$panel"_ClinicalCoverageTargets.bed \
+/share/apps/htslib-distros/htslib-1.4.1/tabix -R "$panel"_ClinicalCoverageTargets.bed \
 "$seqId"_"$sampleId"_DepthOfCoverage.gz | \
 awk -v minimumCoverage="$minimumCoverage" '$3 >= minimumCoverage { print $1"\t"$2-1"\t"$2 }' | \
 sort -k1,1V -k2,2n -k3,3n | \

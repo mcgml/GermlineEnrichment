@@ -20,7 +20,7 @@ version="2.0.0"
 addMetaDataToVCF(){
     output=$(echo "$1" | sed 's/\.vcf/_meta\.vcf/g')
     grep '^##' "$1" > "$output"
-    for sample in $(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$1"); do
+    for sample in $(/share/apps/bcftools-distros/bcftools-1.4.1/bcftools query -l "$1"); do
         cat "$sample"/"$seqId"_"$sample"_meta.txt >> "$output"
     done
     grep -v '^##' "$1" >> "$output"
@@ -220,9 +220,9 @@ fi
 -dt NONE
 
 #restrict to ROI but retain overlapping indels
-/share/apps/htslib-distros/htslib-1.4/bgzip "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf
-/share/apps/htslib-distros/htslib-1.4/tabix -p vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz
-/share/apps/bcftools-distros/bcftools-1.4/bcftools view \
+/share/apps/htslib-distros/htslib-1.4.1/bgzip "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf
+/share/apps/htslib-distros/htslib-1.4.1/tabix -p vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz
+/share/apps/bcftools-distros/bcftools-1.4.1/bcftools view \
 -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz > "$seqId"_combined_filtered.vcf
 
@@ -236,13 +236,13 @@ sort \
 addMetaDataToVCF "$seqId"_combined_filtered_sorted.vcf
 
 #bgzip vcf and index with tabix
-/share/apps/htslib-distros/htslib-1.4/bgzip -c "$seqId"_combined_filtered_sorted_meta.vcf > "$seqId"_combined_filtered_sorted_meta.vcf.gz
-/share/apps/htslib-distros/htslib-1.4/tabix -p vcf "$seqId"_combined_filtered_sorted_meta.vcf.gz
+/share/apps/htslib-distros/htslib-1.4.1/bgzip -c "$seqId"_combined_filtered_sorted_meta.vcf > "$seqId"_combined_filtered_sorted_meta.vcf.gz
+/share/apps/htslib-distros/htslib-1.4.1/tabix -p vcf "$seqId"_combined_filtered_sorted_meta.vcf.gz
 
 ### ROH, SV & CNV analysis ###
 
 #identify runs of homozygosity
-for sample in $(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$seqId"_combined_filtered_sorted_meta.vcf); do
+for sample in $(/share/apps/bcftools-distros/bcftools-1.4.1/bcftools query -l "$seqId"_combined_filtered_sorted_meta.vcf); do
 
     #make >min coverage BED
     zcat "$sample"/"$seqId"_"$sample"_DepthOfCoverage.gz | \
@@ -250,7 +250,7 @@ for sample in $(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$se
     /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$sample"/"$seqId"_"$sample"_gt_eq_"$minimumCoverage".bed
     
     #calculate LOH
-    /share/apps/bcftools-distros/bcftools-1.4/bcftools roh -O r -s "$sample" -R "$sample"/"$seqId"_"$sample"_gt_eq_"$minimumCoverage".bed "$seqId"_combined_filtered_sorted_meta.vcf.gz | \
+    /share/apps/bcftools-distros/bcftools-1.4.1/bcftools roh -O r -s "$sample" -R "$sample"/"$seqId"_"$sample"_gt_eq_"$minimumCoverage".bed "$seqId"_combined_filtered_sorted_meta.vcf.gz | \
     grep -v '^#' | awk '{print $3"\t"$4-1"\t"$5"\t\t"$8}' > "$sample"/"$seqId"_"$sample"_roh.bed
 
 done
@@ -294,7 +294,7 @@ paste HighCoverageBams.list \
 for vcf in $(ls *_cnv.vcf); do
 
     prefix=$(echo "$vcf" | sed 's/\.vcf//g')
-    sampleId=$(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$vcf")
+    sampleId=$(/share/apps/bcftools-distros/bcftools-1.4.1/bcftools query -l "$vcf")
 
     #add VCF headers
     /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar UpdateVcfSequenceDictionary \
