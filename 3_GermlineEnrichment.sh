@@ -50,6 +50,7 @@ annotateVCF(){
     --no_escape \
     --shift_hgvs 1 \
     --vcf \
+    --minimal \
     --refseq
     
     #check VEP has produced annotated VCF
