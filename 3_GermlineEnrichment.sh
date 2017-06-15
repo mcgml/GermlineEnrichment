@@ -226,17 +226,23 @@ fi
 -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz > "$seqId"_combined_filtered.vcf
 
+#sort VCF
+/share/apps/igvtools-distros/igvtools_2.3.68/igvtools \
+sort \
+"$seqId"_combined_filtered.vcf \
+"$seqId"_combined_filtered_sorted.vcf
+
 #Add VCF meta data to final VCF
-addMetaDataToVCF "$seqId"_combined_filtered.vcf
+addMetaDataToVCF "$seqId"_combined_filtered_sorted.vcf
 
 #bgzip vcf and index with tabix
-/share/apps/htslib-distros/htslib-1.4/bgzip -c "$seqId"_combined_filtered_meta.vcf > "$seqId"_combined_filtered_meta.vcf.gz
-/share/apps/htslib-distros/htslib-1.4/tabix -p vcf "$seqId"_combined_filtered_meta.vcf.gz
+/share/apps/htslib-distros/htslib-1.4/bgzip -c "$seqId"_combined_filtered_sorted_meta.vcf > "$seqId"_combined_filtered_sorted_meta.vcf.gz
+/share/apps/htslib-distros/htslib-1.4/tabix -p vcf "$seqId"_combined_filtered_sorted_meta.vcf.gz
 
 ### ROH, SV & CNV analysis ###
 
 #identify runs of homozygosity
-for sample in $(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$seqId"_combined_filtered_meta.vcf); do
+for sample in $(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$seqId"_combined_filtered_sorted_meta.vcf); do
 
     #make >min coverage BED
     zcat "$sample"/"$seqId"_"$sample"_DepthOfCoverage.gz | \
@@ -244,7 +250,7 @@ for sample in $(/share/apps/bcftools-distros/bcftools-1.4/bcftools query -l "$se
     /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$sample"/"$seqId"_"$sample"_gt_eq_"$minimumCoverage".bed
     
     #calculate LOH
-    /share/apps/bcftools-distros/bcftools-1.4/bcftools roh -O r -s "$sample" -R "$sample"/"$seqId"_"$sample"_gt_eq_"$minimumCoverage".bed "$seqId"_combined_filtered_meta.vcf.gz | \
+    /share/apps/bcftools-distros/bcftools-1.4/bcftools roh -O r -s "$sample" -R "$sample"/"$seqId"_"$sample"_gt_eq_"$minimumCoverage".bed "$seqId"_combined_filtered_sorted_meta.vcf.gz | \
     grep -v '^#' | awk '{print $3"\t"$4-1"\t"$5"\t\t"$8}' > "$sample"/"$seqId"_"$sample"_roh.bed
 
 done
@@ -360,4 +366,4 @@ rm ExomeDepth.log GVCFs.list HighCoverageBams.list "$seqId"_sv_filtered.vcf "$pa
 rm "$seqId"_sv_filtered_meta.vcf BAMs.list variables "$seqId"_combined_filtered.vcf "$seqId"_combined_filtered_meta.vcf.gz.tbi 
 rm "$seqId"_combined_filtered_100pad.vcf "$seqId"_combined_filtered_100pad.vcf.idx "$seqId"_combined_filtered_100pad_GCP.vcf
 rm "$seqId"_combined_filtered_100pad_GCP.vcf.idx "$seqId"_combined_filtered_100pad_GCP_filtered.vcf
-rm "$seqId"_combined_filtered_100pad_GCP_filtered.vcf.idx
+rm "$seqId"_combined_filtered_100pad_GCP_filtered.vcf.idx igv.log
