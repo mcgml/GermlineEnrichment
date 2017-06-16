@@ -220,6 +220,7 @@ fi
 -a /state/partition1/db/human/roh/AFs.tab.gz \
 "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz | \
 /share/apps/bcftools-distros/bcftools-1.4.1/bcftools roh \
+-R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 --AF-tag AF1KG \
 -M 100 \
 -m /state/partition1/db/human/roh/genetic-map/genetic_map_chr{CHROM}_combined_b37.txt \
