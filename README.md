@@ -6,7 +6,7 @@
 <h3>Caveats</h3>
 <ul>
   <li>BQSR requires at least 100M bases post filtering to create an accurate model. Roughly, it shouldn't be used for designs less than 0.5Mb.</li>
-  <li>Script 3 requires PED file. By default, one is created assuming all unrelated samples. Downstream filtering assumes samples are unrelated unless specified in the PED</li>
+  <li>Script 2 requires PED file. By default, one is created assuming all unrelated samples. Downstream filtering assumes samples are unrelated unless specified in the PED</li>
 </ul>
 <h3>Outputs</h3>
 <ul>
