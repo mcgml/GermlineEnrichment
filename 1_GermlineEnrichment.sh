@@ -317,6 +317,7 @@ sort -k1,1V -k2,2n -k3,3n | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect \
 -a /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
 -b "$panel"_TargetNMExons.bed | \
+grep "NP_[0-9]*\.[0-9]*" | \
 awk -F'[\t|;|=]' -v p=5 '$3 == "CDS" { gene="null"; for (i=9;i<NF;i++) if ($i=="gene"){gene=$(i+1); break}; genes[gene] = genes[gene]$1"\t"($4-1)-p"\t"$5+p"\t"gene";" } END { for (gene in genes) print genes[gene] }' | \
 while read line; do
     echo "$line" | \
