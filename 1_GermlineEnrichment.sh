@@ -308,16 +308,15 @@ sort -k1,1V -k2,2n -k3,3n | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect \
 -a /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
 -b "$panel"_TargetGenes.bed | \
-grep "NM_[0-9]*\.[0-9]*" | \
+grep -P "NM_[0-9]*\.[0-9]*|^MT" | \
 awk -F "\t" '$3 == "exon" { print $1"\t"$4-1"\t"$5 }' | \
 sort -k1,1V -k2,2n -k3,3n | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$panel"_TargetNMExons.bed
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$panel"_TargetExons.bed
 
 #Intersect CDS for all genes, pad by p=n and merge coordinates by gene
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect \
 -a /state/partition1/db/human/refseq/ref_GRCh37.p13_top_level_canonical_b37_sorted.gff3.gz \
--b "$panel"_TargetNMExons.bed | \
-grep "NP_[0-9]*\.[0-9]*" | \
+-b "$panel"_TargetExons.bed | \
 awk -F'[\t|;|=]' -v p=5 '$3 == "CDS" { gene="null"; for (i=9;i<NF;i++) if ($i=="gene"){gene=$(i+1); break}; genes[gene] = genes[gene]$1"\t"($4-1)-p"\t"$5+p"\t"gene";" } END { for (gene in genes) print genes[gene] }' | \
 while read line; do
     echo "$line" | \
@@ -447,7 +446,7 @@ rm "$seqId"_"$sampleId"*unaligned.bam "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$
 rm "$seqId"_"$sampleId"_realigned.bai 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf Y.bed "$panel"_ROI.interval_list
 rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai
 rm "$seqId"_"$sampleId"_Contamination.log "$seqId"_"$sampleId"_DepthOfCoverage.sample_statistics "$seqId"_"$sampleId"_PASS.bed
-rm "$panel"_ClinicalCoverageTargets.bed "$panel"_TargetGenes.bed "$panel"_TargetNMExons.bed "$seqId"_"$sampleId"_DepthOfCoverage
+rm "$panel"_ClinicalCoverageTargets.bed "$panel"_TargetGenes.bed "$panel"_TargetExons.bed "$seqId"_"$sampleId"_DepthOfCoverage
 
 #create final file lists
 find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
