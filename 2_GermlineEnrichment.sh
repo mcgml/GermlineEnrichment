@@ -307,6 +307,8 @@ annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vc
 --resource:GNOMAD_2.0.1_Genome_chr22 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.22.vcf.gz \
 --resource:GNOMAD_2.0.1_Genome_chrX /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.X.vcf.gz \
 --resource:GNOMAD_2.0.1_Exome /data/db/human/gnomad/gnomad.exomes.r2.0.1.sites.vcf.gz \
+--resource:spidex /data/db/human/spidex/spidex_public_noncommercial_v1_0.b37.vcf.gz \
+--resource:mcap /data/db/human/mcap/mcap_v1_0.b37.vcf.gz \
 -E GNOMAD_2.0.1_Genome_chr1.AF_POPMAX \
 -E GNOMAD_2.0.1_Genome_chr2.AF_POPMAX \
 -E GNOMAD_2.0.1_Genome_chr3.AF_POPMAX \
@@ -331,6 +333,9 @@ annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vc
 -E GNOMAD_2.0.1_Genome_chr22.AF_POPMAX \
 -E GNOMAD_2.0.1_Genome_chrX.AF_POPMAX \
 -E GNOMAD_2.0.1_Exome.AF_POPMAX \
+-E spidex.dpsi_max_tissue \
+-E spidex.dpsi_zscore \
+-E mcap.mcap \
 --resourceAlleleConcordance \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
