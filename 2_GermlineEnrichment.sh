@@ -349,7 +349,7 @@ for vcf in $(ls *_cnv.vcf); do
     sampleId=$(/share/apps/bcftools-distros/bcftools-1.4.1/bcftools query -l "$vcf")
 
     #add VCF headers
-    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar UpdateVcfSequenceDictionary \
+    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar UpdateVcfSequenceDictionary \
     I="$vcf" \
     O="$prefix"_header.vcf \
     SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
@@ -374,7 +374,7 @@ done
 --vcf "$seqId"_combined_filtered_100pad.vcf
 
 #Variant Evaluation
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.8.3/picard.jar CollectVariantCallingMetrics \
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar CollectVariantCallingMetrics \
 INPUT="$seqId"_filtered_meta_annotated_gnomad.vcf \
 OUTPUT="$seqId"_CollectVariantCallingMetrics.txt \
 DBSNP=/state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.excluding_sites_after_129.vcf \
