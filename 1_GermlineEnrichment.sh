@@ -154,6 +154,7 @@ TMP_DIR=/state/partition1/tmpdir
 -I "$seqId"_"$sampleId"_rmdup.bam \
 -o "$seqId"_"$sampleId"_realign.intervals \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-L MT \
 -ip 150 \
 -dt NONE
 
@@ -235,6 +236,7 @@ fi
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -I "$seqId"_"$sampleId".bam \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-L MT \
 -ip 100 \
 -o "$seqId"_"$sampleId".g.vcf \
 --genotyping_mode DISCOVERY \
@@ -282,6 +284,7 @@ TMP_DIR=/state/partition1/tmpdir
 -o "$seqId"_"$sampleId"_DepthOfCoverage \
 -I "$seqId"_"$sampleId".bam \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-L MT \
 --countType COUNT_FRAGMENTS \
 --minMappingQuality 20 \
 --minBaseQuality 10 \
@@ -313,8 +316,7 @@ sort -k1,1V -k2,2n -k3,3n | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$panel"_Targets.bed
 
 #add MT regions to targets
-grep ^MT /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
->> "$panel"_Targets.bed
+echo -e "MT\t0\t16569" >> "$panel"_Targets.bed
 
 #Intersect CDS for all genes, pad by p=n and merge coordinates by gene
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect \
@@ -362,7 +364,7 @@ sort -k1,1V -k2,2n -k3,3n \
 -env \
 -ef \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--XL X -XL Y -XL MT \
+-XL X -XL Y \
 -dt NONE
 
 #Calculate dna contamination: sample-to-sample contamination
