@@ -286,7 +286,6 @@ TMP_DIR=/state/partition1/tmpdir
 --minMappingQuality 20 \
 --minBaseQuality 10 \
 -ct "$minimumCoverage" \
---omitIntervalStatistics \
 --omitLocusTable \
 -rf MappingQualityUnavailable \
 -dt NONE
@@ -451,6 +450,7 @@ rm "$seqId"_"$sampleId"_realigned.bai 1kg_highconfidence_autosomal_ontarget_mono
 rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai
 rm "$seqId"_"$sampleId"_Contamination.log "$seqId"_"$sampleId"_DepthOfCoverage.sample_statistics "$seqId"_"$sampleId"_PASS.bed
 rm "$panel"_ClinicalCoverageTargets.bed "$panel"_TargetGenes.bed "$panel"_Targets.bed "$seqId"_"$sampleId"_DepthOfCoverage
+rm "$seqId"_"$sampleId"_DepthOfCoverage.sample_interval_statistics
 
 #create final file lists
 find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
