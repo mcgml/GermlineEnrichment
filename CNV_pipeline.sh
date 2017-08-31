@@ -132,6 +132,9 @@ for i in $(ls *cnv.vcf); do
     SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
 done
 
+#annotate vcf calls with allele balance & filter
+#annotate cnvs with probe GC
+
 ### SV calling ###
 
 #Structural variant calling with Manta
@@ -149,6 +152,14 @@ while read bam; do
     gzip -dc manta/results/variants/diploidSV.vcf.gz > $(echo "$bam" | sed 's/\.bam/_sv\.vcf/g')
     rm -r manta
 done < HighCoverageBams.list
+
+### interpretation ###
+
+#decipher (DDG2P)
+#dgv
+#ISCA (clingen hap/trip insufficency score)
+#OMIM
+#pubmed (gene/exon/chromosomal loc)
 
 #clean up
 #TODO
