@@ -30,6 +30,8 @@ convertVcfToBed(){
     rm $(echo "$1" | sed 's/\.vcf/\.txt/g')
 }
 
+### Prepare BED for CNV dosage ###
+
 #counts reads per region
 /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.8.0/GenomeAnalysisTK.jar \
 -T DiagnoseTargets \
@@ -106,6 +108,8 @@ convertVcfToBed "$panel"_CNV_b37_annotated_filtered.vcf
 grep PASS "$panel"_CNV_b37_annotated_filtered.bed | \
 awk -F"\t" '{print $1"\t"$2"\t"$3"\tr"NR}' > "$panel"_CNV_b37_annotated_filtered_pass.bed
 
+### CNV calling ###
+
 #call CNVs using read depth
 /share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
 -b HighCoverageBams.list \
@@ -119,23 +123,32 @@ paste HighCoverageBams.list \
 <(grep "Number of counted fragments" ExomeDepth.log | cut -d' ' -f6) \
 <(grep "Correlation between reference and tests count" ExomeDepth.log | cut -d' ' -f8) >> "$seqId"_ExomeDepth_Metrics.txt
 
-#bgzip & tabix vcfs
-for vcf in $(ls *_cnv.vcf); do
-    /share/apps/htslib-distros/htslib-1.4.1/bgzip -f "$i"
-    /share/apps/htslib-distros/htslib-1.4.1/tabix -p vcf "$i".gz
+#add VCF headers and index
+for i in $(ls *cnv.vcf); do
+    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar UpdateVcfSequenceDictionary \
+    I="$vcf" \
+    O=$(echo "$vcf" | sed 's/\.vcf/_header\.vcf/g') \
+    CREATE_INDEX=true \
+    SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
 done
 
-#merge vcfs
-/share/apps/bcftools-distros/bcftools-1.4.1/bcftools merge \
--0 \
--o "$seqId"_cnv_combined.vcf \
-*cnv.vcf.gz
+### SV calling ###
 
-#add VCF headers
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar UpdateVcfSequenceDictionary \
-I="$seqId"_cnv_combined.vcf \
-O="$seqId"_cnv_combined_header.vcf \
-SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
+#Structural variant calling with Manta
+while read bam; do
+    /share/apps/manta-distros/manta-1.1.0.centos5_x86_64/bin/configManta.py \
+    --bam "$bam" \
+    --referenceFasta /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+    --exome \
+    --runDir manta
+    manta/runWorkflow.py \
+    --quiet \
+    -m local \
+    -j 12
+
+    gzip -dc manta/results/variants/diploidSV.vcf.gz > $(echo "$bam" | sed 's/\.bam/_sv\.vcf/g')
+    rm -r manta
+done < HighCoverageBams.list
 
 #clean up
 #TODO
