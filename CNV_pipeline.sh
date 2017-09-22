@@ -38,7 +38,6 @@ convertVcfToBed(){
 -R /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 $(sed 's/^/-I /' HighCoverageBams.list | tr '\n' ' ') \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--XL X -XL Y -XL MT \
 -ip 230 \
 --bad_mate_status_threshold 0.05 \
 --coverage_status_threshold 0.33 \
@@ -54,8 +53,6 @@ awk -F"\t" '{print "chr"$1"\t"$2"\t"$3"\tr"NR}' "$panel"_CNV_b37.bed > "$panel"_
 /share/apps/bigWigAverageOverBed-distros/bigWigAverageOverBed \
 /data/db/human/wgEncodeMapability/wgEncodeCrgMapabilityAlign100mer.bigWig \
 -bedOut="$panel"_CNV_hg19_wgEncodeCrgMapabilityAlign100mer.bed "$panel"_CNV_hg19.bed "$panel"_CNV_hg19_wgEncodeCrgMapabilityAlign100mer.txt
-
-#bgzip & tabix
 sed 's/^chr//g' "$panel"_CNV_hg19_wgEncodeCrgMapabilityAlign100mer.bed | \
 /share/apps/htslib-distros/htslib-1.4.1/bgzip -c > "$panel"_CNV_b37_wgEncodeCrgMapabilityAlign100mer.bed.gz
 /share/apps/htslib-distros/htslib-1.4.1/tabix -p bed "$panel"_CNV_b37_wgEncodeCrgMapabilityAlign100mer.bed.gz
@@ -67,16 +64,56 @@ sed 's/^chr//g' "$panel"_CNV_hg19_wgEncodeCrgMapabilityAlign100mer.bed | \
 -c CHROM,FROM,TO,-,wgEncodeCrgMapabilityAlign100mer \
 "$panel"_CNV_b37.vcf > "$panel"_CNV_b37_wgEncodeCrgMapabilityAlign100mer.vcf
 
+#calculate % overlap with repeat masker
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools coverage \
+-a "$panel"_CNV_b37.bed \
+-b /data/db/human/rmsk/rmsk_b37_sorted.bed | awk -F"\t" '{print $1"\t"$2"\t"$3"\tr"NR"\t"$8}' | \
+/share/apps/htslib-distros/htslib-1.4.1/bgzip -c > "$panel"_CNV_b37_repeatmasker.bed.gz
+/share/apps/htslib-distros/htslib-1.4.1/tabix -p bed "$panel"_CNV_b37_repeatmasker.bed.gz
+
+#annotate with % overlap with repeat masker
+/share/apps/bcftools-distros/bcftools-1.4.1/bcftools annotate \
+-a "$panel"_CNV_b37_repeatmasker.bed.gz \
+-h <(echo "##INFO=<ID=RepeatMaskerOverlap,Number=1,Type=Float,Description=\"Pct overlap with RepeatMasker\">") \
+-c CHROM,FROM,TO,-,RepeatMaskerOverlap \
+"$panel"_CNV_b37_wgEncodeCrgMapabilityAlign100mer.vcf > "$panel"_CNV_b37_RepeatMaskerOverlap.vcf
+
+#calculate GC of unpadded ROI
+rm -f "$panel"_CNV_b37_GC.bed
+cut -s -f1-3 "$panel"_CNV_b37.bed | while read line; do
+    
+    #extract targets from padded ROI
+    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect \
+    -a /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+    -b <(echo "$line") | \
+    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge | \
+    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools nuc \
+    -bed - \
+    -fi /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta | \
+    awk -vl="$line" -F"\t" 'NR > 1 {j++;n+=$5} END {print l"\t\t"(n/j)}' >> "$panel"_CNV_b37_GC.bed
+
+done
+
+#compress and index GC bed
+/share/apps/htslib-distros/htslib-1.4.1/bgzip -f "$panel"_CNV_b37_GC.bed
+/share/apps/htslib-distros/htslib-1.4.1/tabix -p bed "$panel"_CNV_b37_GC.bed.gz
+
+#annotate GC of unpadded ROI
+/share/apps/bcftools-distros/bcftools-1.4.1/bcftools annotate \
+-a "$panel"_CNV_b37_GC.bed.gz \
+-h <(echo "##INFO=<ID=UnpaddedGCContent,Number=1,Type=Float,Description=\"GC content of the unpadded interval\">") \
+-c CHROM,FROM,TO,-,UnpaddedGCContent \
+"$panel"_CNV_b37_RepeatMaskerOverlap.vcf > "$panel"_CNV_b37_GC.vcf
+
 #annotate features with mapping quality
 /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.8.0/GenomeAnalysisTK.jar \
 -T VariantAnnotator \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$panel"_CNV_b37_wgEncodeCrgMapabilityAlign100mer.vcf \
+-V "$panel"_CNV_b37_GC.vcf \
 $(sed 's/^/-I /' HighCoverageBams.list | tr '\n' ' ') \
 -o "$panel"_CNV_b37_annotated.vcf \
 -A MappingQualityZero -A RMSMappingQuality -A LowMQ \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--XL X -XL Y -XL MT \
 -ip 230 \
 -dt NONE
 
@@ -86,20 +123,45 @@ $(sed 's/^/-I /' HighCoverageBams.list | tr '\n' ' ') \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --filterExpression "MQ < 40.0" \
 --filterName "MQ" \
---filterExpression "IGC < 0.15" \
+--filterExpression "IGC < 0.15 || UnpaddedGCContent < 0.15" \
 --filterName "LowGC" \
---filterExpression "IGC > 0.85" \
+--filterExpression "IGC > 0.85 || UnpaddedGCContent > 0.85" \
 --filterName "HighGC" \
 --filterExpression "wgEncodeCrgMapabilityAlign100mer < 0.85" \
 --filterName "wgEncodeCrgMapability" \
 --filterExpression "LowMQ[1] > 0.1" \
 --filterName "LowMQ" \
+--filterExpression "CHROM == 'X' || CHROM == 'Y' || CHROM == 'MT'" \
+--filterName "NonDiploidContig" \
+--filterExpression "RepeatMaskerOverlap > 0.25" \
+--filterName "RepeatMaskerOverlap" \
+-V "$panel"_CNV_b37_annotated.vcf \
+-o "$panel"_CNV_b37_annotated_unmasked.vcf \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-ip 230 \
+-dt NONE
+
+#mask HiSeq high depth
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.8.0/GenomeAnalysisTK.jar \
+-T VariantFiltration \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-V "$panel"_CNV_b37_annotated_unmasked.vcf \
+-o "$panel"_CNV_b37_annotated_hiseq_masked.vcf \
+--mask /data/db/human/hiSeqDepth/hiSeqDepthTop5Pct_b37_sorted.bed.gz \
+--maskName hiSeqDepthTop5Pct \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-ip 230 \
+-dt NONE
+
+#mask segmental duplications
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.8.0/GenomeAnalysisTK.jar \
+-T VariantFiltration \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-V "$panel"_CNV_b37_annotated_hiseq_masked.vcf \
+-o "$panel"_CNV_b37_annotated_filtered.vcf \
 --mask /data/db/human/genomicSuperDups/genomicSuperDups_b37.bed.gz \
 --maskName genomicSuperDups \
--V "$panel"_CNV_b37_annotated.vcf \
--o "$panel"_CNV_b37_annotated_filtered.vcf \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--XL X -XL Y -XL MT \
 -ip 230 \
 -dt NONE
 
@@ -124,11 +186,10 @@ paste HighCoverageBams.list \
 <(grep "Correlation between reference and tests count" ExomeDepth.log | cut -d' ' -f8) >> "$seqId"_ExomeDepth_Metrics.txt
 
 #add VCF headers and index
-for i in $(ls *cnv.vcf); do
+for vcf in $(ls *cnv.vcf); do
     /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar UpdateVcfSequenceDictionary \
     I="$vcf" \
     O=$(echo "$vcf" | sed 's/\.vcf/_header\.vcf/g') \
-    CREATE_INDEX=true \
     SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
 done
 
