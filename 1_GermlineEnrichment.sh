@@ -113,7 +113,7 @@ TMP_DIR=/state/partition1/tmpdir | \
 -p \
 /state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
 /dev/stdin | \
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar MergeBamAlignment \
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar MergeBamAlignment \
 EXPECTED_ORIENTATIONS=FR \
 ALIGNED_BAM=/dev/stdin \
 UNMAPPED_BAM="$seqId"_"$sampleId"_unaligned.bam \
