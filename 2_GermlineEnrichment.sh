@@ -236,16 +236,20 @@ manta/runWorkflow.py \
 
 gzip -dc manta/results/variants/diploidSV.vcf.gz > "$seqId"_sv_filtered.vcf
 
-#make CNV target BED file - sort, merge, increase bins to min 160bp, remove extreme GC & poor mappability bins
-awk '{ if ($1 > 0 && $1 < 23) print $1"\t"$2"\t"$3 }' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
+#make CNV bed
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools slop \
+-i /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-g /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
+-b 230 | \
+grep -v ^X| \
+grep -v ^Y | \
+grep -v ^MT | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort \
+-faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge | \
-awk '{ len=$3-($2+1); if (len < 160) { slop=(160-len)/2; adjStart=$2-slop; adjEnd=$3+slop; printf "%s\t%.0f\t%.0f\n", $1,adjStart,adjEnd; } else {print $1"\t"$2"\t"$3} }' | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools nuc -fi /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta -bed - | \
-awk '{ if ($5 >= 0.1 && $5 <= 0.9) print "chr"$1,$2,$3,$1"-"$2"-"$3 }' | tr ' ' '\t' > "$panel"_ROI_b37_window_gc.bed
-/share/apps/bigWigAverageOverBed-distros/bigWigAverageOverBed /data/db/human/wgEncodeMapability/wgEncodeCrgMapabilityAlign100mer.bigWig "$panel"_ROI_b37_window_gc.bed "$panel"_ROI_b37_window_gc_mappability.txt
-awk '{ if ($5 > 0.9 && $6 > 0.9) print $1"\ttarget_"NR }' "$panel"_ROI_b37_window_gc_mappability.txt | tr '-' '\t' > "$panel"_ROI_b37_CNV.bed
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
+-A -a - -b /data/db/human/genomicSuperDups/genomicSuperDups_b37.bed.gz | \
+awk -F"\t" '{print $1"\t"$2"\t"$3"\tr"NR}' > "$panel"_ROI_b37_CNV.bed
 
 #call CNVs using read depth
 /share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \

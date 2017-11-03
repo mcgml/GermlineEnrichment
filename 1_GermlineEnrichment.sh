@@ -364,7 +364,7 @@ sort -k1,1V -k2,2n -k3,3n \
 -env \
 -ef \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--XL X -XL Y \
+-XL X -XL Y -XL MT \
 -dt NONE
 
 #Calculate dna contamination: sample-to-sample contamination
