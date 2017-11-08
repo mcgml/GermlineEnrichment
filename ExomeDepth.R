@@ -47,7 +47,7 @@ for (i in 1:nsamples) {
   print(paste("Processing sample", i, ":", sampleName, sep = " ", collapse = NULL))
   
   # Create the aggregate reference set for this sample
-  my.choice <- select.reference.set(test.counts = ExomeCount.mat[,i],reference.counts = ExomeCount.mat[,-i],bin.length = (ExomeCount.dafr$end - ExomeCount.dafr$start)/1000,n.bins.reduced = 100000)
+  my.choice <- select.reference.set(test.counts = ExomeCount.mat[,i],reference.counts = ExomeCount.mat[,-i],bin.length = (ExomeCount.dafr$end - ExomeCount.dafr$start)/1000,n.bins.reduced = 0)
 
   #print reference sample(s)
   print(paste("Reference sample(s):", my.choice$reference.choice, sep = " ", collapse = NULL))

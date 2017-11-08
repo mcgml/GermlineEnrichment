@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="2.1.0-dev"
+version="2.2.0"
 
 # Script 1 runs in sample folder, requires fastq files split by lane
 
@@ -16,8 +16,8 @@ version="2.1.0-dev"
 . *.variables
 . /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel".variables
 
+#count how many core FASTQC tests failed
 countQCFlagFails() {
-    #count how many core FASTQC tests failed
     grep -E "Basic Statistics|Per base sequence quality|Per tile sequence quality|Per sequence quality scores|Per base N content" "$1" | \
     grep -v ^PASS | \
     grep -v ^WARN | \
@@ -48,6 +48,15 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     "$read1Fastq" \
     "$read2Fastq"
 
+    #fastqc
+    /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -d /state/partition1/tmpdir --threads 12 --extract "$seqId"_"$sampleId"_"$laneId"_R1.fastq
+    /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -d /state/partition1/tmpdir --threads 12 --extract "$seqId"_"$sampleId"_"$laneId"_R2.fastq
+
+    #check FASTQC output
+    if [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R1_fastqc/summary.txt) -gt 0 ] || [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R2_fastqc/summary.txt) -gt 0 ]; then
+        rawSequenceQuality=FAIL
+    fi
+
     #FASTQ screen for inter-species contamination
     /share/apps/fastqscreen-distros/fastq_screen_v0.10.0/fastq_screen \
     --aligner bwa \
@@ -56,7 +65,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     "$seqId"_"$sampleId"_"$laneId"_R2.fastq
 
     #convert fastq to ubam
-    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar FastqToSam \
+    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar FastqToSam \
     F1="$seqId"_"$sampleId"_"$laneId"_R1.fastq \
     F2="$seqId"_"$sampleId"_"$laneId"_R2.fastq \
     O="$seqId"_"$sampleId"_"$laneId"_unaligned.bam \
@@ -72,72 +81,52 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     MAX_RECORDS_IN_RAM=2000000 \
     TMP_DIR=/state/partition1/tmpdir
 
-    #fastqc
-    /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -d /state/partition1/tmpdir --threads 12 --extract "$seqId"_"$sampleId"_"$laneId"_R1.fastq
-    /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -d /state/partition1/tmpdir --threads 12 --extract "$seqId"_"$sampleId"_"$laneId"_R2.fastq
-
-    #check FASTQC output
-    if [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R1_fastqc/summary.txt) -gt 0 ] || [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R2_fastqc/summary.txt) -gt 0 ]; then
-        rawSequenceQuality=FAIL
-    fi
+    #uBam2fq, map & MergeBamAlignment
+    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar SamToFastq \
+    I="$seqId"_"$sampleId"_"$laneId"_unaligned.bam \
+    FASTQ=/dev/stdout \
+    INTERLEAVE=true \
+    NON_PF=true \
+    MAX_RECORDS_IN_RAM=2000000 \
+    VALIDATION_STRINGENCY=SILENT \
+    COMPRESSION_LEVEL=0 \
+    TMP_DIR=/state/partition1/tmpdir | \
+    /share/apps/bwa-distros/bwa-0.7.15/bwa mem \
+    -M \
+    -t 12 \
+    -p \
+    /state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
+    /dev/stdin | \
+    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar MergeBamAlignment \
+    EXPECTED_ORIENTATIONS=FR \
+    ALIGNED_BAM=/dev/stdin \
+    UNMAPPED_BAM="$seqId"_"$sampleId"_"$laneId"_unaligned.bam \
+    OUTPUT="$seqId"_"$sampleId"_"$laneId"_aligned.bam \
+    REFERENCE_SEQUENCE=/state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
+    PAIRED_RUN=true \
+    SORT_ORDER="coordinate" \
+    IS_BISULFITE_SEQUENCE=false \
+    ALIGNED_READS_ONLY=false \
+    CLIP_ADAPTERS=false \
+    MAX_RECORDS_IN_RAM=2000000 \
+    ADD_MATE_CIGAR=true \
+    MAX_INSERTIONS_OR_DELETIONS=-1 \
+    PRIMARY_ALIGNMENT_STRATEGY=MostDistant \
+    UNMAP_CONTAMINANT_READS=false \
+    CLIP_OVERLAPPING_READS=true \
+    ALIGNER_PROPER_PAIR_FLAGS=false \
+    INCLUDE_SECONDARY_ALIGNMENTS=true \
+    CREATE_INDEX=true \
+    TMP_DIR=/state/partition1/tmpdir
 
     #clean up
-    rm "$seqId"_"$sampleId"_"$laneId"_R1.fastq "$seqId"_"$sampleId"_"$laneId"_R2.fastq *_fastqc.zip *_fastqc.html
+    rm "$seqId"_"$sampleId"_"$laneId"_R1.fastq "$seqId"_"$sampleId"_"$laneId"_R2.fastq *_fastqc.zip *_fastqc.html "$seqId"_"$sampleId"_"$laneId"_unaligned.bam
 
 done
 
-#merge lane bams
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar MergeSamFiles \
-$(ls "$seqId"_"$sampleId"_*_unaligned.bam | sed 's/^/I=/' | tr '\n' ' ') \
-SORT_ORDER=queryname \
-ASSUME_SORTED=true \
-VALIDATION_STRINGENCY=SILENT \
-USE_THREADING=true \
-MAX_RECORDS_IN_RAM=2000000 \
-TMP_DIR=/state/partition1/tmpdir \
-O="$seqId"_"$sampleId"_unaligned.bam
-
-#uBam2fq, map & MergeBamAlignment
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar SamToFastq \
-I="$seqId"_"$sampleId"_unaligned.bam \
-FASTQ=/dev/stdout \
-INTERLEAVE=true \
-NON_PF=true \
-MAX_RECORDS_IN_RAM=2000000 \
-VALIDATION_STRINGENCY=SILENT \
-COMPRESSION_LEVEL=0 \
-TMP_DIR=/state/partition1/tmpdir | \
-/share/apps/bwa-distros/bwa-0.7.15/bwa mem \
--M \
--t 12 \
--p \
-/state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
-/dev/stdin | \
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar MergeBamAlignment \
-EXPECTED_ORIENTATIONS=FR \
-ALIGNED_BAM=/dev/stdin \
-UNMAPPED_BAM="$seqId"_"$sampleId"_unaligned.bam \
-OUTPUT="$seqId"_"$sampleId"_aligned.bam \
-REFERENCE_SEQUENCE=/state/partition1/db/human/mappers/b37/bwa/human_g1k_v37.fasta \
-PAIRED_RUN=true \
-SORT_ORDER="coordinate" \
-IS_BISULFITE_SEQUENCE=false \
-ALIGNED_READS_ONLY=false \
-CLIP_ADAPTERS=false \
-MAX_RECORDS_IN_RAM=2000000 \
-ADD_MATE_CIGAR=true \
-MAX_INSERTIONS_OR_DELETIONS=-1 \
-PRIMARY_ALIGNMENT_STRATEGY=MostDistant \
-UNMAP_CONTAMINANT_READS=false \
-CLIP_OVERLAPPING_READS=true \
-ALIGNER_PROPER_PAIR_FLAGS=false \
-INCLUDE_SECONDARY_ALIGNMENTS=true \
-CREATE_INDEX=true \
-TMP_DIR=/state/partition1/tmpdir
-
 #Mark duplicate reads
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar MarkDuplicates \
-INPUT="$seqId"_"$sampleId"_aligned.bam \
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar MarkDuplicates \
+$(ls "$seqId"_"$sampleId"_*_aligned.bam | \sed 's/^/I=/' | tr '\n' ' ') \
 OUTPUT="$seqId"_"$sampleId"_rmdup.bam \
 METRICS_FILE="$seqId"_"$sampleId"_MarkDuplicatesMetrics.txt \
 CREATE_INDEX=true \
@@ -237,7 +226,7 @@ fi
 -I "$seqId"_"$sampleId".bam \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -L MT \
--ip 100 \
+-ip 150 \
 -o "$seqId"_"$sampleId".g.vcf \
 --genotyping_mode DISCOVERY \
 --emitRefConfidence GVCF \
@@ -246,13 +235,13 @@ fi
 ### QC ###
 
 #Convert BED to interval_list for later
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar BedToIntervalList \
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar BedToIntervalList \
 I=/data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 O="$panel"_ROI.interval_list \
 SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict 
 
 #Alignment metrics: library sequence similarity
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar CollectAlignmentSummaryMetrics \
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar CollectAlignmentSummaryMetrics \
 R=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 I="$seqId"_"$sampleId".bam \
 O="$seqId"_"$sampleId"_AlignmentSummaryMetrics.txt \
@@ -260,7 +249,7 @@ MAX_RECORDS_IN_RAM=2000000 \
 TMP_DIR=/state/partition1/tmpdir
 
 #Calculate insert size: fragmentation performance
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar CollectInsertSizeMetrics \
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar CollectInsertSizeMetrics \
 I="$seqId"_"$sampleId".bam \
 O="$seqId"_"$sampleId"_InsertMetrics.txt \
 H="$seqId"_"$sampleId"_InsertMetrics.pdf \
@@ -268,7 +257,7 @@ MAX_RECORDS_IN_RAM=2000000 \
 TMP_DIR=/state/partition1/tmpdir
 
 #HsMetrics: capture & pooling performance
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar CollectHsMetrics \
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar CollectHsMetrics \
 I="$seqId"_"$sampleId".bam \
 O="$seqId"_"$sampleId"_HsMetrics.txt \
 R=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
@@ -284,6 +273,7 @@ TMP_DIR=/state/partition1/tmpdir
 -o "$seqId"_"$sampleId"_DepthOfCoverage \
 -I "$seqId"_"$sampleId".bam \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-ip 150 \
 -L MT \
 --countType COUNT_FRAGMENTS \
 --minMappingQuality 20 \
@@ -447,7 +437,7 @@ cat "$seqId"_"$sampleId"_pedigree.ped >> ../"$seqId"_pedigree.ped
 ### Clean up ###
 
 #delete unused files
-rm "$seqId"_"$sampleId"*unaligned.bam "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam 
+rm "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam 
 rm "$seqId"_"$sampleId"_realigned.bai 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf Y.bed "$panel"_ROI.interval_list
 rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai
 rm "$seqId"_"$sampleId"_Contamination.log "$seqId"_"$sampleId"_DepthOfCoverage.sample_statistics "$seqId"_"$sampleId"_PASS.bed

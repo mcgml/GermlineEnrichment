@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="2.1.0-dev"
+version="2.2.0"
 
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 # Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
@@ -71,7 +71,7 @@ annotateVCF(){
 -V GVCFs.list \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -L MT \
--ip 100 \
+-ip 150 \
 -o "$seqId"_variants.vcf \
 -ped "$seqId"_pedigree.ped \
 -dt NONE
@@ -84,7 +84,7 @@ annotateVCF(){
 -selectType SNP \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -L MT \
--ip 100 \
+-ip 150 \
 -o "$seqId"_snps.vcf \
 -ped "$seqId"_pedigree.ped \
 -dt NONE
@@ -108,7 +108,7 @@ annotateVCF(){
 --filterName "ReadPosRankSum" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -L MT \
--ip 100 \
+-ip 150 \
 -o "$seqId"_snps_filtered.vcf \
 -ped "$seqId"_pedigree.ped \
 -dt NONE
@@ -121,7 +121,7 @@ annotateVCF(){
 --selectTypeToExclude SNP \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -L MT \
--ip 100 \
+-ip 150 \
 -o "$seqId"_non_snps.vcf \
 -ped "$seqId"_pedigree.ped \
 -dt NONE
@@ -145,7 +145,7 @@ annotateVCF(){
 --filterName "InbreedingCoeff" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -L MT \
--ip 100 \
+-ip 150 \
 -o "$seqId"_non_snps_filtered.vcf \
 -ped "$seqId"_pedigree.ped \
 -dt NONE
@@ -160,7 +160,7 @@ annotateVCF(){
 -genotypeMergeOptions UNSORTED \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -L MT \
--ip 100 \
+-ip 150 \
 -ped "$seqId"_pedigree.ped \
 -dt NONE
 
@@ -173,7 +173,7 @@ annotateVCF(){
 -ped "$seqId"_pedigree.ped \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -L MT \
--ip 100 \
+-ip 150 \
 -o "$seqId"_combined_filtered_100pad_GCP.vcf \
 -dt NONE
 
@@ -188,7 +188,7 @@ if [ $(awk '$3 != 0 && $4 != 0' "$seqId"_pedigree.ped | wc -l | sed 's/^[[:space
     --DeNovoPrior 0.000001 \
     -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
     -L MT \
-    -ip 100 \
+    -ip 150 \
     -mvf "$seqId"_MendelianViolations.txt \
     -dt NONE
 else 
@@ -210,21 +210,14 @@ fi
 --setFilteredGtToNocall \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -L MT \
--ip 100 \
+-ip 150 \
 -o "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf \
 -dt NONE
 
-### ROH, SV & CNV analysis ###
-
-#identify runs of homozygosity
-#TODO
-
-#bgzip vcf and index with tabix
-/share/apps/htslib-distros/htslib-1.4.1/bgzip -c "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf > "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz
-/share/apps/htslib-distros/htslib-1.4.1/tabix -p vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz
+### SV & CNV analysis ###
 
 #Structural variant calling with Manta
-/share/apps/manta-distros/manta-1.1.0.centos5_x86_64/bin/configManta.py \
+/share/apps/manta-distros/manta-1.2.1.centos6_x86_64/bin/configManta.py \
 $(sed 's/^/--bam /' HighCoverageBams.list | tr '\n' ' ') \
 --referenceFasta /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --exome \
@@ -240,7 +233,7 @@ gzip -dc manta/results/variants/diploidSV.vcf.gz > "$seqId"_sv_filtered.vcf
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools slop \
 -i /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -g /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
--b 230 | \
+-b 250 | \
 grep -v ^X| \
 grep -v ^Y | \
 grep -v ^MT | \
@@ -265,6 +258,10 @@ paste HighCoverageBams.list \
 <(grep "Correlation between reference and tests count" ExomeDepth.log | cut -d' ' -f8) >> "$seqId"_ExomeDepth_Metrics.txt
 
 ### Annotation & Reporting ###
+
+#bgzip vcf and index with tabix
+/share/apps/htslib-distros/htslib-1.4.1/bgzip -c "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf > "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz
+/share/apps/htslib-distros/htslib-1.4.1/tabix -p vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz
 
 #restrict variants to ROI but retain overlapping indels
 /share/apps/bcftools-distros/bcftools-1.4.1/bcftools view \
@@ -341,7 +338,7 @@ annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vc
 --resourceAlleleConcordance \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -L MT \
--ip 100 \
+-ip 150 \
 -o "$seqId"_filtered_meta_annotated_gnomad.vcf \
 -dt NONE
 
@@ -352,7 +349,7 @@ for vcf in $(ls *_cnv.vcf); do
     sampleId=$(/share/apps/bcftools-distros/bcftools-1.4.1/bcftools query -l "$vcf")
 
     #add VCF headers
-    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar UpdateVcfSequenceDictionary \
+    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar UpdateVcfSequenceDictionary \
     I="$vcf" \
     O="$prefix"_header.vcf \
     SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
@@ -377,7 +374,7 @@ done
 --vcf "$seqId"_combined_filtered_100pad.vcf
 
 #Variant Evaluation
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.10.10/picard.jar CollectVariantCallingMetrics \
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar CollectVariantCallingMetrics \
 INPUT="$seqId"_filtered_meta_annotated_gnomad.vcf \
 OUTPUT="$seqId"_CollectVariantCallingMetrics.txt \
 DBSNP=/state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.excluding_sites_after_129.vcf \
