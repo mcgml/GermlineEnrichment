@@ -53,8 +53,6 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -d /state/partition1/tmpdir --threads 12 --extract "$seqId"_"$sampleId"_"$laneId"_R2.fastq
     mv "$seqId"_"$sampleId"_"$laneId"_R1_fastqc/summary.txt "$seqId"_"$sampleId"_"$laneId"_R1_fastqc.txt
     mv "$seqId"_"$sampleId"_"$laneId"_R2_fastqc/summary.txt "$seqId"_"$sampleId"_"$laneId"_R2_fastqc.txt
-    mv "$seqId"_"$sampleId"_"$laneId"_R1_fastqc/fastqc_report.html "$seqId"_"$sampleId"_"$laneId"_R1_fastqc.html
-    mv "$seqId"_"$sampleId"_"$laneId"_R2_fastqc/fastqc_report.html "$seqId"_"$sampleId"_"$laneId"_R2_fastqc.html
 
     #check FASTQC output
     if [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R1_fastqc.txt) -gt 0 ] || [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R2_fastqc.txt) -gt 0 ]; then
@@ -124,7 +122,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     TMP_DIR=/state/partition1/tmpdir
 
     #clean up
-    rm "$seqId"_"$sampleId"_"$laneId"_R1.fastq "$seqId"_"$sampleId"_"$laneId"_R2.fastq *_fastqc.zip *_fastqc.html "$seqId"_"$sampleId"_"$laneId"_unaligned.bam
+    rm "$seqId"_"$sampleId"_"$laneId"_R1.fastq "$seqId"_"$sampleId"_"$laneId"_R2.fastq *_fastqc.zip "$seqId"_"$sampleId"_"$laneId"_unaligned.bam
     rm -r "$seqId"_"$sampleId"_"$laneId"_R1_fastqc "$seqId"_"$sampleId"_"$laneId"_R2_fastqc
 
 done
