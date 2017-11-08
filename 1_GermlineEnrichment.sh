@@ -91,7 +91,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     VALIDATION_STRINGENCY=SILENT \
     COMPRESSION_LEVEL=0 \
     TMP_DIR=/state/partition1/tmpdir | \
-    /share/apps/bwa-distros/bwa-0.7.15/bwa mem \
+    /share/apps/bwa-distros/bwa-0.7.17/bwa mem \
     -M \
     -t 12 \
     -p \
