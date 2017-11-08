@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="2.2.0"
+version="2.2.1"
 
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 # Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
@@ -70,8 +70,7 @@ annotateVCF(){
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V GVCFs.list \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--L MT \
--ip 150 \
+-ip 100 \
 -o "$seqId"_variants.vcf \
 -ped "$seqId"_pedigree.ped \
 -dt NONE
@@ -83,8 +82,7 @@ annotateVCF(){
 -V "$seqId"_variants.vcf \
 -selectType SNP \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--L MT \
--ip 150 \
+-ip 100 \
 -o "$seqId"_snps.vcf \
 -ped "$seqId"_pedigree.ped \
 -dt NONE
@@ -107,8 +105,7 @@ annotateVCF(){
 --filterExpression "ReadPosRankSum < -8.0" \
 --filterName "ReadPosRankSum" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--L MT \
--ip 150 \
+-ip 100 \
 -o "$seqId"_snps_filtered.vcf \
 -ped "$seqId"_pedigree.ped \
 -dt NONE
@@ -120,8 +117,7 @@ annotateVCF(){
 -V "$seqId"_variants.vcf \
 --selectTypeToExclude SNP \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--L MT \
--ip 150 \
+-ip 100 \
 -o "$seqId"_non_snps.vcf \
 -ped "$seqId"_pedigree.ped \
 -dt NONE
@@ -144,8 +140,7 @@ annotateVCF(){
 --filterExpression "InbreedingCoeff != 'NaN' && InbreedingCoeff < -0.8" \
 --filterName "InbreedingCoeff" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--L MT \
--ip 150 \
+-ip 100 \
 -o "$seqId"_non_snps_filtered.vcf \
 -ped "$seqId"_pedigree.ped \
 -dt NONE
@@ -159,8 +154,7 @@ annotateVCF(){
 -o "$seqId"_combined_filtered_100pad.vcf \
 -genotypeMergeOptions UNSORTED \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--L MT \
--ip 150 \
+-ip 100 \
 -ped "$seqId"_pedigree.ped \
 -dt NONE
 
@@ -172,8 +166,7 @@ annotateVCF(){
 --skipPopulationPriors \
 -ped "$seqId"_pedigree.ped \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--L MT \
--ip 150 \
+-ip 100 \
 -o "$seqId"_combined_filtered_100pad_GCP.vcf \
 -dt NONE
 
@@ -187,8 +180,7 @@ if [ $(awk '$3 != 0 && $4 != 0' "$seqId"_pedigree.ped | wc -l | sed 's/^[[:space
     -o "$seqId"_combined_filtered_100pad_GCP_phased.vcf \
     --DeNovoPrior 0.000001 \
     -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
-    -L MT \
-    -ip 150 \
+    -ip 100 \
     -mvf "$seqId"_MendelianViolations.txt \
     -dt NONE
 else 
@@ -209,8 +201,7 @@ fi
 --genotypeFilterName "LowGQ" \
 --setFilteredGtToNocall \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--L MT \
--ip 150 \
+-ip 100 \
 -o "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf \
 -dt NONE
 
@@ -266,7 +257,6 @@ paste HighCoverageBams.list \
 #restrict variants to ROI but retain overlapping indels
 /share/apps/bcftools-distros/bcftools-1.4.1/bcftools view \
 -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--R <(echo -e "MT\t0\t16569") \
 "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz > "$seqId"_combined_filtered.vcf
 
 #Add VCF meta data to final VCFs
@@ -337,8 +327,7 @@ annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vc
 -E mcap.mcap \
 --resourceAlleleConcordance \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--L MT \
--ip 150 \
+-ip 100 \
 -o "$seqId"_filtered_meta_annotated_gnomad.vcf \
 -dt NONE
 

@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="2.2.0"
+version="2.2.1"
 
 # Script 1 runs in sample folder, requires fastq files split by lane
 
@@ -51,9 +51,13 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     #fastqc
     /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -d /state/partition1/tmpdir --threads 12 --extract "$seqId"_"$sampleId"_"$laneId"_R1.fastq
     /share/apps/fastqc-distros/fastqc_v0.11.5/fastqc -d /state/partition1/tmpdir --threads 12 --extract "$seqId"_"$sampleId"_"$laneId"_R2.fastq
+    mv "$seqId"_"$sampleId"_"$laneId"_R1_fastqc/summary.txt "$seqId"_"$sampleId"_"$laneId"_R1_fastqc.txt
+    mv "$seqId"_"$sampleId"_"$laneId"_R2_fastqc/summary.txt "$seqId"_"$sampleId"_"$laneId"_R2_fastqc.txt
+    mv "$seqId"_"$sampleId"_"$laneId"_R1_fastqc/fastqc_report.html "$seqId"_"$sampleId"_"$laneId"_R1_fastqc.html
+    mv "$seqId"_"$sampleId"_"$laneId"_R2_fastqc/fastqc_report.html "$seqId"_"$sampleId"_"$laneId"_R2_fastqc.html
 
     #check FASTQC output
-    if [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R1_fastqc/summary.txt) -gt 0 ] || [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R2_fastqc/summary.txt) -gt 0 ]; then
+    if [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R1_fastqc.txt) -gt 0 ] || [ $(countQCFlagFails "$seqId"_"$sampleId"_"$laneId"_R2_fastqc.txt) -gt 0 ]; then
         rawSequenceQuality=FAIL
     fi
 
@@ -121,10 +125,11 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
 
     #clean up
     rm "$seqId"_"$sampleId"_"$laneId"_R1.fastq "$seqId"_"$sampleId"_"$laneId"_R2.fastq *_fastqc.zip *_fastqc.html "$seqId"_"$sampleId"_"$laneId"_unaligned.bam
+    rm -r "$seqId"_"$sampleId"_"$laneId"_R1_fastqc "$seqId"_"$sampleId"_"$laneId"_R2_fastqc
 
 done
 
-#Mark duplicate reads
+#Merge & Mark duplicate reads
 /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar MarkDuplicates \
 $(ls "$seqId"_"$sampleId"_*_aligned.bam | \sed 's/^/I=/' | tr '\n' ' ') \
 OUTPUT="$seqId"_"$sampleId"_rmdup.bam \
@@ -143,8 +148,7 @@ TMP_DIR=/state/partition1/tmpdir
 -I "$seqId"_"$sampleId"_rmdup.bam \
 -o "$seqId"_"$sampleId"_realign.intervals \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--L MT \
--ip 150 \
+-ip 100 \
 -dt NONE
 
 #Realign around indels
@@ -172,7 +176,7 @@ if [ "$includeBQSR" = true ] ; then
     -I "$seqId"_"$sampleId"_realigned.bam \
     -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
     -o "$seqId"_"$sampleId"_recal_data.table \
-    -ip 150 \
+    -ip 100 \
     -dt NONE
 
     #Do a second pass to analyze covariation remaining after recalibration
@@ -186,7 +190,7 @@ if [ "$includeBQSR" = true ] ; then
     -I "$seqId"_"$sampleId"_realigned.bam \
     -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
     -o "$seqId"_"$sampleId"_post_recal_data.table \
-    -ip 150 \
+    -ip 100 \
     -dt NONE
 
     #Generate BQSR plots
@@ -225,8 +229,7 @@ fi
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -I "$seqId"_"$sampleId".bam \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--L MT \
--ip 150 \
+-ip 100 \
 -o "$seqId"_"$sampleId".g.vcf \
 --genotyping_mode DISCOVERY \
 --emitRefConfidence GVCF \
@@ -273,8 +276,7 @@ TMP_DIR=/state/partition1/tmpdir
 -o "$seqId"_"$sampleId"_DepthOfCoverage \
 -I "$seqId"_"$sampleId".bam \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 150 \
--L MT \
+-ip 100 \
 --countType COUNT_FRAGMENTS \
 --minMappingQuality 20 \
 --minBaseQuality 10 \
@@ -306,7 +308,7 @@ sort -k1,1V -k2,2n -k3,3n | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$panel"_Targets.bed
 
 #add MT regions to targets
-echo -e "MT\t0\t16569" >> "$panel"_Targets.bed
+grep ^MT /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed >> "$panel"_Targets.bed
 
 #Intersect CDS for all genes, pad by p=n and merge coordinates by gene
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect \
@@ -439,10 +441,9 @@ cat "$seqId"_"$sampleId"_pedigree.ped >> ../"$seqId"_pedigree.ped
 #delete unused files
 rm "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam 
 rm "$seqId"_"$sampleId"_realigned.bai 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf Y.bed "$panel"_ROI.interval_list
-rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_aligned.bam "$seqId"_"$sampleId"_aligned.bai
+rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_DepthOfCoverage.sample_interval_statistics
 rm "$seqId"_"$sampleId"_Contamination.log "$seqId"_"$sampleId"_DepthOfCoverage.sample_statistics "$seqId"_"$sampleId"_PASS.bed
 rm "$panel"_ClinicalCoverageTargets.bed "$panel"_TargetGenes.bed "$panel"_Targets.bed "$seqId"_"$sampleId"_DepthOfCoverage
-rm "$seqId"_"$sampleId"_DepthOfCoverage.sample_interval_statistics
 
 #create final file lists
 find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
