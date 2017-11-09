@@ -355,8 +355,8 @@ rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_non_snps.vcf
 rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx 
 rm "$seqId"_non_snps.vcf.idx "$seqId"_non_snps_filtered.vcf "$seqId"_non_snps_filtered.vcf.idx ExomeDepth.log
 rm GVCFs.list HighCoverageBams.list igv.log BAMs.list variables "$seqId"_*_cnv.vcf
-rm "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta_filtered.vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta_filtered.vcf.idx
-rm "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta.vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta.vcf.idx
-rm "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.idx
-rm "$seqId"_combined_filtered_100pad_GCP_phased.vcf "$seqId"_combined_filtered_100pad_GCP_phased.vcf.idx
-rm "$seqId"_combined_filtered_100pad_GCP.vcf "$seqId"_combined_filtered_100pad_GCP.vcf.idx "$seqId"_combined_filtered_100pad.vcf "$seqId"_combined_filtered_100pad.vcf.idx
+rm "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta.vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta_vep.vcf
+rm "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta_vep.vcf.idx "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf
+rm "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.idx "$seqId"_combined_filtered_100pad_GCP_phased.vcf
+rm "$seqId"_combined_filtered_100pad_GCP_phased.vcf.idx "$seqId"_combined_filtered_100pad_GCP.vcf "$seqId"_combined_filtered_100pad_GCP.vcf.idx
+rm "$seqId"_combined_filtered_100pad.vcf "$seqId"_combined_filtered_100pad.vcf.idx
