@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="2.2.2"
+version="2.2.3"
 
 # Script 1 runs in sample folder, requires fastq files split by lane
 
@@ -233,6 +233,20 @@ fi
 --emitRefConfidence GVCF \
 -dt NONE
 
+#Structural variant calling with Manta
+/share/apps/manta-distros/manta-1.2.1.centos6_x86_64/bin/configManta.py \
+"$seqId"_"$sampleId".bam \
+--referenceFasta /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+--exome \
+--runDir manta
+manta/runWorkflow.py \
+--quiet \
+-m local \
+-j 12
+
+gzip -dc manta/results/variants/diploidSV.vcf.gz > "$seqId"_sv_filtered.vcf
+
+
 ### QC ###
 
 #Convert BED to interval_list for later
@@ -442,6 +456,7 @@ rm "$seqId"_"$sampleId"_realigned.bai 1kg_highconfidence_autosomal_ontarget_mono
 rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_DepthOfCoverage.sample_interval_statistics
 rm "$seqId"_"$sampleId"_Contamination.log "$seqId"_"$sampleId"_DepthOfCoverage.sample_statistics "$seqId"_"$sampleId"_PASS.bed
 rm "$panel"_ClinicalCoverageTargets.bed "$panel"_TargetGenes.bed "$panel"_Targets.bed "$seqId"_"$sampleId"_DepthOfCoverage
+rm -r manta
 
 #create final file lists
 find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list

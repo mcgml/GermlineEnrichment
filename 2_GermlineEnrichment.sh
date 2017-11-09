@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="2.2.2"
+version="2.2.3"
 
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 # Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
@@ -205,20 +205,7 @@ fi
 -o "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf \
 -dt NONE
 
-### SV & CNV analysis ###
-
-#Structural variant calling with Manta
-/share/apps/manta-distros/manta-1.2.1.centos6_x86_64/bin/configManta.py \
-$(sed 's/^/--bam /' HighCoverageBams.list | tr '\n' ' ') \
---referenceFasta /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
---exome \
---runDir manta
-manta/runWorkflow.py \
---quiet \
--m local \
--j 12
-
-gzip -dc manta/results/variants/diploidSV.vcf.gz > "$seqId"_sv_filtered.vcf
+### CNV analysis ###
 
 #make CNV bed
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools slop \
@@ -248,6 +235,26 @@ paste HighCoverageBams.list \
 <(grep "Number of counted fragments" ExomeDepth.log | cut -d' ' -f6) \
 <(grep "Correlation between reference and tests count" ExomeDepth.log | cut -d' ' -f8) >> "$seqId"_ExomeDepth_Metrics.txt
 
+#add CNV vcf headers and move to sample folder
+for vcf in $(ls *_cnv.vcf); do
+
+    prefix=$(echo "$vcf" | sed 's/\.vcf//g')
+    sampleId=$(/share/apps/bcftools-distros/bcftools-1.4.1/bcftools query -l "$vcf")
+
+    #add VCF headers
+    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar UpdateVcfSequenceDictionary \
+    I="$vcf" \
+    O="$sampleId"/"$seqId"_"$sampleId"_cnv.vcf \
+    CREATE_INDEX=true \
+    SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
+
+done
+
+#move cnv metrics to sample folder
+for i in $(ls *cnv.txt); do
+    mv "$i" $(echo "$i" | cut -d_ -f1);
+done
+
 ### Annotation & Reporting ###
 
 #bgzip vcf and index with tabix
@@ -261,11 +268,9 @@ paste HighCoverageBams.list \
 
 #Add VCF meta data to final VCFs
 addMetaDataToVCF "$seqId"_combined_filtered.vcf
-addMetaDataToVCF "$seqId"_sv_filtered.vcf
 
 #annotate with VEP
 annotateVCF "$seqId"_combined_filtered_meta.vcf "$seqId"_filtered_meta_annotated.vcf
-annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vcf
 
 #add gnomad allele frequencies
 /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.8.0/GenomeAnalysisTK.jar \
@@ -331,29 +336,6 @@ annotateVCF "$seqId"_sv_filtered_meta.vcf "$seqId"_sv_filtered_meta_annotated.vc
 -o "$seqId"_filtered_meta_annotated_gnomad.vcf \
 -dt NONE
 
-#add CNV vcf headers, metadata and annotate
-for vcf in $(ls *_cnv.vcf); do
-
-    prefix=$(echo "$vcf" | sed 's/\.vcf//g')
-    sampleId=$(/share/apps/bcftools-distros/bcftools-1.4.1/bcftools query -l "$vcf")
-
-    #add VCF headers
-    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar UpdateVcfSequenceDictionary \
-    I="$vcf" \
-    O="$prefix"_header.vcf \
-    SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
-
-    #add metadata, annotate & index
-    addMetaDataToVCF "$prefix"_header.vcf
-    annotateVCF "$prefix"_header_meta.vcf "$prefix"_meta_annotated.vcf
-
-    #move files to sampleId folder
-    mv "$prefix"_meta_annotated.vcf* "$sampleId"
-
-    #delete unused files
-    rm "$vcf" "$prefix"_header.vcf "$prefix"_header_meta.vcf
-done
-
 ### QC ###
 
 #relatedness test
@@ -372,7 +354,6 @@ THREAD_COUNT=4
 ### Clean up ###
 
 #delete unused files
-rm -r manta
 rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$panel"_ROI_b37_window_gc_mappability.txt  "$seqId"_combined_filtered_meta.vcf
 rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_non_snps.vcf igv.log
 rm "$seqId"_non_snps.vcf.idx "$seqId"_non_snps_filtered.vcf "$seqId"_non_snps_filtered.vcf.idx "$seqId"_combined_filtered_meta.vcf.gz
