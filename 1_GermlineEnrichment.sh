@@ -122,7 +122,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     TMP_DIR=/state/partition1/tmpdir
 
     #clean up
-    rm "$seqId"_"$sampleId"_"$laneId"_R1.fastq "$seqId"_"$sampleId"_"$laneId"_R2.fastq *_fastqc.zip "$seqId"_"$sampleId"_"$laneId"_unaligned.bam "$seqId"_"$sampleId"_"$laneId"_aligned.bam
+    rm "$seqId"_"$sampleId"_"$laneId"_R1.fastq "$seqId"_"$sampleId"_"$laneId"_R2.fastq *_fastqc.zip "$seqId"_"$sampleId"_"$laneId"_unaligned.bam
     rm -r "$seqId"_"$sampleId"_"$laneId"_R1_fastqc "$seqId"_"$sampleId"_"$laneId"_R2_fastqc
 
 done
@@ -452,11 +452,11 @@ cat "$seqId"_"$sampleId"_pedigree.ped >> ../"$seqId"_pedigree.ped
 ### Clean up ###
 
 #delete unused files
-rm "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam 
+rm "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam "$seqId"_"$sampleId"_*_aligned.bam
 rm "$seqId"_"$sampleId"_realigned.bai 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf Y.bed "$panel"_ROI.interval_list
 rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_DepthOfCoverage.sample_interval_statistics
 rm "$seqId"_"$sampleId"_Contamination.log "$seqId"_"$sampleId"_DepthOfCoverage.sample_statistics "$seqId"_"$sampleId"_PASS.bed
-rm "$panel"_ClinicalCoverageTargets.bed "$panel"_TargetGenes.bed "$panel"_Targets.bed "$seqId"_"$sampleId"_DepthOfCoverage
+rm "$panel"_ClinicalCoverageTargets.bed "$panel"_TargetGenes.bed "$panel"_Targets.bed "$seqId"_"$sampleId"_DepthOfCoverage igv.log
 rm -r manta
 
 #create final file lists
