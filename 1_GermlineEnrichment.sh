@@ -235,7 +235,7 @@ fi
 
 #Structural variant calling with Manta
 /share/apps/manta-distros/manta-1.2.1.centos6_x86_64/bin/configManta.py \
-"$seqId"_"$sampleId".bam \
+--bam "$seqId"_"$sampleId".bam \
 --referenceFasta /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 --exome \
 --runDir manta
