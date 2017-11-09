@@ -122,7 +122,7 @@ for fastqPair in $(ls "$sampleId"_S*.fastq.gz | cut -d_ -f1-3 | sort | uniq); do
     TMP_DIR=/state/partition1/tmpdir
 
     #clean up
-    rm "$seqId"_"$sampleId"_"$laneId"_R1.fastq "$seqId"_"$sampleId"_"$laneId"_R2.fastq *_fastqc.zip "$seqId"_"$sampleId"_"$laneId"_unaligned.bam
+    rm "$seqId"_"$sampleId"_"$laneId"_R1.fastq "$seqId"_"$sampleId"_"$laneId"_R2.fastq *_fastqc.zip "$seqId"_"$sampleId"_"$laneId"_unaligned.bam "$seqId"_"$sampleId"_"$laneId"_aligned.bam
     rm -r "$seqId"_"$sampleId"_"$laneId"_R1_fastqc "$seqId"_"$sampleId"_"$laneId"_R2_fastqc
 
 done
@@ -244,8 +244,9 @@ manta/runWorkflow.py \
 -m local \
 -j 12
 
-gzip -dc manta/results/variants/diploidSV.vcf.gz > "$seqId"_sv_filtered.vcf
-
+#rename and index VCF
+gzip -dc manta/results/variants/diploidSV.vcf.gz > "$seqId"_"$sampleId"_sv_filtered.vcf
+/share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$seqId"_"$sampleId"_sv_filtered.vcf
 
 ### QC ###
 
