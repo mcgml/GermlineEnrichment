@@ -205,79 +205,17 @@ fi
 -o "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf \
 -dt NONE
 
-### CNV analysis ###
-
-#make CNV bed
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools slop \
--i /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--g /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
--b 250 | \
-grep -v ^X| \
-grep -v ^Y | \
-grep -v ^MT | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort \
--faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
--A -a - -b /data/db/human/genomicSuperDups/genomicSuperDups_b37.bed.gz | \
-awk -F"\t" '{print $1"\t"$2"\t"$3"\tr"NR}' > "$panel"_ROI_b37_CNV.bed
-
-#call CNVs using read depth
-/share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
--b HighCoverageBams.list \
--f /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--r "$panel"_ROI_b37_CNV.bed \
-2>&1 | tee ExomeDepth.log
-
-#print ExomeDepth metrics
-echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_ExomeDepth_Metrics.txt
-paste HighCoverageBams.list \
-<(grep "Number of counted fragments" ExomeDepth.log | cut -d' ' -f6) \
-<(grep "Correlation between reference and tests count" ExomeDepth.log | cut -d' ' -f8) >> "$seqId"_ExomeDepth_Metrics.txt
-
-#add CNV vcf headers and move to sample folder
-for vcf in $(ls *_cnv.vcf); do
-
-    prefix=$(echo "$vcf" | sed 's/\.vcf//g')
-    sampleId=$(/share/apps/bcftools-distros/bcftools-1.4.1/bcftools query -l "$vcf")
-
-    #add VCF headers
-    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar UpdateVcfSequenceDictionary \
-    I="$vcf" \
-    O="$sampleId"/"$seqId"_"$sampleId"_cnv.vcf \
-    SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
-
-    /share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$sampleId"/"$seqId"_"$sampleId"_cnv.vcf
-
-done
-
-#move cnv metrics to sample folder
-for i in $(ls *cnv.txt); do
-    mv "$i" $(echo "$i" | cut -d_ -f1);
-done
-
-### Annotation & Reporting ###
-
-#bgzip vcf and index with tabix
-/share/apps/htslib-distros/htslib-1.4.1/bgzip -c "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf > "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz
-/share/apps/htslib-distros/htslib-1.4.1/tabix -p vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz
-
-#restrict variants to ROI but retain overlapping indels
-/share/apps/bcftools-distros/bcftools-1.4.1/bcftools view \
--R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
-"$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.gz > "$seqId"_combined_filtered.vcf
-
 #Add VCF meta data to final VCFs
-addMetaDataToVCF "$seqId"_combined_filtered.vcf
+addMetaDataToVCF "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf
 
 #annotate with VEP
-annotateVCF "$seqId"_combined_filtered_meta.vcf "$seqId"_filtered_meta_annotated.vcf
+annotateVCF "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta.vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta_filtered.vcf
 
 #add gnomad allele frequencies
 /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.8.0/GenomeAnalysisTK.jar \
 -T VariantAnnotator \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$seqId"_filtered_meta_annotated.vcf \
+-V "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta_filtered.vcf \
 --resource:GNOMAD_2.0.1_Genome_chr1 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.1.vcf.gz \
 --resource:GNOMAD_2.0.1_Genome_chr2 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.2.vcf.gz \
 --resource:GNOMAD_2.0.1_Genome_chr3 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.3.vcf.gz \
@@ -334,8 +272,66 @@ annotateVCF "$seqId"_combined_filtered_meta.vcf "$seqId"_filtered_meta_annotated
 --resourceAlleleConcordance \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
--o "$seqId"_filtered_meta_annotated_gnomad.vcf \
+-o "$seqId"_filtered_annotated_padded.vcf.gz \
 -dt NONE
+
+#restrict variants to ROI but retain overlapping indels
+/share/apps/bcftools-distros/bcftools-1.4.1/bcftools view \
+-R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+"$seqId"_filtered_annotated_padded.vcf.gz | \
+/share/apps/htslib-distros/htslib-1.4.1/bgzip -c > "$seqId"_filtered_annotated_roi.vcf.gz
+/share/apps/htslib-distros/htslib-1.4.1/tabix -p vcf "$seqId"_filtered_annotated_roi.vcf.gz
+
+### CNV analysis ###
+
+#make CNV bed
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools slop \
+-i /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-g /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
+-b 250 | \
+grep -v ^X| \
+grep -v ^Y | \
+grep -v ^MT | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort \
+-faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge | \
+/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
+-A -a - -b /data/db/human/genomicSuperDups/genomicSuperDups_b37.bed.gz | \
+awk -F"\t" '{print $1"\t"$2"\t"$3"\tr"NR}' > "$panel"_ROI_b37_CNV.bed
+
+#call CNVs using read depth
+/share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
+-b HighCoverageBams.list \
+-f /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-r "$panel"_ROI_b37_CNV.bed \
+2>&1 | tee ExomeDepth.log
+
+#print ExomeDepth metrics
+echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_ExomeDepth_Metrics.txt
+paste HighCoverageBams.list \
+<(grep "Number of counted fragments" ExomeDepth.log | cut -d' ' -f6) \
+<(grep "Correlation between reference and tests count" ExomeDepth.log | cut -d' ' -f8) >> "$seqId"_ExomeDepth_Metrics.txt
+
+#add CNV vcf headers and move to sample folder
+for vcf in $(ls *_cnv.vcf); do
+
+    prefix=$(echo "$vcf" | sed 's/\.vcf//g')
+    sampleId=$(/share/apps/bcftools-distros/bcftools-1.4.1/bcftools query -l "$vcf")
+
+    #add VCF headers
+    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar UpdateVcfSequenceDictionary \
+    I="$vcf" \
+    O="$sampleId"/"$seqId"_"$sampleId"_cnv.vcf \
+    SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
+
+    /share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$sampleId"/"$seqId"_"$sampleId"_cnv.vcf
+
+done
+
+#move cnv metrics to sample folder
+for i in $(ls *cnv.txt); do
+    mv "$i" $(echo "$i" | cut -d_ -f1);
+done
 
 ### QC ###
 
@@ -347,7 +343,7 @@ annotateVCF "$seqId"_combined_filtered_meta.vcf "$seqId"_filtered_meta_annotated
 
 #Variant Evaluation
 /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar CollectVariantCallingMetrics \
-INPUT="$seqId"_filtered_meta_annotated_gnomad.vcf \
+INPUT="$seqId"_filtered_annotated_padded.vcf.gz \
 OUTPUT="$seqId"_CollectVariantCallingMetrics.txt \
 DBSNP=/state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.excluding_sites_after_129.vcf \
 THREAD_COUNT=4
@@ -355,11 +351,11 @@ THREAD_COUNT=4
 ### Clean up ###
 
 #delete unused files
-rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$panel"_ROI_b37_window_gc_mappability.txt  "$seqId"_combined_filtered_meta.vcf
-rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx "$seqId"_non_snps.vcf igv.log
-rm "$seqId"_non_snps.vcf.idx "$seqId"_non_snps_filtered.vcf "$seqId"_non_snps_filtered.vcf.idx "$seqId"_combined_filtered_meta.vcf.gz
-rm ExomeDepth.log GVCFs.list HighCoverageBams.list "$seqId"_sv_filtered.vcf "$panel"_ROI_b37_window_gc.bed
+rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_combined_filtered_meta.vcf "$seqId"_non_snps.vcf
+rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx 
+rm "$seqId"_non_snps.vcf.idx "$seqId"_non_snps_filtered.vcf "$seqId"_non_snps_filtered.vcf.idx ExomeDepth.log
+rm GVCFs.list HighCoverageBams.list "$seqId"_sv_filtered.vcf "$panel"_ROI_b37_window_gc.bed igv.log
 rm "$seqId"_sv_filtered_meta.vcf BAMs.list variables "$seqId"_combined_filtered.vcf "$seqId"_combined_filtered_meta.vcf.gz.tbi 
 rm "$seqId"_combined_filtered_100pad.vcf "$seqId"_combined_filtered_100pad.vcf.idx "$seqId"_combined_filtered_100pad_GCP.vcf
 rm "$seqId"_combined_filtered_100pad_GCP.vcf.idx "$seqId"_combined_filtered_100pad_GCP_filtered.vcf
-rm "$seqId"_combined_filtered_100pad_GCP_filtered.vcf.idx igv.log
+rm "$seqId"_combined_filtered_100pad_GCP_filtered.vcf.idx rm *_cnv.vcf
