@@ -452,7 +452,7 @@ cat "$seqId"_"$sampleId"_pedigree.ped >> ../"$seqId"_pedigree.ped
 ### Clean up ###
 
 #delete unused files
-rm "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam "$seqId"_"$sampleId"_*_aligned.bam
+rm "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$sampleId"_realigned.bam "$seqId"_"$sampleId"_*_aligned.*
 rm "$seqId"_"$sampleId"_realigned.bai 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf Y.bed "$panel"_ROI.interval_list
 rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_DepthOfCoverage.sample_interval_statistics
 rm "$seqId"_"$sampleId"_Contamination.log "$seqId"_"$sampleId"_DepthOfCoverage.sample_statistics "$seqId"_"$sampleId"_PASS.bed
