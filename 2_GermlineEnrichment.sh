@@ -330,7 +330,7 @@ done
 
 #move cnv metrics to sample folder
 for i in $(ls *cnv.txt); do
-    mv "$i" $(echo "$i" | cut -d_ -f1);
+    mv "$i" $(echo "$i" | cut -d_ -f1)/"$seqId"_"$i";
 done
 
 ### QC ###
