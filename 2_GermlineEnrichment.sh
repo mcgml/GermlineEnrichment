@@ -245,8 +245,9 @@ for vcf in $(ls *_cnv.vcf); do
     /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar UpdateVcfSequenceDictionary \
     I="$vcf" \
     O="$sampleId"/"$seqId"_"$sampleId"_cnv.vcf \
-    CREATE_INDEX=true \
     SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
+
+    /share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$sampleId"/"$seqId"_"$sampleId"_cnv.vcf
 
 done
 

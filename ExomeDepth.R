@@ -109,7 +109,7 @@ for (i in 1:nsamples) {
   }
 
   #print per target counts and likelihoods
-  write.table(data.frame(all.exons@annotations$chromosome, all.exons@annotations$start, all.exons@annotations$end, all.exons@annotations$name, all.exons@reference, all.exons@test, all.exons@likelihood, stringsAsFactors=FALSE), sep="\t", row.names=FALSE, col.names=c("chr", "start", "end", "name", "ref", sampleName, "0.5", "1", "1.5"), quote=FALSE, file=paste(sampleName, "_cnv.txt", sep=""), append=TRUE)
+  write.table(data.frame(all.exons@annotations$chromosome, all.exons@annotations$start, all.exons@annotations$end, all.exons@annotations$name, all.exons@reference, all.exons@test, all.exons@likelihood, stringsAsFactors=FALSE), sep="\t", row.names=FALSE, col.names=c("chr", "start", "end", "name", "ref", sampleName, "0.5", "1", "1.5"), quote=FALSE, file=paste(sampleName, "_cnv.txt", sep=""))
     
 }
 
