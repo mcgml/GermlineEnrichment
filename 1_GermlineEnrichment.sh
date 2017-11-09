@@ -289,7 +289,6 @@ TMP_DIR=/state/partition1/tmpdir
 -o "$seqId"_"$sampleId"_DepthOfCoverage \
 -I "$seqId"_"$sampleId".bam \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 100 \
 --countType COUNT_FRAGMENTS \
 --minMappingQuality 20 \
 --minBaseQuality 10 \
@@ -395,8 +394,8 @@ meanOnTargetCoverage=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summ
 pctTargetBasesCt=$(head -n2 $seqId"_"$sampleId"_DepthOfCoverage".sample_summary | tail -n1 | cut -s -f7) #percentage panel covered with good enough data for variant detection
 freemix=$(tail -n1 "$seqId"_"$sampleId"_Contamination.selfSM | cut -s -f7) #percentage DNA contamination. Should be <= 0.02
 pctPfReadsAligned=$(grep ^PAIR "$seqId"_"$sampleId"_AlignmentSummaryMetrics.txt | awk '{print $7*100}') #Percentage mapped reads
-atDropout=$(head -n8 "$seqId"_"$sampleId"_HsMetrics.txt | tail -n1 | cut -s -f50) #A measure of how undercovered <= 50% GC regions are relative to the mean
-gcDropout=$(head -n8 "$seqId"_"$sampleId"_HsMetrics.txt | tail -n1 | cut -s -f51) #A measure of how undercovered >= 50% GC regions are relative to the mean
+atDropout=$(head -n8 "$seqId"_"$sampleId"_HsMetrics.txt | tail -n1 | cut -s -f51) #A measure of how undercovered <= 50% GC regions are relative to the mean
+gcDropout=$(head -n8 "$seqId"_"$sampleId"_HsMetrics.txt | tail -n1 | cut -s -f52) #A measure of how undercovered >= 50% GC regions are relative to the mean
 
 #gender analysis using Y chrom coverage
 awk '{if ($1 == "Y") print $0}' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed > Y.bed
