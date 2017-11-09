@@ -209,13 +209,13 @@ fi
 addMetaDataToVCF "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf
 
 #annotate with VEP
-annotateVCF "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta.vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta_filtered.vcf
+annotateVCF "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta.vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta_vep.vcf
 
 #add gnomad allele frequencies
 /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.8.0/GenomeAnalysisTK.jar \
 -T VariantAnnotator \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta_filtered.vcf \
+-V "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta_vep.vcf \
 --resource:GNOMAD_2.0.1_Genome_chr1 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.1.vcf.gz \
 --resource:GNOMAD_2.0.1_Genome_chr2 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.2.vcf.gz \
 --resource:GNOMAD_2.0.1_Genome_chr3 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.3.vcf.gz \
@@ -351,11 +351,12 @@ THREAD_COUNT=4
 ### Clean up ###
 
 #delete unused files
-rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_combined_filtered_meta.vcf "$seqId"_non_snps.vcf
+rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_non_snps.vcf
 rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx 
 rm "$seqId"_non_snps.vcf.idx "$seqId"_non_snps_filtered.vcf "$seqId"_non_snps_filtered.vcf.idx ExomeDepth.log
-rm GVCFs.list HighCoverageBams.list "$seqId"_sv_filtered.vcf "$panel"_ROI_b37_window_gc.bed igv.log
-rm "$seqId"_sv_filtered_meta.vcf BAMs.list variables "$seqId"_combined_filtered.vcf "$seqId"_combined_filtered_meta.vcf.gz.tbi 
-rm "$seqId"_combined_filtered_100pad.vcf "$seqId"_combined_filtered_100pad.vcf.idx "$seqId"_combined_filtered_100pad_GCP.vcf
-rm "$seqId"_combined_filtered_100pad_GCP.vcf.idx "$seqId"_combined_filtered_100pad_GCP_filtered.vcf
-rm "$seqId"_combined_filtered_100pad_GCP_filtered.vcf.idx rm *_cnv.vcf
+rm GVCFs.list HighCoverageBams.list igv.log BAMs.list variables "$seqId"_*_cnv.vcf
+rm "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta_filtered.vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta_filtered.vcf.idx
+rm "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta.vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta.vcf.idx
+rm "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.idx
+rm "$seqId"_combined_filtered_100pad_GCP_phased.vcf "$seqId"_combined_filtered_100pad_GCP_phased.vcf.idx
+rm "$seqId"_combined_filtered_100pad_GCP.vcf "$seqId"_combined_filtered_100pad_GCP.vcf.idx "$seqId"_combined_filtered_100pad.vcf "$seqId"_combined_filtered_100pad.vcf.idx
