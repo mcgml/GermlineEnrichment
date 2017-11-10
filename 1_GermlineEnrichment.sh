@@ -244,9 +244,9 @@ manta/runWorkflow.py \
 -m local \
 -j 12
 
-#rename and index VCF
-gzip -dc manta/results/variants/diploidSV.vcf.gz > "$seqId"_"$sampleId"_sv_filtered.vcf
-/share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$seqId"_"$sampleId"_sv_filtered.vcf
+#rename sv vcf
+mv manta/results/variants/diploidSV.vcf.gz "$seqId"_"$sampleId"_sv_filtered.vcf.gz
+mv manta/results/variants/diploidSV.vcf.gz.tbi "$seqId"_"$sampleId"_sv_filtered.vcf.gz.tbi
 
 ### QC ###
 

@@ -324,7 +324,9 @@ for vcf in $(ls *_cnv.vcf); do
     O="$sampleId"/"$seqId"_"$sampleId"_cnv.vcf \
     SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
 
-    /share/apps/igvtools-distros/igvtools_2.3.75/igvtools index "$sampleId"/"$seqId"_"$sampleId"_cnv.vcf
+    #gzip and tabix
+    /share/apps/htslib-distros/htslib-1.4.1/bgzip "$sampleId"/"$seqId"_"$sampleId"_cnv.vcf
+    /share/apps/htslib-distros/htslib-1.4.1/tabix -p vcf "$sampleId"/"$seqId"_"$sampleId"_cnv.vcf.gz
 
 done
 
