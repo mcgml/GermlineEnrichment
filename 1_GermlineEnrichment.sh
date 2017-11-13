@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_SAMPLE
-version="2.2.6"
+version="2.2.7"
 
 # Script 1 runs in sample folder, requires fastq files split by lane
 
@@ -219,35 +219,6 @@ else
 
 fi
 
-### Variant calling ###
-
-#SNPs and Indels GVCF with Haplotypecaller
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx16g -jar /share/apps/GATK-distros/GATK_3.8.0/GenomeAnalysisTK.jar \
--T HaplotypeCaller \
--R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--I "$seqId"_"$sampleId".bam \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 100 \
--o "$seqId"_"$sampleId".g.vcf \
---genotyping_mode DISCOVERY \
---emitRefConfidence GVCF \
--dt NONE
-
-#Structural variant calling with Manta
-/share/apps/manta-distros/manta-1.2.1.centos6_x86_64/bin/configManta.py \
---bam "$seqId"_"$sampleId".bam \
---referenceFasta /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
---exome \
---runDir manta
-manta/runWorkflow.py \
---quiet \
--m local \
--j 12
-
-#rename sv vcf
-mv manta/results/variants/diploidSV.vcf.gz "$seqId"_"$sampleId"_sv_filtered.vcf.gz
-mv manta/results/variants/diploidSV.vcf.gz.tbi "$seqId"_"$sampleId"_sv_filtered.vcf.gz.tbi
-
 ### QC ###
 
 #Convert BED to interval_list for later
@@ -448,6 +419,38 @@ if [ ! -z ${phenotype-} ]; then echo -e "$phenotype" >> "$sampleId"_pedigree.ped
 
 cat "$seqId"_"$sampleId"_pedigree.ped >> ../"$seqId"_pedigree.ped
 
+### Variant calling ###
+
+#SNPs and Indels GVCF with Haplotypecaller
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx16g -jar /share/apps/GATK-distros/GATK_3.8.0/GenomeAnalysisTK.jar \
+-T HaplotypeCaller \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-I "$seqId"_"$sampleId".bam \
+-L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+-ip 100 \
+-o "$seqId"_"$sampleId".g.vcf \
+-ped "$seqId"_"$sampleId"_pedigree.ped \
+--genotyping_mode DISCOVERY \
+--emitRefConfidence GVCF \
+-dt NONE
+
+#Structural variant calling with Manta
+if [ $(echo "$meanOnTargetCoverage" | awk '{if ($1 > 20) print "true"; else print "false"}') = true ]; then
+    /share/apps/manta-distros/manta-1.2.1.centos6_x86_64/bin/configManta.py \
+    --bam "$seqId"_"$sampleId".bam \
+    --referenceFasta /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+    --exome \
+    --runDir manta
+    manta/runWorkflow.py \
+    --quiet \
+    -m local \
+    -j 12
+
+    #rename sv vcf
+    mv manta/results/variants/diploidSV.vcf.gz "$seqId"_"$sampleId"_sv_filtered.vcf.gz
+    mv manta/results/variants/diploidSV.vcf.gz.tbi "$seqId"_"$sampleId"_sv_filtered.vcf.gz.tbi
+fi
+
 ### Clean up ###
 
 #delete unused files
@@ -455,15 +458,15 @@ rm "$seqId"_"$sampleId"_rmdup.bam "$seqId"_"$sampleId"_rmdup.bai "$seqId"_"$samp
 rm "$seqId"_"$sampleId"_realigned.bai 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf Y.bed "$panel"_ROI.interval_list
 rm 1kg_highconfidence_autosomal_ontarget_monoallelic_snps.vcf.idx "$seqId"_"$sampleId"_DepthOfCoverage.sample_interval_statistics
 rm "$seqId"_"$sampleId"_Contamination.log "$seqId"_"$sampleId"_DepthOfCoverage.sample_statistics "$seqId"_"$sampleId"_PASS.bed
-rm "$panel"_ClinicalCoverageTargets.bed "$panel"_TargetGenes.bed "$panel"_Targets.bed "$seqId"_"$sampleId"_DepthOfCoverage igv.log
-rm -r manta
+rm "$panel"_ClinicalCoverageTargets.bed "$panel"_TargetGenes.bed "$panel"_Targets.bed "$seqId"_"$sampleId"_DepthOfCoverage
+rm -fr manta
 
 #create final file lists
 find $PWD -name "$seqId"_"$sampleId".g.vcf >> ../GVCFs.list
 find $PWD -name "$seqId"_"$sampleId".bam >> ../BAMs.list
 
 #filter low coverage samples 
-if [ $(echo "$meanOnTargetCoverage" | awk '{if ($1 > 50) print "true"; else print "false"}') = true ]; then
+if [ $(echo "$meanOnTargetCoverage" | awk '{if ($1 > 20) print "true"; else print "false"}') = true ]; then
     find $PWD -name "$seqId"_"$sampleId".bam >> ../HighCoverageBams.list
 fi
 
