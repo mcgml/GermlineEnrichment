@@ -291,7 +291,7 @@ sort -k1,1V -k2,2n -k3,3n | \
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge > "$panel"_Targets.bed
 
 #add MT regions to targets
-grep ^MT /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed >> "$panel"_Targets.bed
+awk '$1 ~ /^MT/' /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed >> "$panel"_Targets.bed
 
 #Intersect CDS for all genes, pad by p=n and merge coordinates by gene
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools intersect \
