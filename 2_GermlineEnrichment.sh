@@ -284,56 +284,61 @@ annotateVCF "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta.vcf "$s
 
 ### CNV analysis ###
 
-#make CNV bed
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools slop \
--i /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--g /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
--b 250 | \
-grep -v ^X| \
-grep -v ^Y | \
-grep -v ^MT | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort \
--faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge | \
-/share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
--A -a - -b /data/db/human/genomicSuperDups/genomicSuperDups_b37.bed.gz | \
-awk -F"\t" '{print $1"\t"$2"\t"$3"\tr"NR}' > "$panel"_ROI_b37_CNV.bed
+#check one or more samples have high coverage
+if [[ -e "HighCoverageBams.list" ]] && [[ $(wc -l "HighCoverageBams.list" | awk '{print $1}') -gt 4 ]]; then
 
-#call CNVs using read depth
-/share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
--b HighCoverageBams.list \
--f /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--r "$panel"_ROI_b37_CNV.bed \
-2>&1 | tee ExomeDepth.log
+    #make CNV bed
+    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools slop \
+    -i /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+    -g /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai \
+    -b 250 | \
+    grep -v ^X| \
+    grep -v ^Y | \
+    grep -v ^MT | \
+    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools sort \
+    -faidx /data/db/human/gatk/2.8/b37/human_g1k_v37.fasta.fai | \
+    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools merge | \
+    /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
+    -A -a - -b /data/db/human/genomicSuperDups/genomicSuperDups_b37.bed.gz | \
+    awk -F"\t" '{print $1"\t"$2"\t"$3"\tr"NR}' > "$panel"_ROI_b37_CNV.bed
 
-#print ExomeDepth metrics
-echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_ExomeDepth_Metrics.txt
-paste HighCoverageBams.list \
-<(grep "Number of counted fragments" ExomeDepth.log | cut -d' ' -f6) \
-<(grep "Correlation between reference and tests count" ExomeDepth.log | cut -d' ' -f8) >> "$seqId"_ExomeDepth_Metrics.txt
+    #call CNVs using read depth
+    /share/apps/R-distros/R-3.3.1/bin/Rscript /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/ExomeDepth.R \
+    -b HighCoverageBams.list \
+    -f /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+    -r "$panel"_ROI_b37_CNV.bed \
+    2>&1 | tee ExomeDepth.log
 
-#add CNV vcf headers and move to sample folder
-for vcf in $(ls *_cnv.vcf); do
+    #print ExomeDepth metrics
+    echo -e "BamPath\tFragments\tCorrelation" > "$seqId"_ExomeDepth_Metrics.txt
+    paste HighCoverageBams.list \
+    <(grep "Number of counted fragments" ExomeDepth.log | cut -d' ' -f6) \
+    <(grep "Correlation between reference and tests count" ExomeDepth.log | cut -d' ' -f8) >> "$seqId"_ExomeDepth_Metrics.txt
 
-    prefix=$(echo "$vcf" | sed 's/\.vcf//g')
-    sampleId=$(/share/apps/bcftools-distros/bcftools-1.4.1/bcftools query -l "$vcf")
+    #add CNV vcf headers and move to sample folder
+    for vcf in $(ls *_cnv.vcf); do
 
-    #add VCF headers
-    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar UpdateVcfSequenceDictionary \
-    I="$vcf" \
-    O="$sampleId"/"$seqId"_"$sampleId"_cnv.vcf \
-    SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
+        prefix=$(echo "$vcf" | sed 's/\.vcf//g')
+        sampleId=$(/share/apps/bcftools-distros/bcftools-1.4.1/bcftools query -l "$vcf")
 
-    #gzip and tabix
-    /share/apps/htslib-distros/htslib-1.4.1/bgzip "$sampleId"/"$seqId"_"$sampleId"_cnv.vcf
-    /share/apps/htslib-distros/htslib-1.4.1/tabix -p vcf "$sampleId"/"$seqId"_"$sampleId"_cnv.vcf.gz
+        #add VCF headers
+        /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx2g -jar /share/apps/picard-tools-distros/picard-tools-2.12.2/picard.jar UpdateVcfSequenceDictionary \
+        I="$vcf" \
+        O="$sampleId"/"$seqId"_"$sampleId"_cnv.vcf \
+        SD=/state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.dict
 
-done
+        #gzip and tabix
+        /share/apps/htslib-distros/htslib-1.4.1/bgzip "$sampleId"/"$seqId"_"$sampleId"_cnv.vcf
+        /share/apps/htslib-distros/htslib-1.4.1/tabix -p vcf "$sampleId"/"$seqId"_"$sampleId"_cnv.vcf.gz
 
-#move cnv metrics to sample folder
-for i in $(ls *cnv.txt); do
-    mv "$i" $(echo "$i" | cut -d_ -f1)/"$seqId"_"$i";
-done
+    done
+
+    #move cnv metrics to sample folder
+    for i in $(ls *cnv.txt); do
+        mv "$i" $(echo "$i" | cut -d_ -f1)/"$seqId"_"$i";
+    done
+
+fi
 
 ### QC ###
 
