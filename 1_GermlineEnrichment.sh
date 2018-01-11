@@ -306,8 +306,12 @@ while read line; do
 done | \
 sort -k1,1V -k2,2n -k3,3n > "$panel"_ClinicalCoverageTargets.bed
 
+#add hotspot regions
+cat /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/GermlineEnrichment_Hotspots.bed "$panel"_ClinicalCoverageTargets.bed | \
+sort -k1,1V -k2,2n -k3,3n > "$panel"_ClinicalCoverageTargetsHotspots.bed
+
 #Make PASS BED
-/share/apps/htslib-distros/htslib-1.4.1/tabix -R "$panel"_ClinicalCoverageTargets.bed \
+/share/apps/htslib-distros/htslib-1.4.1/tabix -R "$panel"_ClinicalCoverageTargetsHotspots.bed \
 "$seqId"_"$sampleId"_DepthOfCoverage.gz | \
 awk -v minimumCoverage="$minimumCoverage" '$3 >= minimumCoverage { print $1"\t"$2-1"\t"$2 }' | \
 sort -k1,1V -k2,2n -k3,3n | \
@@ -315,7 +319,7 @@ sort -k1,1V -k2,2n -k3,3n | \
 
 #Calculate overlap between PASS BED and ClinicalCoverageTargets
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools coverage \
--a "$panel"_ClinicalCoverageTargets.bed \
+-a "$panel"_ClinicalCoverageTargetsHotspots.bed \
 -b "$seqId"_"$sampleId"_PASS.bed | \
 tee "$seqId"_"$sampleId"_ClinicalCoverageTargetMetrics.txt | \
 awk '{pass[$4]+=$6; len[$4]+=$7} END { for(i in pass) printf "%s\t %.2f%\n", i, (pass[i]/len[i]) * 100 }' | \
@@ -323,7 +327,7 @@ sort -k1,1 > "$seqId"_"$sampleId"_ClinicalCoverageGeneCoverage.txt
 
 #Make GAP BED
 /share/apps/bedtools-distros/bedtools-2.26.0/bin/bedtools subtract \
--a "$panel"_ClinicalCoverageTargets.bed \
+-a "$panel"_ClinicalCoverageTargetsHotspots.bed \
 -b "$seqId"_"$sampleId"_PASS.bed | \
 sort -k1,1V -k2,2n -k3,3n \
 > "$seqId"_"$sampleId"_Gaps.bed
