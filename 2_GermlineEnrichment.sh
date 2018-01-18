@@ -278,9 +278,21 @@ annotateVCF "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta.vcf "$s
 #restrict variants to ROI but retain overlapping indels
 /share/apps/bcftools-distros/bcftools-1.4.1/bcftools view \
 -R /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
-"$seqId"_filtered_annotated_padded.vcf.gz | \
-/share/apps/htslib-distros/htslib-1.4.1/bgzip -c > "$seqId"_filtered_annotated_roi.vcf.gz
-/share/apps/htslib-distros/htslib-1.4.1/tabix -p vcf "$seqId"_filtered_annotated_roi.vcf.gz
+"$seqId"_filtered_annotated_padded.vcf.gz > "$seqId"_filtered_annotated_roi.vcf
+
+#validate final VCF
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.8.0/GenomeAnalysisTK.jar \
+-T ValidateVariants \
+-R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+-V "$seqId"_filtered_annotated_roi.vcf \
+-dt NONE
+
+#report variants to text
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx48g -jar /data/diagnostics/apps/VariantReporterSpark/VariantReporterSpark-1.3.0/VariantReporterSpark.jar \
+-V "$seqId"_filtered_annotated_roi.vcf \
+-P "$seqId"_pedigree.ped \
+-T 12 \
+-N
 
 ### CNV analysis ###
 
