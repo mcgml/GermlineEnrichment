@@ -158,20 +158,20 @@ annotateVCF(){
 -ped "$seqId"_pedigree.ped \
 -dt NONE
 
-#Apply only family priors to a callset
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.8.0/GenomeAnalysisTK.jar \
--T CalculateGenotypePosteriors \
--R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$seqId"_combined_filtered_100pad.vcf \
---skipPopulationPriors \
--ped "$seqId"_pedigree.ped \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 100 \
--o "$seqId"_combined_filtered_100pad_GCP.vcf \
--dt NONE
-
 #check if trios are present
 if [ $(awk '$3 != 0 && $4 != 0' "$seqId"_pedigree.ped | wc -l | sed 's/^[[:space:]]*//g') -gt 0 ]; then
+
+    #Apply only family priors to a callset
+    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.8.0/GenomeAnalysisTK.jar \
+    -T CalculateGenotypePosteriors \
+    -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+    -V "$seqId"_combined_filtered_100pad.vcf \
+    --skipPopulationPriors \
+    -ped "$seqId"_pedigree.ped \
+    -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+    -ip 100 \
+    -o "$seqId"_combined_filtered_100pad_GCP.vcf \
+    -dt NONE
 
     #phase genotypes for trios
     /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.8.0/GenomeAnalysisTK.jar \
@@ -199,8 +199,8 @@ if [ $(awk '$3 != 0 && $4 != 0' "$seqId"_pedigree.ped | wc -l | sed 's/^[[:space
 
 else 
     #skip phasing if no trios are present
-    cp "$seqId"_combined_filtered_100pad_GCP.vcf "$seqId"_combined_filtered_100pad_GCP_phased.vcf
-    cp "$seqId"_combined_filtered_100pad_GCP.vcf.idx "$seqId"_combined_filtered_100pad_GCP_phased.vcf.idx
+    ln -s "$seqId"_combined_filtered_100pad.vcf "$seqId"_combined_filtered_100pad_GCP_phased.vcf
+    ln -s "$seqId"_combined_filtered_100pad.vcf.idx "$seqId"_combined_filtered_100pad_GCP_phased.vcf.idx
 fi
 
 #filter genotypes
