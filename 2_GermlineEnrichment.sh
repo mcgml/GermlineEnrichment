@@ -170,19 +170,34 @@ annotateVCF(){
 -o "$seqId"_combined_filtered_100pad_GCP.vcf \
 -dt NONE
 
-#phase genotypes for trios
+#check if trios are present
 if [ $(awk '$3 != 0 && $4 != 0' "$seqId"_pedigree.ped | wc -l | sed 's/^[[:space:]]*//g') -gt 0 ]; then
+
+    #phase genotypes for trios
     /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.8.0/GenomeAnalysisTK.jar \
     -T PhaseByTransmission \
     -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
     -V "$seqId"_combined_filtered_100pad_GCP.vcf \
     -ped "$seqId"_pedigree.ped \
-    -o "$seqId"_combined_filtered_100pad_GCP_phased.vcf \
+    -o "$seqId"_combined_filtered_100pad_GCP_phased_broken.vcf \
     --DeNovoPrior 0.000001 \
     -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
     -ip 100 \
     -mvf "$seqId"_MendelianViolations.txt \
     -dt NONE
+
+    #re-calc AC/AN/AF
+    /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.8.0/GenomeAnalysisTK.jar \
+    -T VariantAnnotator \
+    -A ChromosomeCounts \
+    -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
+    -V "$seqId"_combined_filtered_100pad_GCP_phased_broken.vcf \
+    -o "$seqId"_combined_filtered_100pad_GCP_phased.vcf \
+    -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
+    -ip 100 \
+    -o "$seqId"_filtered_annotated_padded.vcf.gz \
+    -dt NONE
+
 else 
     #skip phasing if no trios are present
     cp "$seqId"_combined_filtered_100pad_GCP.vcf "$seqId"_combined_filtered_100pad_GCP_phased.vcf
@@ -201,6 +216,7 @@ fi
 --genotypeFilterName "LowGQ" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
+--setFilteredGtToNocall \
 -o "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf \
 -dt NONE
 
@@ -379,3 +395,4 @@ rm "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta_vep.vcf.idx "$se
 rm "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered.vcf.idx "$seqId"_combined_filtered_100pad_GCP_phased.vcf
 rm "$seqId"_combined_filtered_100pad_GCP_phased.vcf.idx "$seqId"_combined_filtered_100pad_GCP.vcf "$seqId"_combined_filtered_100pad_GCP.vcf.idx
 rm "$seqId"_combined_filtered_100pad.vcf "$seqId"_combined_filtered_100pad.vcf.idx
+rm -f "$seqId"_combined_filtered_100pad_GCP_phased_broken.vcf "$seqId"_combined_filtered_100pad_GCP_phased_broken.vcf.idx
