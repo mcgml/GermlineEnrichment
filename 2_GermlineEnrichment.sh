@@ -300,6 +300,7 @@ annotateVCF "$seqId"_combined_filtered_100pad_GCP_phased_gtfiltered_meta.vcf "$s
 -T ValidateVariants \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_filtered_annotated_roi.vcf \
+--validationTypeToExclude ALLELES \
 --reference_window_stop 300 \
 -dt NONE
 
