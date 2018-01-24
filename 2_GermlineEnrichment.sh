@@ -195,7 +195,6 @@ if [ $(awk '$3 != 0 && $4 != 0' "$seqId"_pedigree.ped | wc -l | sed 's/^[[:space
     -o "$seqId"_combined_filtered_100pad_GCP_phased.vcf \
     -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
     -ip 100 \
-    -o "$seqId"_filtered_annotated_padded.vcf.gz \
     -dt NONE
 
 else 
