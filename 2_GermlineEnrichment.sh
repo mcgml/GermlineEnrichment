@@ -348,7 +348,7 @@ fi
 INPUT="$seqId"_filtered_annotated_padded.vcf.gz \
 OUTPUT="$seqId"_CollectVariantCallingMetrics.txt \
 DBSNP=/state/partition1/db/human/gatk/2.8/b37/dbsnp_138.b37.excluding_sites_after_129.vcf \
-THREAD_COUNT=4
+THREAD_COUNT=8
 
 ### Clean up ###
 
