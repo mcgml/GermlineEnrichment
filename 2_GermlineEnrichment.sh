@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="2.4.0"
+version="2.4.1"
 
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 # Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
@@ -196,6 +196,7 @@ annotateVCF "$seqId"_variants_filtered_genotypes_filtered_meta.vcf "$seqId"_vari
 -T VariantAnnotator \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_variants_filtered_genotypes_filtered_meta_vep.vcf \
+-A PossibleDeNovo \
 --resource:GNOMAD_2.0.1_Genome_chr1 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.1.vcf.gz \
 --resource:GNOMAD_2.0.1_Genome_chr2 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.2.vcf.gz \
 --resource:GNOMAD_2.0.1_Genome_chr3 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.3.vcf.gz \
@@ -249,6 +250,7 @@ annotateVCF "$seqId"_variants_filtered_genotypes_filtered_meta.vcf "$seqId"_vari
 -E spidex.dpsi_max_tissue \
 -E spidex.dpsi_zscore \
 -E mcap.mcap \
+-ped "$seqId"_pedigree.ped \
 --resourceAlleleConcordance \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
