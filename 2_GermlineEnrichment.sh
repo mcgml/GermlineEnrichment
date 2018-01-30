@@ -355,11 +355,11 @@ THREAD_COUNT=4
 #delete unused files
 rm "$seqId"_variants.vcf "$seqId"_variants.vcf.idx "$seqId"_non_snps.vcf
 rm "$seqId"_snps.vcf "$seqId"_snps.vcf.idx "$seqId"_snps_filtered.vcf "$seqId"_snps_filtered.vcf.idx 
-rm "$seqId"_non_snps.vcf.idx "$seqId"_non_snps_filtered.vcf "$seqId"_non_snps_filtered.vcf.idx ExomeDepth.log
+rm "$seqId"_non_snps.vcf.idx "$seqId"_non_snps_filtered.vcf "$seqId"_non_snps_filtered.vcf.idx
 rm GVCFs.list HighCoverageBams.list igv.log BAMs.list variables "$seqId"_*_cnv.vcf
 rm "$seqId"_variants_filtered_genotypes_filtered_meta.vcf "$seqId"_variants_filtered_genotypes_filtered_meta_vep.vcf
 rm "$seqId"_variants_filtered_genotypes_filtered_meta_vep.vcf.idx "$seqId"_variants_filtered_genotypes_filtered.vcf
-rm "$seqId"_variants_filtered_genotypes_filtered.vcf.idx "$seqId"_combined_filtered_100pad_GCP_phased.vcf
-rm "$seqId"_combined_filtered_100pad_GCP_phased.vcf.idx "$seqId"_variants_filtered_genotypes_refined.vcf "$seqId"_variants_filtered_genotypes_refined.vcf.idx
+rm "$seqId"_variants_filtered_genotypes_filtered.vcf.idx
+rm "$seqId"_variants_filtered_genotypes_refined.vcf "$seqId"_variants_filtered_genotypes_refined.vcf.idx
 rm "$seqId"_variants_filtered.vcf "$seqId"_variants_filtered.vcf.idx
-rm -f "$seqId"_combined_filtered_100pad_GCP_phased_broken.vcf "$seqId"_combined_filtered_100pad_GCP_phased_broken.vcf.idx
+rm -f ExomeDepth.log
