@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="2.4.1"
+version="2.5.0"
 
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 # Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
@@ -158,28 +158,14 @@ annotateVCF(){
 -ped "$seqId"_pedigree.ped \
 -dt NONE
 
-#Apply only family priors to a callset
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.8.0/GenomeAnalysisTK.jar \
--T CalculateGenotypePosteriors \
--R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$seqId"_variants_filtered.vcf \
---skipPopulationPriors \
--ped "$seqId"_pedigree.ped \
--L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
--ip 100 \
--o "$seqId"_variants_filtered_genotypes_refined.vcf \
--dt NONE
-
 #filter genotypes
 /share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx4g -jar /share/apps/GATK-distros/GATK_3.8.0/GenomeAnalysisTK.jar \
 -T VariantFiltration \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
--V "$seqId"_variants_filtered_genotypes_refined.vcf \
+-V "$seqId"_variants_filtered.vcf \
 -ped "$seqId"_pedigree.ped \
 --genotypeFilterExpression "DP < 10" \
 --genotypeFilterName "LowDP" \
---genotypeFilterExpression "GQ < 20" \
---genotypeFilterName "LowGQ" \
 -L /data/diagnostics/pipelines/GermlineEnrichment/GermlineEnrichment-"$version"/"$panel"/"$panel"_ROI_b37.bed \
 -ip 100 \
 -o "$seqId"_variants_filtered_genotypes_filtered.vcf \
@@ -196,7 +182,6 @@ annotateVCF "$seqId"_variants_filtered_genotypes_filtered_meta.vcf "$seqId"_vari
 -T VariantAnnotator \
 -R /state/partition1/db/human/gatk/2.8/b37/human_g1k_v37.fasta \
 -V "$seqId"_variants_filtered_genotypes_filtered_meta_vep.vcf \
--A PossibleDeNovo \
 --resource:GNOMAD_2.0.1_Genome_chr1 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.1.vcf.gz \
 --resource:GNOMAD_2.0.1_Genome_chr2 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.2.vcf.gz \
 --resource:GNOMAD_2.0.1_Genome_chr3 /data/db/human/gnomad/gnomad.genomes.r2.0.1.sites.3.vcf.gz \
@@ -271,7 +256,7 @@ annotateVCF "$seqId"_variants_filtered_genotypes_filtered_meta.vcf "$seqId"_vari
 -dt NONE
 
 #report variants to text
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx48g -jar /data/diagnostics/apps/VariantReporterSpark/VariantReporterSpark-1.3.0/VariantReporterSpark.jar \
+/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx48g -jar /data/diagnostics/apps/VariantReporterSpark/VariantReporterSpark-1.3.1/VariantReporterSpark.jar \
 -V "$seqId"_filtered_annotated_roi.vcf \
 -P "$seqId"_pedigree.ped \
 -T 12 \
@@ -360,6 +345,5 @@ rm GVCFs.list igv.log BAMs.list variables
 rm "$seqId"_variants_filtered_genotypes_filtered_meta.vcf "$seqId"_variants_filtered_genotypes_filtered_meta_vep.vcf
 rm "$seqId"_variants_filtered_genotypes_filtered_meta_vep.vcf.idx "$seqId"_variants_filtered_genotypes_filtered.vcf
 rm "$seqId"_variants_filtered_genotypes_filtered.vcf.idx
-rm "$seqId"_variants_filtered_genotypes_refined.vcf "$seqId"_variants_filtered_genotypes_refined.vcf.idx
 rm "$seqId"_variants_filtered.vcf "$seqId"_variants_filtered.vcf.idx
 rm -f ExomeDepth.log HighCoverageBams.list "$seqId"_*_cnv.vcf
