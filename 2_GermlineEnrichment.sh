@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: Germline Enrichment Pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Author: Matt Lyon, All Wales Medical Genetics Lab
 #Mode: BY_COHORT
-version="2.5.0"
+version="2.5.1"
 
 # Script 2 runs in panel folder, requires final Bams, gVCFs and a PED file
 # Variant filtering assumes non-related samples. If familiy structures are known they MUST be provided in the PED file
@@ -256,10 +256,10 @@ annotateVCF "$seqId"_variants_filtered_genotypes_filtered_meta.vcf "$seqId"_vari
 -dt NONE
 
 #report variants to text
-/share/apps/jre-distros/jre1.8.0_131/bin/java -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx48g -jar /data/diagnostics/apps/VariantReporterSpark/VariantReporterSpark-1.3.1/VariantReporterSpark.jar \
+/share/apps/jre-distros/jre1.8.0_131/bin/java -Djava.io.tmpdir=/state/partition1/tmpdir -Xmx48g -jar /data/diagnostics/apps/VariantReporterSpark/VariantReporterSpark-1.3.2/VariantReporterSpark.jar \
 -V "$seqId"_filtered_annotated_roi.vcf \
 -P "$seqId"_pedigree.ped \
--T 12 \
+-T 8 \
 -N
 
 ### CNV analysis ###
